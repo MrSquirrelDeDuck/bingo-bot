@@ -6,7 +6,8 @@ class Admin_cog(commands.Cog, name="Admin"):
     bot = None
 
     all_extensions = [
-        "loop_cog"
+        "loop_cog",
+        "other_cog"
     ]
 
     ######################
@@ -48,9 +49,9 @@ class Admin_cog(commands.Cog, name="Admin"):
         print(ctx.message.content, ctx.author)
         return True
 
-    #####################
-    #####################
-    #####################
+    #################################
+    ##### COG UTILITY FUNCTIONS #####
+    #################################
 
     def add_checks(self):
         # Adds a list of global checks here.
