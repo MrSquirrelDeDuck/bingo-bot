@@ -6,6 +6,7 @@ import sys
 import importlib
 
 import utility.bingo as bingo
+import utility.images as images
 
 class Bingo_cog(commands.Cog, name="Bingo"):
     bot = None
@@ -65,6 +66,44 @@ class Bingo_cog(commands.Cog, name="Bingo"):
     )
     async def gen_board_9x9(self, ctx):
         await ctx.reply("`{}`".format(bingo.generate_9x9_board()))
+    
+    @commands.group(
+        name = "board",
+        brief = "Shows the current 5x5 bingo board.",
+        description = "Shows the current 5x5 bingo board.",
+        pass_context = True,
+        invoke_without_command = True
+    )
+    async def board(self, ctx):
+        live_data = bingo.live()
+
+        images.render_board_5x5(
+            tile_string = live_data["daily_tile_string"],
+            enabled = live_data["daily_enabled"]
+        )
+
+        await ctx.reply(content="This is bingo board #{}!".format(live_data["daily_board_id"]), file=discord.File(r'images/generated/bingo_board.png'))
+    
+    @commands.group(
+        name = "weekly",
+        brief = "Shows the current weekly bingo board.",
+        description = "Shows the current weekly bingo board.",
+        pass_context = True,
+        invoke_without_command = True
+    )
+    async def weekly(self, ctx):
+        live_data = bingo.live()
+
+        images.render_board_9x9(
+            tile_string = live_data["weekly_tile_string"],
+            enabled = live_data["weekly_enabled"]
+        )
+
+        await ctx.reply(
+            content = "This is weekly board #{}!".format(live_data["weekly_board_id"]),
+            file = discord.File(r'images/generated/bingo_board.png')
+        )
+
 
 async def setup(bot: commands.Bot):
     cog = Bingo_cog()

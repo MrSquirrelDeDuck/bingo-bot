@@ -161,3 +161,6 @@ cython_debug/
 
 # VSCode workspace:
 *.code-workspace
+
+images/generated/
+data/bingo/live_data.json
