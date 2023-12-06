@@ -2,6 +2,11 @@ from discord.ext import commands
 import typing
 import traceback
 
+import sys
+import importlib
+
+import utility.text as text
+
 class Admin_cog(commands.Cog, name="Admin"):
     bot = None
 
@@ -42,7 +47,11 @@ class Admin_cog(commands.Cog, name="Admin"):
         if ctx.guild is None:
             return False
         
-        return ctx.author.guild_permissions.administrator
+        if ctx.author.guild_permissions.administrator:
+            return True
+        
+        await ctx.reply("I am sorry, but you do not have the permissions to use this command.")
+        return False
     
     # Added via bot.add_check in add_checks.
     async def test(self, ctx):
@@ -52,12 +61,42 @@ class Admin_cog(commands.Cog, name="Admin"):
     #################################
     ##### COG UTILITY FUNCTIONS #####
     #################################
+    
+    def _reload_module(self, module_name: str) -> bool:
+        """Reloads a module by name.
+        For imports that are in a folder, the folder name must be included. For instance: `utility.files` would reload the utility.files code.
+        Returns a bool for whether anything was reloaded, so the number of reloads can be counted."""
+
+        # Get a list of the names of every module in globals(). This can be done with a list comprehension but this is easier to read.
+        globals_modules = []
+
+        for module in globals().values():
+            if hasattr(module, "__name__"):
+                globals_modules.append(module.__name__)
+        
+        # Get a list of every imported module via cross-checking globals_modules and sys.modules.
+        all_modules = set(sys.modules) & set(globals_modules)
+
+        # If the provided module name 
+        if module_name not in all_modules:
+            return False
+        
+        # Get the module object.
+        module = sys.modules[module_name]
+
+        # Reload the module via importlib.reload.
+        importlib.reload(module)
+        print("- {} has reloaded {}.".format(self.qualified_name, module_name))
+
+        # Return True, since it has been reloaded in theory.
+        return True
 
     def add_checks(self):
-        # Adds a list of global checks here.
+        """Adds a list of global checks that are in Admin_cog."""
         self.bot.add_check(self.test)
 
     async def _load_all_extensions(self) -> None:
+        """Uses self.all_extensions to load all listed cogs."""
         print("Loading all extensions.\nExtension list: {}".format(self.all_extensions))
 
         for extension in self.all_extensions:
@@ -66,6 +105,7 @@ class Admin_cog(commands.Cog, name="Admin"):
         print("Loaded all extensions.")
 
     async def _load_extension(self, extension_name: str) -> None:
+        """Loads a cog if it is not already loaded."""
         print("Attempting to load extension \"{}\"".format(extension_name))
         
         try:
@@ -85,8 +125,49 @@ class Admin_cog(commands.Cog, name="Admin"):
         await self.bot.reload_extension(extension_name)
 
         print("Reloaded \"{}\" extension.".format(extension_name))
+    
+    async def _reload_module_universal(self, module_name: str) -> int:
+        """Attempts to have all cogs reload a module by name.
+        Returns the number of cogs that reloaded the module."""
+
+        # Gets a list of all the cogs.
+        all_cogs = self.bot.cogs
+
+        # Just to track how many are reloaded, we set a variable to 0 and increase it whenever something is reloaded.
+        reloaded_count = 0
+
+        # Now, loop through all the cogs and run the reload_module() function for them.
+        for cog in all_cogs.values():
+            result = cog._reload_module(module_name)
+            if result:
+                reloaded_count += 1
+        
+        return reloaded_count
+
+    
+    async def _smart_reload(self, extension_name: str) -> int:
+        """Attempts to reload a cog via the extension name, and if there is no cog with that name tries to reload it as a module.
+        Returns an int of the number of things reloaded."""
+
+        try:
+            # First, attempt to reload it via self._reload_extension, assuming it's a cog.
+            await self._reload_extension(extension_name)
+
+            return 1
+        except commands.errors.ExtensionNotLoaded:
+            # Okay, it's not a cog, now let's try to reload it assuming it's a module.
+            reloaded = await self._reload_module_universal(extension_name)
+
+            return reloaded
+        except:
+            raise
+
+        return 0
+
+
 
     async def _unload_extension(self, extension_name: str) -> None:
+        """Unloads a cog, note that this can unload the admin cog."""
         print("Attempting to unload extension \"{}\"".format(extension_name))
         
         try:
@@ -171,15 +252,15 @@ class Admin_cog(commands.Cog, name="Admin"):
     @commands.is_owner()
     async def reload_cog(self, ctx, extension_name: typing.Optional[str]):
         if extension_name is None:
-            await ctx.reply("You must provide a cog name.")
+            await ctx.reply("You must provide a cog or utility name.")
             return
 
         try:
             await ctx.reply("Reloading {}".format(extension_name))
 
-            await self._reload_extension(extension_name)
+            reload_count = await self._smart_reload(extension_name)
 
-            await ctx.send("Done.")
+            await ctx.send("Done. {} reloaded.".format(text.smart_text(reload_count, "item")))
         except:
             traceback.print_exc()
             await ctx.send("Failed.")
