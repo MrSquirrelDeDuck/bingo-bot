@@ -354,7 +354,7 @@
         "solo": false
     },
     {
-        "name": "Someone pings '@gets pinged to much'",
+        "name": "Someone pings '@gets pinged too much'",
         "description": "Someone pings @gets pinged too much",
         "center": false,
         "solo": true
