@@ -1,4 +1,5 @@
 from discord.ext import commands
+import discord
 import typing
 import traceback
 
@@ -12,7 +13,8 @@ class Admin_cog(commands.Cog, name="Admin"):
 
     all_extensions = [
         "loop_cog",
-        "other_cog"
+        "other_cog",
+        "bingo_cog"
     ]
 
     ######################
@@ -58,6 +60,10 @@ class Admin_cog(commands.Cog, name="Admin"):
         print(ctx.message.content, ctx.author)
         return True
 
+    def add_checks(self):
+        """Adds a list of global checks that are in Admin_cog."""
+        self.bot.add_check(self.test, call_once = True)
+
     #################################
     ##### COG UTILITY FUNCTIONS #####
     #################################
@@ -90,10 +96,6 @@ class Admin_cog(commands.Cog, name="Admin"):
 
         # Return True, since it has been reloaded in theory.
         return True
-
-    def add_checks(self):
-        """Adds a list of global checks that are in Admin_cog."""
-        self.bot.add_check(self.test)
 
     async def _load_all_extensions(self) -> None:
         """Uses self.all_extensions to load all listed cogs."""

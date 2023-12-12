@@ -15,3 +15,7 @@ def smart_text(number: int, text: str) -> str:
 def split_chunks(text: str, chunk_length: int) -> list[str]:
     """Splits a string into chunks."""
     return [text[i:i + chunk_length] for i in range(0, len(text), chunk_length)]
+
+def ping_filter(text: str) -> str:
+    """Puts an invisible character (U+200B) after every @ symbol."""
+    return text.replace("@", "@​")
