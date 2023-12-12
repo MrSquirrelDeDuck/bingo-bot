@@ -118,6 +118,20 @@ class Admin_cog(commands.Cog, name="Admin"):
         # It was loaded!
         print("\"{}\" loaded successfully.".format(extension_name))
     
+    async def _unload_extension(self, extension_name: str) -> None:
+        """Unloads a cog, note that this can unload the admin cog."""
+        print("Attempting to unload extension \"{}\"".format(extension_name))
+        
+        try:
+            # Try to unload it.
+            await self.bot.unload_extension(extension_name)
+        except:
+            # If it is loaded, but there's some other problem.
+            raise
+
+        # It was unloaded!
+        print("\"{}\" unloaded successfully.".format(extension_name))
+
     async def _reload_extension(self, extension_name: str) -> None:
         print("Attempting to reload extension \"{}\"".format(extension_name))
         
@@ -163,22 +177,6 @@ class Admin_cog(commands.Cog, name="Admin"):
             raise
 
         return 0
-
-
-
-    async def _unload_extension(self, extension_name: str) -> None:
-        """Unloads a cog, note that this can unload the admin cog."""
-        print("Attempting to unload extension \"{}\"".format(extension_name))
-        
-        try:
-            # Try to unload it.
-            await self.bot.unload_extension(extension_name)
-        except:
-            # If it is loaded, but there's some other problem.
-            raise
-
-        # It was unaded!
-        print("\"{}\" unloaded successfully.".format(extension_name))
     
     #####################
     ##### COMMANDS ######
