@@ -7,6 +7,7 @@ import sys
 import importlib
 
 import utility.text as text
+import utility.interface as interface
 
 class Admin_cog(commands.Cog, name="Admin"):
     bot = None
@@ -36,7 +37,7 @@ class Admin_cog(commands.Cog, name="Admin"):
         traceback.print_exception(error)
 
         # Let whoever ran the command know that something went awry.
-        await ctx.reply("Something went wrong processing that command.")
+        await interface.smart_reply(ctx, "Something went wrong processing that command.")
 
     #####################
     #####  CHECKS  ######
@@ -52,7 +53,7 @@ class Admin_cog(commands.Cog, name="Admin"):
         if ctx.author.guild_permissions.administrator:
             return True
         
-        await ctx.reply("I am sorry, but you do not have the permissions to use this command.")
+        await interface.smart_reply(ctx, "I am sorry, but you do not have the permissions to use this command.")
         return False
     
     # Added via bot.add_check in add_checks.
@@ -195,7 +196,7 @@ class Admin_cog(commands.Cog, name="Admin"):
     @commands.is_owner()
     async def admin(self, ctx):
         if ctx.invoked_subcommand is None:
-            await ctx.reply("You're missing a subcommand.")
+            await interface.smart_reply(ctx, "You're missing a subcommand.")
     
 
     @admin.command(
@@ -207,18 +208,18 @@ class Admin_cog(commands.Cog, name="Admin"):
     @commands.is_owner()
     async def load_cog(self, ctx, extension_name: typing.Optional[str]):
         if extension_name is None:
-            await ctx.reply("You must provide a cog name.")
+            await interface.smart_reply(ctx, "You must provide a cog name.")
             return
         
         try:
-            await ctx.reply("Loading {}.".format(extension_name))
+            await interface.smart_reply(ctx, "Loading {}.".format(extension_name))
 
             await self._load_extension(extension_name)
 
-            await ctx.send("Done.")
+            await interface.safe_send(ctx, "Done.")
         except:
             traceback.print_exc()
-            await ctx.send("Failed.")
+            await interface.safe_send(ctx, "Failed.")
 
     @admin.command(
         name="unload",
@@ -229,18 +230,18 @@ class Admin_cog(commands.Cog, name="Admin"):
     @commands.is_owner()
     async def unload_cog(self, ctx, extension_name: typing.Optional[str]):
         if extension_name is None:
-            await ctx.reply("You must provide a cog name.")
+            await interface.smart_reply(ctx, "You must provide a cog name.")
             return
         
         try:
-            await ctx.reply("Unloading {}.".format(extension_name))
+            await interface.smart_reply(ctx, "Unloading {}.".format(extension_name))
 
             await self._unload_extension(extension_name)
 
-            await ctx.send("Done.")
+            await interface.safe_send(ctx, "Done.")
         except:
             traceback.print_exc()
-            await ctx.send("Failed.")
+            await interface.safe_send(ctx, "Failed.")
     
 
     @admin.command(
@@ -252,18 +253,18 @@ class Admin_cog(commands.Cog, name="Admin"):
     @commands.is_owner()
     async def reload_cog(self, ctx, extension_name: typing.Optional[str]):
         if extension_name is None:
-            await ctx.reply("You must provide a cog or utility name.")
+            await interface.smart_reply(ctx, "You must provide a cog or utility name.")
             return
-
+        
         try:
-            await ctx.reply("Reloading {}".format(extension_name))
+            await interface.smart_reply(ctx, "Reloading {}".format(extension_name), mention_author = False)
 
             reload_count = await self._smart_reload(extension_name)
 
-            await ctx.send("Done. {} reloaded.".format(text.smart_text(reload_count, "item")))
+            await interface.safe_send(ctx, "Done. {} reloaded.".format(text.smart_text(reload_count, "item")))
         except:
             traceback.print_exc()
-            await ctx.send("Failed.")
+            await interface.safe_send(ctx, "Failed.")
 
     
 
