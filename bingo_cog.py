@@ -48,6 +48,8 @@ class Bingo_cog(custom.CustomCog, name="Bingo"):
         hidden = True
     )
     async def gen_board_5x5(self, ctx):
+        ctx = custom.CustomContext(ctx)
+        
         await ctx.reply("`{}`".format(bingo.generate_5x5_board()))
     
     @commands.group(
@@ -58,6 +60,8 @@ class Bingo_cog(custom.CustomCog, name="Bingo"):
         invoke_without_command = True
     )
     async def board(self, ctx):
+        ctx = custom.CustomContext(ctx)
+        
         live_data = bingo.live()
 
         images.render_board_5x5(
@@ -75,6 +79,8 @@ class Bingo_cog(custom.CustomCog, name="Bingo"):
     )
     @commands.check(checks.bingo_tick_check)
     async def tick(self, ctx, coord_x: typing.Optional[int], coord_y: typing.Optional[int]):
+        ctx = custom.CustomContext(ctx)
+        
         # Ensure at least 1 number is provided, if just an x coordinate is provided, it is used as a tile id.
         if coord_x is None:
             await ctx.reply("You must provide a coordinate, as a single tile id or an X and Y coordinate.\nYou can use `%tick guide` to get a guide.")
@@ -119,6 +125,8 @@ class Bingo_cog(custom.CustomCog, name="Bingo"):
     )
     @commands.check(checks.bingo_tick_check)
     async def untick(self, ctx, coord_x: typing.Optional[int], coord_y: typing.Optional[int]):
+        ctx = custom.CustomContext(ctx)
+        
         # Ensure at least 1 number is provided, if just an x coordinate is provided, it is used as a tile id.
         if coord_x is None:
             await ctx.reply("You must provide a coordinate, as a single tile id or an X and Y coordinate.\nYou can use `%tick guide` to get a guide.")
@@ -164,6 +172,8 @@ class Bingo_cog(custom.CustomCog, name="Bingo"):
         hidden = True
     )
     async def gen_board_9x9(self, ctx):
+        ctx = custom.CustomContext(ctx)
+        
         await ctx.reply("`{}`".format(bingo.generate_9x9_board()))
     
     @commands.group(
@@ -174,6 +184,8 @@ class Bingo_cog(custom.CustomCog, name="Bingo"):
         invoke_without_command = True
     )
     async def weekly(self, ctx):
+        ctx = custom.CustomContext(ctx)
+        
         live_data = bingo.live()
 
         images.render_board_9x9(

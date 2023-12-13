@@ -3,6 +3,9 @@
 import discord
 
 import utility.text as text
+import utility.custom as custom
+
+everyone_prevention = discord.AllowedMentions(everyone=False)
 
 def get_display_name(member):
     return (member.global_name if (member.global_name is not None and member.name == member.display_name) else member.display_name)
@@ -20,8 +23,16 @@ async def smart_reply(ctx, content: str, **kwargs) -> discord.Message:
 
 async def safe_reply(ctx, content: str, **kwargs) -> discord.Message:
     """Replies in a safe manner."""
-    return await ctx.reply(content, **kwargs, allowed_mentions = discord.AllowedMentions(everyone=False))
+
+    if isinstance(ctx, custom.CustomContext):
+        return await ctx._old_ctx.reply(content, allowed_mentions = everyone_prevention, **kwargs)
+
+    return await ctx.reply(content, allowed_mentions = everyone_prevention, **kwargs)
 
 async def safe_send(ctx, content: str, **kwargs) -> discord.Message:
     """Sends a message in a safe manner."""
-    return await ctx.send(content, **kwargs, allowed_mentions = discord.AllowedMentions(everyone=False))
+    
+    if isinstance(ctx, custom.CustomContext):
+        return await ctx._old_ctx.send(content, allowed_mentions = everyone_prevention, **kwargs)
+    
+    return await ctx.send(content, allowed_mentions = everyone_prevention, **kwargs)

@@ -167,6 +167,8 @@ class Admin_cog(custom.CustomCog, name="Admin"):
     )
     @commands.is_owner()
     async def admin(self, ctx):
+        ctx = custom.CustomContext(ctx)
+        
         await interface.smart_reply(ctx, "You're missing a subcommand.")
     
 
@@ -178,6 +180,8 @@ class Admin_cog(custom.CustomCog, name="Admin"):
     )
     @commands.is_owner()
     async def load_cog(self, ctx, extension_name: typing.Optional[str]):
+        ctx = custom.CustomContext(ctx)
+        
         if extension_name is None:
             await interface.smart_reply(ctx, "You must provide a cog name.")
             return
@@ -200,6 +204,8 @@ class Admin_cog(custom.CustomCog, name="Admin"):
     )
     @commands.is_owner()
     async def unload_cog(self, ctx, extension_name: typing.Optional[str]):
+        ctx = custom.CustomContext(ctx)
+        
         if extension_name is None:
             await interface.smart_reply(ctx, "You must provide a cog name.")
             return
@@ -223,12 +229,14 @@ class Admin_cog(custom.CustomCog, name="Admin"):
     )
     @commands.is_owner()
     async def reload_cog(self, ctx, extension_name: typing.Optional[str]):
+        ctx = custom.CustomContext(ctx)
+        
         if extension_name is None:
             await interface.smart_reply(ctx, "You must provide a cog or utility name.")
             return
         
         try:
-            await interface.smart_reply(ctx, "Reloading {}".format(extension_name), mention_author = False)
+            await interface.smart_reply(ctx, "Reloading {}".format(extension_name))
 
             reload_count = await self._smart_reload(extension_name)
 

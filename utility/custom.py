@@ -6,8 +6,13 @@ import discord
 from discord.ext import commands
 
 import importlib
+import inspect
+
+import utility.interface as interface
 
 class CustomCog(commands.Cog):
+    """Custom discord.ext.commands cog that is used by the cog files to allow for universal code."""
+
     def __init__(self, **kwargs) -> None:
         super().__init__(**kwargs)
     
@@ -39,3 +44,14 @@ class CustomCog(commands.Cog):
 
         # Return True, since it has been reloaded in theory.
         return True
+
+class CustomContext(commands.Context):
+    def __init__(self, old_ctx: commands.Context) -> None:
+        self.__dict__.update(old_ctx.__dict__)
+        self._old_ctx = old_ctx
+
+    async def reply(self, content, **kwargs) -> discord.Message:
+        return await interface.smart_reply(self, content, **kwargs)
+
+    async def send(self, content, **kwargs) -> discord.Message:
+        return await interface.safe_send(self, content, **kwargs)
