@@ -5,41 +5,10 @@ import typing
 import sys
 import importlib
 
-class Other_cog(commands.Cog, name="Other"):
+import utility.custom as custom
+
+class Other_cog(custom.CustomCog, name="Other"):
     bot = None
-
-    ###########################
-    ##### ADMIN FUNCTIONS #####
-    ###########################
-    
-    def _reload_module(self, module_name: str) -> bool:
-        """Reloads a module by name.
-        For imports that are in a folder, the folder name must be included. For instance: `utility.files` would reload the utility.files code.
-        Returns a bool for whether anything was reloaded, so the number of reloads can be counted."""
-
-        # Get a list of the names of every module in globals(). This can be done with a list comprehension but this is easier to read.
-        globals_modules = []
-
-        for module in globals().values():
-            if hasattr(module, "__name__"):
-                globals_modules.append(module.__name__)
-        
-        # Get a list of every imported module via cross-checking globals_modules and sys.modules.
-        all_modules = set(sys.modules) & set(globals_modules)
-
-        # If the provided module name 
-        if module_name not in all_modules:
-            return False
-        
-        # Get the module object.
-        module = sys.modules[module_name]
-
-        # Reload the module via importlib.reload.
-        importlib.reload(module)
-        print("- {} has reloaded {}.".format(self.qualified_name, module_name))
-
-        # Return True, since it has been reloaded in theory.
-        return True
     
     ###########################
     ###########################
@@ -75,5 +44,9 @@ class Other_cog(commands.Cog, name="Other"):
 async def setup(bot: commands.Bot):
     cog = Other_cog()
     cog.bot = bot
+    
+    # Add attributes for sys.modules and globals() so the _reload_module() function in utility.custom can read it and get the module objects.
+    cog.modules = sys.modules
+    cog.globals = globals()
     
     await bot.add_cog(cog)

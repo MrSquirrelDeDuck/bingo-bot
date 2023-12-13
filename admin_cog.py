@@ -8,8 +8,9 @@ import importlib
 
 import utility.text as text
 import utility.interface as interface
+import utility.custom as custom
 
-class Admin_cog(commands.Cog, name="Admin"):
+class Admin_cog(custom.CustomCog, name="Admin"):
     bot = None
 
     all_extensions = [
@@ -68,35 +69,6 @@ class Admin_cog(commands.Cog, name="Admin"):
     #################################
     ##### COG UTILITY FUNCTIONS #####
     #################################
-    
-    def _reload_module(self, module_name: str) -> bool:
-        """Reloads a module by name.
-        For imports that are in a folder, the folder name must be included. For instance: `utility.files` would reload the utility.files code.
-        Returns a bool for whether anything was reloaded, so the number of reloads can be counted."""
-
-        # Get a list of the names of every module in globals(). This can be done with a list comprehension but this is easier to read.
-        globals_modules = []
-
-        for module in globals().values():
-            if hasattr(module, "__name__"):
-                globals_modules.append(module.__name__)
-        
-        # Get a list of every imported module via cross-checking globals_modules and sys.modules.
-        all_modules = set(sys.modules) & set(globals_modules)
-
-        # If the provided module name 
-        if module_name not in all_modules:
-            return False
-        
-        # Get the module object.
-        module = sys.modules[module_name]
-
-        # Reload the module via importlib.reload.
-        importlib.reload(module)
-        print("- {} has reloaded {}.".format(self.qualified_name, module_name))
-
-        # Return True, since it has been reloaded in theory.
-        return True
 
     async def _load_all_extensions(self) -> None:
         """Uses self.all_extensions to load all listed cogs."""
@@ -153,7 +125,7 @@ class Admin_cog(commands.Cog, name="Admin"):
         # Just to track how many are reloaded, we set a variable to 0 and increase it whenever something is reloaded.
         reloaded_count = 0
 
-        # Now, loop through all the cogs and run the reload_module() function for them.
+        # Now, loop through all the cogs and run the _reload_module() function for them.
         for cog in all_cogs.values():
             result = cog._reload_module(module_name)
             if result:
@@ -195,8 +167,7 @@ class Admin_cog(commands.Cog, name="Admin"):
     )
     @commands.is_owner()
     async def admin(self, ctx):
-        if ctx.invoked_subcommand is None:
-            await interface.smart_reply(ctx, "You're missing a subcommand.")
+        await interface.smart_reply(ctx, "You're missing a subcommand.")
     
 
     @admin.command(
@@ -272,4 +243,9 @@ class Admin_cog(commands.Cog, name="Admin"):
 async def setup(bot: commands.Bot):
     cog = Admin_cog()
     cog.bot = bot
+    
+    # Add attributes for sys.modules and globals() so the _reload_module() function in utility.custom can read it and get the module objects.
+    cog.modules = sys.modules
+    cog.globals = globals()
+
     await bot.add_cog(cog)
