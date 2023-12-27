@@ -38,7 +38,7 @@ class Admin_cog(custom.CustomCog, name="Admin"):
         traceback.print_exception(error)
 
         # Let whoever ran the command know that something went awry.
-        await interface.smart_reply(ctx, "Something went wrong processing that command.")
+        await ctx.reply("Something went wrong processing that command.")
 
     #####################
     #####  CHECKS  ######
@@ -54,7 +54,7 @@ class Admin_cog(custom.CustomCog, name="Admin"):
         if ctx.author.guild_permissions.administrator:
             return True
         
-        await interface.smart_reply(ctx, "I am sorry, but you do not have the permissions to use this command.")
+        await ctx.reply("I am sorry, but you do not have the permissions to use this command.")
         return False
     
     # Added via bot.add_check in add_checks.
@@ -169,7 +169,7 @@ class Admin_cog(custom.CustomCog, name="Admin"):
     async def admin(self, ctx):
         ctx = custom.CustomContext(ctx)
         
-        await interface.smart_reply(ctx, "You're missing a subcommand.")
+        await ctx.reply("You're missing a subcommand.")
     
 
     @admin.command(
@@ -183,18 +183,18 @@ class Admin_cog(custom.CustomCog, name="Admin"):
         ctx = custom.CustomContext(ctx)
         
         if extension_name is None:
-            await interface.smart_reply(ctx, "You must provide a cog name.")
+            await ctx.reply("You must provide a cog name.")
             return
         
         try:
-            await interface.smart_reply(ctx, "Loading {}.".format(extension_name))
+            await ctx.reply("Loading {}.".format(extension_name))
 
             await self._load_extension(extension_name)
 
-            await interface.safe_send(ctx, "Done.")
+            await ctx.send("Done.")
         except:
             traceback.print_exc()
-            await interface.safe_send(ctx, "Failed.")
+            await ctx.send("Failed.")
 
     @admin.command(
         name="unload",
@@ -207,18 +207,18 @@ class Admin_cog(custom.CustomCog, name="Admin"):
         ctx = custom.CustomContext(ctx)
         
         if extension_name is None:
-            await interface.smart_reply(ctx, "You must provide a cog name.")
+            await ctx.reply("You must provide a cog name.")
             return
         
         try:
-            await interface.smart_reply(ctx, "Unloading {}.".format(extension_name))
+            await ctx.reply("Unloading {}.".format(extension_name))
 
             await self._unload_extension(extension_name)
 
-            await interface.safe_send(ctx, "Done.")
+            await ctx.send("Done.")
         except:
             traceback.print_exc()
-            await interface.safe_send(ctx, "Failed.")
+            await ctx.send("Failed.")
     
 
     @admin.command(
@@ -232,18 +232,18 @@ class Admin_cog(custom.CustomCog, name="Admin"):
         ctx = custom.CustomContext(ctx)
         
         if extension_name is None:
-            await interface.smart_reply(ctx, "You must provide a cog or utility name.")
+            await ctx.reply("You must provide a cog or utility name.")
             return
         
         try:
-            await interface.smart_reply(ctx, "Reloading {}".format(extension_name))
+            await ctx.reply("Reloading {}".format(extension_name))
 
             reload_count = await self._smart_reload(extension_name)
 
-            await interface.safe_send(ctx, "Done. {} reloaded.".format(text.smart_text(reload_count, "item")))
+            await ctx.send("Done. {} reloaded.".format(text.smart_text(reload_count, "item")))
         except:
             traceback.print_exc()
-            await interface.safe_send(ctx, "Failed.")
+            await ctx.send("Failed.")
 
     
 
