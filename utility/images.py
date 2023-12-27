@@ -5,6 +5,7 @@ import textwrap
 
 import utility.bingo as bingo
 import utility.text as text
+import utility.files as files
 
 def bingo_board_base(board_size: int, solo: bool = False) -> PIL_Image:
     """Generates the base for a bingo board, allowing for any size."""
@@ -60,6 +61,17 @@ def render_board(tile_string: str, enabled: int, tile_list: list[dict], board_si
     
     After saving the image it will return the image object."""
 
+    # Get the current data, since if the last image generated is the same as the one we're making, then we don't need to make anything new.
+    current_data = files.load("data/bingo/last_generated.json")
+    if all([
+            tile_string == current_data.get(f"{board_size}_board"),
+            enabled == current_data.get(f"{board_size}_enabled"),
+            solo == current_data.get(f"{board_size}_solo")
+        ]):
+        # If it's here, then the board is the same.
+        # Now we load the existing image, and return it.
+        return PIL_Image.open("images/generated/bingo_board.png")
+
     # Split the tile string into groups of 3 characters.
     tile_string_split = text.split_chunks(tile_string, 3)
 
@@ -103,6 +115,15 @@ def render_board(tile_string: str, enabled: int, tile_list: list[dict], board_si
     
     # Save the image to images/generated/bingo_board.png
     img.save("images/generated/bingo_board.png")
+
+    # Update the data in data/bingo/last_generated.json.
+    current_data = files.load("data/bingo/last_generated.json")
+
+    current_data[f"{board_size}_board"] = tile_string
+    current_data[f"{board_size}_enabled"] = enabled
+    current_data[f"{board_size}_solo"] = solo
+
+    files.save("data/bingo/last_generated.json", current_data)
 
     # Return the image.
     return img
