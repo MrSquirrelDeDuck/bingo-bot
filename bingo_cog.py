@@ -103,6 +103,9 @@ class Bingo_cog(custom.CustomCog, name="Bingo"):
         ticked_data = bingo.tick_5x5(tile_id)
         pre_tick_bingos, post_tick_bingos, objective_id = ticked_data
 
+        pre_tick_bingos = bingo.count_bingos(pre_tick_bingos, 5)
+        post_tick_bingos = bingo.count_bingos(post_tick_bingos, 5)
+
         # Determine how many bingos were made.
         bingos_made = post_tick_bingos - pre_tick_bingos
         

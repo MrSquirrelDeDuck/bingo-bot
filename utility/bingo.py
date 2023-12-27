@@ -182,6 +182,42 @@ def get_tile_state_9x9(tile_id: int) -> bool:
     # Decompile the enabled integer into a list of bools, and return the one chosen by the tile_id parameter.
     return decompile_enabled(live_data["weekly_enabled"], 9)[tile_id]
 
+def update_tile(tile_id: int, board_size: int, live_data_key: str, new_value: bool, live_data: dict = None) -> tuple[int, int]:
+    """Updates a tile on a bingo board.
+    
+    Parameters:
+    - tile_id (int): The tile id on the board to tick, should be a value between 0 and board_size^2-1.
+    - board_size (int): The length of one face of the board, so for the 5x5 board it would be 5.
+    - live_data_key (str): The key in the live data that houses the current enabled string.
+    - new_value (bool): The new value for the tile data, should be either True or False.
+    - live_data (dict) = None: An optional parameter that allows for passing of a version of the live data, so this function doesn't get another copy.
+    
+    Returns a tuple of:
+    - Pre-tick enabled integer.
+    - Post-tick enabled integer."""
+
+    # If live_data was not provided, get the current data.
+    if live_data is None:
+        live_data = live()
+
+    # Get a copy of the pre-tick enabled integer.
+    pre_tick = live_data[live_data_key]
+
+    # Decompile the current enabled number into a list.
+    decompiled = decompile_enabled(pre_tick, board_size ** 2)
+
+    # Update the changing value with True.
+    decompiled[tile_id] = new_value
+
+    # Compile the list of bools into a number.
+    post_tick = compile_enabled(decompiled)
+
+    # Save the data, while compiling the `decompiled` list into a number.
+    set_live(live_data_key, post_tick)
+
+    # Return the before and after version of the enabled integer.
+    return (pre_tick, post_tick)
+
 def tick_5x5(tile_id: int) -> tuple[int, int, int]:
     """Ticks a tile on the 5x5 board, takes a tile id.
     
@@ -193,27 +229,20 @@ def tick_5x5(tile_id: int) -> tuple[int, int, int]:
     # Get the current data.
     live_data = live()
 
-    # Get a copy of the pre-tick enabled integer.
-    pre_tick = live_data["daily_enabled"]
-
-    # Decompile the current enabled number into a list.
-    decompiled = decompile_enabled(pre_tick, 25)
-
-    # Update the changing value with True.
-    decompiled[tile_id] = True
-
-    # Compile the list of bools into a number.
-    post_tick = compile_enabled(decompiled)
-
-    # Save the data, while compiling the `decompiled` list into a number.
-    set_live("daily_enabled", post_tick)
+    pre_tick, post_tick = update_tile(
+        tile_id = tile_id,
+        board_size = 5,
+        live_data_key = "daily_enabled",
+        new_value = True,
+        live_data = live_data
+    )
 
     # Get the tile string and split it into groups of 3 characters.
     tile_string = live_data["daily_tile_string"]
     split_tile_string = text.split_chunks(tile_string, 3)
 
     # Return an integer version of the objective id of the ticked tile.
-    return (count_bingos(pre_tick, 5), count_bingos(post_tick, 5), int(split_tile_string[tile_id]))
+    return (pre_tick, post_tick, int(split_tile_string[tile_id]))
 
 def untick_5x5(tile_id: int) -> tuple[int, int, int]:
     """Unticks a tile on the 5x5 board, takes a tile id.
@@ -222,23 +251,12 @@ def untick_5x5(tile_id: int) -> tuple[int, int, int]:
     - Pre-tick enabled integer.
     - Post-tick enabled integer."""
 
-    # Get the current data.
-    live_data = live()
-
-    # Get a copy of the pre-tick enabled integer.
-    pre_tick = live_data["daily_enabled"]
-
-    # Decompile the current enabled number into a list.
-    decompiled = decompile_enabled(pre_tick, 25)
-
-    # Update the changing value with True.
-    decompiled[tile_id] = False
-
-    # Compile the list of bools into a number.
-    post_tick = compile_enabled(decompiled)
-
-    # Save the data, while compiling the `decompiled` list into a number.
-    set_live("daily_enabled", post_tick)
+    pre_tick, post_tick = update_tile(
+        tile_id = tile_id,
+        board_size = 5,
+        live_data_key = "daily_enabled",
+        new_value = False
+    )
 
     # Return an integer version of the objective id of the ticked tile.
-    return (count_bingos(pre_tick, 5), count_bingos(post_tick, 5))
+    return (pre_tick, post_tick)
