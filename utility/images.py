@@ -64,9 +64,10 @@ def render_board(tile_string: str, enabled: int, tile_list: list[dict], board_si
     # Get the current data, since if the last image generated is the same as the one we're making, then we don't need to make anything new.
     current_data = files.load("data/bingo/last_generated.json")
     if all([
-            tile_string == current_data.get(f"{board_size}_board"),
-            enabled == current_data.get(f"{board_size}_enabled"),
-            solo == current_data.get(f"{board_size}_solo")
+            board_size == current_data.get("last_size"),
+            tile_string == current_data.get(f"board"),
+            enabled == current_data.get(f"enabled"),
+            solo == current_data.get(f"solo")
         ]):
         # If it's here, then the board is the same.
         # Now we load the existing image, and return it.
@@ -119,9 +120,10 @@ def render_board(tile_string: str, enabled: int, tile_list: list[dict], board_si
     # Update the data in data/bingo/last_generated.json.
     current_data = files.load("data/bingo/last_generated.json")
 
-    current_data[f"{board_size}_board"] = tile_string
-    current_data[f"{board_size}_enabled"] = enabled
-    current_data[f"{board_size}_solo"] = solo
+    current_data["board"] = tile_string
+    current_data["enabled"] = enabled
+    current_data["solo"] = solo
+    current_data["last_size"] = board_size
 
     files.save("data/bingo/last_generated.json", current_data)
 
