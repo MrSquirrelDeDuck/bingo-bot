@@ -2,6 +2,7 @@
 
 Note that in order to reload this code utility.custom needs to be reloaded, and then every cog that uses it."""
 
+from typing import Any
 import discord
 from discord.ext import commands
 
@@ -50,8 +51,8 @@ class CustomContext(commands.Context):
         self.__dict__.update(old_ctx.__dict__)
         self._old_ctx = old_ctx
 
-    async def reply(self, content, **kwargs) -> discord.Message:
-        return await interface.smart_reply(self, content, **kwargs)
+    async def reply(self, content: str = "", **kwargs) -> discord.Message:
+        return await interface.smart_reply(self._old_ctx, content, **kwargs)
 
-    async def send(self, content, **kwargs) -> discord.Message:
-        return await interface.safe_send(self, content, **kwargs)
+    async def send(self, content: str = "", **kwargs) -> discord.Message:
+        return await interface.safe_send(self._old_ctx, content, **kwargs)

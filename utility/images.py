@@ -54,7 +54,7 @@ def bingo_board_base(board_size: int, solo: bool = False) -> PIL_Image:
     # Return the finished image.
     return img
 
-def render_board(tile_string: str, enabled: int, tile_list: list[dict], board_size: int, solo: bool = False) -> PIL_Image:
+def render_board(tile_string: str, enabled: int, tile_list: list[dict], board_size: int, solo: bool = False, force: bool = False) -> PIL_Image:
     """Generates an image for a 5x5 bingo board and saves it to images/generated/bingo_board.png
 
     Board size is in length of one face of the sqaure, so for a 5x5 board it would be 5.
@@ -62,16 +62,18 @@ def render_board(tile_string: str, enabled: int, tile_list: list[dict], board_si
     After saving the image it will return the image object."""
 
     # Get the current data, since if the last image generated is the same as the one we're making, then we don't need to make anything new.
-    current_data = files.load("data/bingo/last_generated.json")
-    if all([
-            board_size == current_data.get("last_size"),
-            tile_string == current_data.get(f"board"),
-            enabled == current_data.get(f"enabled"),
-            solo == current_data.get(f"solo")
-        ]):
-        # If it's here, then the board is the same.
-        # Now we load the existing image, and return it.
-        return PIL_Image.open("images/generated/bingo_board.png")
+    if not force:
+        # If force is true, then we don't do this check.
+        current_data = files.load("data/bingo/last_generated.json")
+        if all([
+                board_size == current_data.get("last_size"),
+                tile_string == current_data.get(f"board"),
+                enabled == current_data.get(f"enabled"),
+                solo == current_data.get(f"solo")
+            ]):
+            # If it's here, then the board is the same.
+            # Now we load the existing image, and return it.
+            return PIL_Image.open("images/generated/bingo_board.png")
 
     # Split the tile string into groups of 3 characters.
     tile_string_split = text.split_chunks(tile_string, 3)

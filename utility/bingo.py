@@ -260,3 +260,46 @@ def untick_5x5(tile_id: int) -> tuple[int, int, int]:
 
     # Return an integer version of the objective id of the ticked tile.
     return (pre_tick, post_tick)
+
+def tick_9x9(tile_id: int) -> tuple[int, int, int]:
+    """Ticks a tile on the 9x9 board, takes a tile id.
+    
+    Returns a tuple of:
+    - Pre-tick enabled integer.
+    - Post-tick enabled integer.
+    - Objective id of the affected tile."""
+
+    # Get the current data.
+    live_data = live()
+
+    pre_tick, post_tick = update_tile(
+        tile_id = tile_id,
+        board_size = 9,
+        live_data_key = "weekly_enabled",
+        new_value = True,
+        live_data = live_data
+    )
+
+    # Get the tile string and split it into groups of 3 characters.
+    tile_string = live_data["weekly_tile_string"]
+    split_tile_string = text.split_chunks(tile_string, 3)
+
+    # Return an integer version of the objective id of the ticked tile.
+    return (pre_tick, post_tick, int(split_tile_string[tile_id]))
+
+def untick_9x9(tile_id: int) -> tuple[int, int, int]:
+    """Unticks a tile on the 9x9 board, takes a tile id.
+    
+    Returns a tuple of:
+    - Pre-tick enabled integer.
+    - Post-tick enabled integer."""
+
+    pre_tick, post_tick = update_tile(
+        tile_id = tile_id,
+        board_size = 9,
+        live_data_key = "weekly_enabled",
+        new_value = False
+    )
+
+    # Return an integer version of the objective id of the ticked tile.
+    return (pre_tick, post_tick)
