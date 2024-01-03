@@ -153,6 +153,14 @@ class Admin_cog(custom.CustomCog, name="Admin"):
             raise
 
         return 0
+
+    
+    
+    
+    
+    
+    
+    
     
     #####################
     ##### COMMANDS ######
@@ -170,8 +178,14 @@ class Admin_cog(custom.CustomCog, name="Admin"):
         ctx = custom.CustomContext(ctx)
         
         await ctx.reply("You're missing a subcommand.")
-    
 
+    
+    
+    
+    
+    
+    
+    
     @admin.command(
         name="load",
         brief = "Load a cog.",
@@ -197,6 +211,13 @@ class Admin_cog(custom.CustomCog, name="Admin"):
             traceback.print_exc()
             await ctx.send("Failed.")
 
+    
+    
+    
+    
+    
+    
+    
     @admin.command(
         name="unload",
         brief = "Unload a cog.",
@@ -221,8 +242,14 @@ class Admin_cog(custom.CustomCog, name="Admin"):
         except:
             traceback.print_exc()
             await ctx.send("Failed.")
-    
 
+    
+    
+    
+    
+    
+    
+    
     @admin.command(
         name="reload",
         brief = "Reload a cog/module.",
