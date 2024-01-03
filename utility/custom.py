@@ -47,6 +47,9 @@ class CustomCog(commands.Cog):
         return True
 
 class CustomContext(commands.Context):
+    """
+    This custom version of the commands.Context object automatically uses smart replies when using ctx.reply, and disables everyone and here pings for both ctx.reply and ctx.send.
+    """
     def __init__(self, old_ctx: commands.Context) -> None:
         self.__dict__.update(old_ctx.__dict__)
         self._old_ctx = old_ctx

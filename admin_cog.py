@@ -16,7 +16,8 @@ class Admin_cog(custom.CustomCog, name="Admin"):
     all_extensions = [
         "loop_cog",
         "other_cog",
-        "bingo_cog"
+        "bingo_cog",
+        "bread_cog"
     ]
 
     ######################
@@ -162,8 +163,7 @@ class Admin_cog(custom.CustomCog, name="Admin"):
         description="Administration commands for the Bingo-Bot.",
         brief="Administration commands for the Bingo-Bot.",
         pass_context=True,
-        invoke_without_command=True,
-        hidden=True
+        invoke_without_command=True
     )
     @commands.is_owner()
     async def admin(self, ctx):
@@ -174,9 +174,10 @@ class Admin_cog(custom.CustomCog, name="Admin"):
 
     @admin.command(
         name="load",
+        brief = "Load a cog.",
+        description = "Load a cog.",
         pass_context=True,
-        invoke_without_command=True,
-        hidden=True
+        invoke_without_command=True
     )
     @commands.is_owner()
     async def load_cog(self, ctx, extension_name: typing.Optional[str]):
@@ -198,9 +199,10 @@ class Admin_cog(custom.CustomCog, name="Admin"):
 
     @admin.command(
         name="unload",
+        brief = "Unload a cog.",
+        description = "Unload a cog.",
         pass_context=True,
-        invoke_without_command=True,
-        hidden=True
+        invoke_without_command=True
     )
     @commands.is_owner()
     async def unload_cog(self, ctx, extension_name: typing.Optional[str]):
@@ -223,9 +225,10 @@ class Admin_cog(custom.CustomCog, name="Admin"):
 
     @admin.command(
         name="reload",
+        brief = "Reload a cog/module.",
+        description = "Reload a cog/module, note that to load a module like utility.bingo, you need to say 'utility.bingo'.",
         pass_context=True,
-        invoke_without_command=True,
-        hidden=True
+        invoke_without_command=True
     )
     @commands.is_owner()
     async def reload_cog(self, ctx, extension_name: typing.Optional[str]):

@@ -102,7 +102,10 @@ class Bingo_cog(custom.CustomCog, name="Bingo"):
         pass_context = True,
         invoke_without_command = True
     )
-    async def objective(self, ctx, board: typing.Optional[str], objective: typing.Optional[int]):
+    async def objective(self, ctx,
+            board: typing.Optional[str] = commands.parameter(description = "Which board to use, 'daily' or 'weekly'."),
+            objective: typing.Optional[int] = commands.parameter(description = "The id of the objective to look up.")
+        ):
         if ctx.invoked_subcommand is not None:
             return
         
@@ -142,7 +145,10 @@ class Bingo_cog(custom.CustomCog, name="Bingo"):
         brief = "Search for an objective.",
         description = "Search for an objective on the daily or weekly board.\nTo get information about a specific objective, use '%objective [daily|weekly] [objective id]'\nTo get a list of objectives, use '%objective list [daily|weekly]'"
     )
-    async def objective_search(self, ctx, board: typing.Optional[str], search: typing.Optional[str]):
+    async def objective_search(self, ctx,
+            board: typing.Optional[str] = commands.parameter(description = "Which board to use, 'daily' or 'weekly'."),
+            search: typing.Optional[str] = commands.parameter(description = "The text to search for.")
+        ):
         ctx = custom.CustomContext(ctx)
 
         if board not in ["daily", "weekly"]:
@@ -188,7 +194,10 @@ class Bingo_cog(custom.CustomCog, name="Bingo"):
         brief = "Provides a list of objectives.",
         description = "Get a list of all the daily or weekly objectives.\nTo get information about a specific objective, use '%objective [daily|weekly] [objective id]'\nTo search for an objective, use '%objective search [daily|weekly] [search term]'"
     )
-    async def objective_list(self, ctx, board: typing.Optional[str], page: typing.Optional[int]):
+    async def objective_list(self, ctx,
+            board: typing.Optional[str] = commands.parameter(description = "Which board to use, 'daily' or 'weekly'."),
+            page: typing.Optional[int] = commands.parameter(description = "An integer for what page to use.", displayed_default = 1)
+        ):
         ctx = custom.CustomContext(ctx)
 
         if board not in ["daily", "weekly"]:
@@ -280,7 +289,9 @@ class Bingo_cog(custom.CustomCog, name="Bingo"):
         brief = "Get information about the current board.",
         description = "Get information about the current board."
     )
-    async def daily_stats(self, ctx, page: typing.Optional[int]):
+    async def daily_stats(self, ctx,
+            page: typing.Optional[int] = commands.parameter(description = "An integer for what page to use.", displayed_default = 1)
+        ):
         ctx = custom.CustomContext(ctx)
         
         base_tile_list = bingo.tile_list_5x5()
@@ -309,7 +320,10 @@ class Bingo_cog(custom.CustomCog, name="Bingo"):
         description = "Tick off a tile on the bingo board."
     )
     @commands.check(checks.bingo_tick_check)
-    async def tick(self, ctx, coord_x: typing.Optional[int], coord_y: typing.Optional[int]):
+    async def tick(self, ctx,
+            coord_x: typing.Optional[int] = commands.parameter(description = "The X coordinate of the tile to tick."),
+            coord_y: typing.Optional[int] = commands.parameter(description = "The Y coordinate of the tile to tick.")
+        ):
         if ctx.invoked_subcommand is not None:
             return
         
@@ -359,7 +373,10 @@ class Bingo_cog(custom.CustomCog, name="Bingo"):
         description = "Untick a tile on the bingo board."
     )
     @commands.check(checks.bingo_tick_check)
-    async def untick(self, ctx, coord_x: typing.Optional[int], coord_y: typing.Optional[int]):
+    async def untick(self, ctx,
+            coord_x: typing.Optional[int] = commands.parameter(description = "The X coordinate of the tile to untick."),
+            coord_y: typing.Optional[int] = commands.parameter(description = "The Y coordinate of the tile to untick.")
+        ):
         ctx = custom.CustomContext(ctx)
         
         # Ensure at least 1 number is provided, if just an x coordinate is provided, it is used as a tile id.
@@ -459,7 +476,9 @@ class Bingo_cog(custom.CustomCog, name="Bingo"):
         brief = "Get information about the current board.",
         description = "Get information about the current board."
     )
-    async def daily_stats(self, ctx, page: typing.Optional[int]):
+    async def daily_stats(self, ctx,
+            page: typing.Optional[int] = commands.parameter(description = "An integer for what page to use.", displayed_default = 1)
+        ):
         ctx = custom.CustomContext(ctx)
         
         base_tile_list = bingo.tile_list_9x9()
@@ -488,7 +507,10 @@ class Bingo_cog(custom.CustomCog, name="Bingo"):
         description = "Tick off a tile on the weekly board."
     )
     @commands.check(checks.bingo_tick_check)
-    async def weekly_tick(self, ctx, coord_x: typing.Optional[int], coord_y: typing.Optional[int]):
+    async def weekly_tick(self, ctx,
+            coord_x: typing.Optional[int] = commands.parameter(description = "The X coordinate of the tile to tick."),
+            coord_y: typing.Optional[int] = commands.parameter(description = "The Y coordinate of the tile to tick.")
+        ):
         if ctx.invoked_subcommand is not None:
             return
         
@@ -538,7 +560,10 @@ class Bingo_cog(custom.CustomCog, name="Bingo"):
         description = "Untick a tile on the weekly board."
     )
     @commands.check(checks.bingo_tick_check)
-    async def weekly_untick(self, ctx, coord_x: typing.Optional[int], coord_y: typing.Optional[int]):
+    async def weekly_untick(self, ctx,
+            coord_x: typing.Optional[int] = commands.parameter(description = "The X coordinate of the tile to untick."),
+            coord_y: typing.Optional[int] = commands.parameter(description = "The Y coordinate of the tile to untick.")
+        ):
         ctx = custom.CustomContext(ctx)
         
         # Ensure at least 1 number is provided, if just an x coordinate is provided, it is used as a tile id.

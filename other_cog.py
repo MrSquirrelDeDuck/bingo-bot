@@ -19,7 +19,10 @@ class Other_cog(custom.CustomCog, name="Other"):
         brief = "Get someone's avatar.",
         description = "Get someone's avatar.\nThis will use their global avatar, however the `display` parameter can be used to fetch server-specific avatars."
     )
-    async def avatar(self, ctx, target: typing.Optional[discord.Member], display: typing.Optional[str]):
+    async def avatar(self, ctx,
+            target: typing.Optional[discord.Member] = commands.parameter(description = "The member to use, if nothing is provided it'll use you."),
+            display: typing.Optional[str] = commands.parameter(description = "If 'display' is provided it will use server avatars.")
+        ):
         ctx = custom.CustomContext(ctx)
 
         # If a target was specified or not.
