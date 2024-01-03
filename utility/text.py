@@ -1,5 +1,9 @@
 """Functions for working with/formatting text."""
 
+from discord.ext import commands
+
+import utility.interface as interface
+
 def smart_number(number: int) -> str:
     """Inserts a comma in the correct spots so numbers are easy to read."""
     return f'{number:,d}'
@@ -19,3 +23,7 @@ def split_chunks(text: str, chunk_length: int) -> list[str]:
 def ping_filter(text: str) -> str:
     """Puts an invisible character (U+200B) after every @ symbol."""
     return text.replace("@", "@​")
+
+def after_parameter(ctx: commands.Context, parameter_text: str) -> str:
+    """Gets all the text after a parameter."""
+    return interface.msg_content(ctx).split(str(parameter_text), 1)[1].lstrip('"\'').strip()

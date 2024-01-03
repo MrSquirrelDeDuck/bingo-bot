@@ -89,6 +89,13 @@ class Bingo_cog(custom.CustomCog, name="Bingo"):
         )
 
         return embed
+
+    
+    
+    
+    
+    
+    
     
     ##############################
     ##### COMMUNITY COMMANDS #####
@@ -140,6 +147,13 @@ class Bingo_cog(custom.CustomCog, name="Bingo"):
 
         await ctx.reply(embed=embed)
 
+    
+    
+    
+    
+    
+    
+
     @objective.command(
         name = "search",
         brief = "Search for an objective.",
@@ -155,7 +169,7 @@ class Bingo_cog(custom.CustomCog, name="Bingo"):
             await ctx.reply("You must specify what set of objectives you want. `daily` and `weekly` are the current options.")
             return
 
-        search = interface.msg_content(ctx).split(board, 1)[1].lstrip('"\'').strip()
+        search = text.after_parameter(ctx, board)
 
         if search in ["", None]:
             await ctx.reply("You must provide a search term.")
@@ -189,6 +203,13 @@ class Bingo_cog(custom.CustomCog, name="Bingo"):
 
         await ctx.reply(embed=embed)
 
+    
+    
+    
+    
+    
+    
+
     @objective.command(
         name = "list",
         brief = "Provides a list of objectives.",
@@ -203,36 +224,8 @@ class Bingo_cog(custom.CustomCog, name="Bingo"):
         if board not in ["daily", "weekly"]:
             await ctx.reply("You must specify what set of objectives you want. `daily` and `weekly` are the current options.")
             return
-
-        # if page is None:
-        #     page = 0
-        # else:
-        #     page -= 1
         
         tile_list = self._match_tile_list(board)
-
-        # PAGE_SIZE = 6 # How many objectives are shown on each page.
-
-        # page_count = math.ceil(len(tile_list) / PAGE_SIZE)
-
-        # if page >= page_count:
-        #     page = page_count - 1
-
-        # fields = []
-
-        # lower_bound = PAGE_SIZE * page
-        # upper_bound = min(len(tile_list), PAGE_SIZE * (page + 1))
-
-        # for objective_id in range(lower_bound, upper_bound):
-        #     objective_data = tile_list[objective_id]
-
-        #     fields.append((objective_data["name"], "Objective #{}.\n\nDescription:\n{}".format(objective_id, objective_data["description"]), True))
-        
-        # embed = interface.embed(
-        #     title = "{} objective list page {}".format(board.title(), page + 1),
-        #     description = "Page {} of {}. You can get other pages via `%objective list {} [page number]`\n\nTo get more information about an objective, use `%objective {} [objective id]`\n\nObjectives {} to {} in the {} tile list:".format(page + 1, page_count, board, board, lower_bound, upper_bound - 1, board),
-        #     fields = fields
-        # )
 
         embed = self._generate_list(
             tile_list = tile_list,
@@ -245,6 +238,13 @@ class Bingo_cog(custom.CustomCog, name="Bingo"):
         )
 
         await ctx.reply(embed=embed)
+
+    
+    
+    
+    
+    
+    
     
     #######################
     ##### DAILY BOARD #####
@@ -261,6 +261,13 @@ class Bingo_cog(custom.CustomCog, name="Bingo"):
         ctx = custom.CustomContext(ctx)
         
         await ctx.reply("`{}`".format(bingo.generate_5x5_board()))
+
+    
+    
+    
+    
+    
+    
     
     @commands.group(
         name = "board",
@@ -283,6 +290,13 @@ class Bingo_cog(custom.CustomCog, name="Bingo"):
         )
 
         await ctx.reply(content="This is bingo board #{}!".format(live_data["daily_board_id"]), file=discord.File(r'images/generated/bingo_board.png'))
+
+    
+    
+    
+    
+    
+    
     
     @board.command(
         name = "stats",
@@ -313,6 +327,13 @@ class Bingo_cog(custom.CustomCog, name="Bingo"):
         )
 
         await ctx.reply(embed=embed)
+
+    
+    
+    
+    
+    
+    
 
     @commands.group(
         name = "tick",
@@ -367,6 +388,13 @@ class Bingo_cog(custom.CustomCog, name="Bingo"):
 
         await ctx.reply("It's been ticked off!\n\nThe objective was id {}, which has the name `{}` and description:\n{}\n\n{}".format(objective_id, objective_data["name"], objective_data["description"], bingo_bonus))
 
+    
+    
+    
+    
+    
+    
+
     @commands.command(
         name = "untick",
         brief = "Untick a tile on the bingo board.",
@@ -410,6 +438,13 @@ class Bingo_cog(custom.CustomCog, name="Bingo"):
             bingo_bonus = ""
 
         await ctx.reply("It's been unticked!\n\n{}".format(bingo_bonus))
+
+    
+    
+    
+    
+    
+    
     
     @tick.command(
         name = "guide",
@@ -429,6 +464,13 @@ class Bingo_cog(custom.CustomCog, name="Bingo"):
         )
 
         await ctx.reply(content="Here you go!", file=discord.File(r'images/generated/bingo_board.png'))
+
+    
+    
+    
+    
+    
+    
 
     
     ########################
@@ -470,6 +512,13 @@ class Bingo_cog(custom.CustomCog, name="Bingo"):
             content = "This is weekly board #{}!".format(live_data["weekly_board_id"]),
             file = discord.File(r'images/generated/bingo_board.png')
         )
+
+    
+    
+    
+    
+    
+    
     
     @weekly.command(
         name = "stats",
@@ -500,6 +549,13 @@ class Bingo_cog(custom.CustomCog, name="Bingo"):
         )
 
         await ctx.reply(embed=embed)
+
+    
+    
+    
+    
+    
+    
     
     @weekly.group(
         name = "tick",
@@ -554,6 +610,13 @@ class Bingo_cog(custom.CustomCog, name="Bingo"):
 
         await ctx.reply("It's been ticked off!\n\nThe objective was id {}, which has the name `{}` and description:\n{}\n\n{}".format(objective_id, objective_data["name"], objective_data["description"], bingo_bonus))
 
+    
+    
+    
+    
+    
+    
+
     @weekly.command(
         name = "untick",
         brief = "Untick a tile on the weekly board.",
@@ -597,6 +660,13 @@ class Bingo_cog(custom.CustomCog, name="Bingo"):
             bingo_bonus = ""
 
         await ctx.reply("It's been unticked!\n\n{}".format(bingo_bonus))
+
+    
+    
+    
+    
+    
+    
     
     @weekly_tick.command(
         name = "guide",
