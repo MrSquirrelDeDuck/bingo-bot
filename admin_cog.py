@@ -2,6 +2,8 @@ from discord.ext import commands
 import discord
 import typing
 import traceback
+import copy
+import os
 
 import sys
 import importlib
@@ -142,6 +144,9 @@ class Admin_cog(u_custom.CustomCog, name="Admin"):
         """Attempts to reload a cog via the extension name, and if there is no cog with that name tries to reload it as a module.
         Returns an int of the number of things reloaded."""
 
+        if extension_name == "all":
+            return await self._reload_all()
+
         try:
             # First, attempt to reload it via self._reload_extension, assuming it's a cog.
             await self._reload_extension(extension_name)
@@ -156,6 +161,19 @@ class Admin_cog(u_custom.CustomCog, name="Admin"):
             raise
 
         return 0
+    
+    async def _reload_all(self) -> int:
+        """Reloads all the cogs the bot has loaded and all the modules in the utility folder."""
+
+        reloaded_count = 0
+
+        for cog_name in copy.deepcopy(list(dict(self.bot.cogs).keys())):
+            reloaded_count += await self._smart_reload(cog_name)
+
+        for module_name in copy.deepcopy([i.replace(".py", "") for i in os.listdir("utility/") if i.endswith(".py")]):
+            reloaded_count += await self._smart_reload("utility.{}".format(module_name))
+        
+        return reloaded_count
 
     
     
