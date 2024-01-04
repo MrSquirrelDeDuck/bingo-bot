@@ -54,8 +54,11 @@ class Admin_cog(custom.CustomCog, name="Admin"):
         
         if ctx.author.guild_permissions.administrator:
             return True
+
+        # Don't send the message if the check was invoked via the help command.
+        if ctx.invoked_with != "help":
+            await ctx.reply("I am sorry, but you do not have the permissions to use this command.")
         
-        await ctx.reply("I am sorry, but you do not have the permissions to use this command.")
         return False
     
     # Added via bot.add_check in add_checks.
