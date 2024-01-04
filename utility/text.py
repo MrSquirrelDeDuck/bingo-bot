@@ -2,7 +2,7 @@
 
 from discord.ext import commands
 
-import utility.interface as interface
+import utility.interface as u_interface
 
 def smart_number(number: int) -> str:
     """Inserts a comma in the correct spots so numbers are easy to read."""
@@ -26,4 +26,8 @@ def ping_filter(text: str) -> str:
 
 def after_parameter(ctx: commands.Context, parameter_text: str) -> str:
     """Gets all the text after a parameter."""
-    return interface.msg_content(ctx).split(str(parameter_text), 1)[1].lstrip('"\'').strip()
+    return u_interface.msg_content(ctx).split(str(parameter_text), 1)[-1].lstrip('"\'').strip()
+
+def return_numeric(text: str) -> int:
+    """Returns just all the numbers in a string as an integer, ignoring all other characters."""
+    return int("".join([i for i in str(text) if i.isdigit()]))

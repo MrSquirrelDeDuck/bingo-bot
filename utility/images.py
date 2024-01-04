@@ -1,11 +1,13 @@
+"""Functions for the generation of images."""
+
 from PIL import Image as PIL_Image
 from PIL import ImageDraw as PIL_ImageDraw
 from PIL import ImageFont as PIL_ImageFont
 import textwrap
 
-import utility.bingo as bingo
-import utility.text as text
-import utility.files as files
+import utility.bingo as u_bingo
+import utility.text as u_text
+import utility.files as u_files
 
 def bingo_board_base(board_size: int, solo: bool = False) -> PIL_Image:
     """Generates the base for a bingo board, allowing for any size."""
@@ -64,7 +66,7 @@ def render_board(tile_string: str, enabled: int, tile_list: list[dict], board_si
     # Get the current data, since if the last image generated is the same as the one we're making, then we don't need to make anything new.
     if not force:
         # If force is true, then we don't do this check.
-        current_data = files.load("data/bingo/last_generated.json")
+        current_data = u_files.load("data/bingo/last_generated.json")
         if all([
                 board_size == current_data.get("last_size"),
                 tile_string == current_data.get(f"board"),
@@ -76,7 +78,7 @@ def render_board(tile_string: str, enabled: int, tile_list: list[dict], board_si
             return PIL_Image.open("images/generated/bingo_board.png")
 
     # Split the tile string into groups of 3 characters.
-    tile_string_split = text.split_chunks(tile_string, 3)
+    tile_string_split = u_text.split_chunks(tile_string, 3)
 
     # Generate the base image from bingo_board_base().
     img = bingo_board_base(board_size, solo)
@@ -87,7 +89,7 @@ def render_board(tile_string: str, enabled: int, tile_list: list[dict], board_si
     text_wrapper = textwrap.TextWrapper(width=14) 
 
     # Convert the enabled number into a list of booleans.
-    enabled_list = bingo.decompile_enabled(enabled, board_size)
+    enabled_list = u_bingo.decompile_enabled(enabled, board_size)
 
     # Loop through all the items in the enabled list, but using `enumerate()` so it tracks the index.
     for index, item in enumerate(enabled_list):
@@ -120,14 +122,14 @@ def render_board(tile_string: str, enabled: int, tile_list: list[dict], board_si
     img.save("images/generated/bingo_board.png")
 
     # Update the data in data/bingo/last_generated.json.
-    current_data = files.load("data/bingo/last_generated.json")
+    current_data = u_files.load("data/bingo/last_generated.json")
 
     current_data["board"] = tile_string
     current_data["enabled"] = enabled
     current_data["solo"] = solo
     current_data["last_size"] = board_size
 
-    files.save("data/bingo/last_generated.json", current_data)
+    u_files.save("data/bingo/last_generated.json", current_data)
 
     # Return the image.
     return img
@@ -137,7 +139,7 @@ def render_board_5x5(tile_string: str, enabled: int) -> PIL_Image:
 
     After saving the image it will return the image object."""
 
-    tile_list = bingo.tile_list_5x5()
+    tile_list = u_bingo.tile_list_5x5()
 
     return render_board(
         tile_string = tile_string,
@@ -151,7 +153,7 @@ def render_board_9x9(tile_string: str, enabled: int) -> PIL_Image:
 
     After saving the image it will return the image object."""
 
-    tile_list = bingo.tile_list_9x9()
+    tile_list = u_bingo.tile_list_9x9()
 
     return render_board(
         tile_string = tile_string,

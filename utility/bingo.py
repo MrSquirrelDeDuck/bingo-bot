@@ -3,8 +3,8 @@
 import random
 import typing
 
-import utility.files as files
-import utility.text as text
+import utility.files as u_files
+import utility.text as u_text
 
 def generate_custom_board(tile_list: dict, size: int = 25) -> str:
     """Generates a bingo board based on a tile list and a size."""
@@ -130,7 +130,7 @@ def count_bingos(enabled_data: list[bool] | int, board_size: int = None) -> int:
 
 def tile_list_5x5() -> list[dict]:
     """Returns the 5x5 board tile list."""
-    return files.load("data/bingo/tile_list_5x5.json")
+    return u_files.load("data/bingo/tile_list_5x5.json")
 
 def get_objective_5x5(objective_id: int) -> dict:
     """Gets the data for an objective from the 5x5 tile list."""
@@ -138,7 +138,7 @@ def get_objective_5x5(objective_id: int) -> dict:
 
 def tile_list_9x9() -> list[dict]:
     """Returns the 9x9 board tile list."""
-    return files.load("data/bingo/tile_list_9x9.json")
+    return u_files.load("data/bingo/tile_list_9x9.json")
 
 def get_objective_9x9(objective_id: int) -> dict:
     """Gets the data for an objective from the 9x9 tile list."""
@@ -146,11 +146,11 @@ def get_objective_9x9(objective_id: int) -> dict:
 
 def live() -> dict:
     """Returns the current live data dict."""
-    return files.load("data/bingo/live_data.json")
+    return u_files.load("data/bingo/live_data.json")
 
 def update_live(new_data: dict) -> None:
     """Updates the live data with the provided dict."""
-    files.save("data/bingo/live_data.json", new_data)
+    u_files.save("data/bingo/live_data.json", new_data)
 
 def set_live(key: str, value: any) -> None:
     """Sets a single value in the live data, takes the key and new value."""
@@ -239,7 +239,7 @@ def tick_5x5(tile_id: int) -> tuple[int, int, int]:
 
     # Get the tile string and split it into groups of 3 characters.
     tile_string = live_data["daily_tile_string"]
-    split_tile_string = text.split_chunks(tile_string, 3)
+    split_tile_string = u_text.split_chunks(tile_string, 3)
 
     # Return an integer version of the objective id of the ticked tile.
     return (pre_tick, post_tick, int(split_tile_string[tile_id]))
@@ -282,7 +282,7 @@ def tick_9x9(tile_id: int) -> tuple[int, int, int]:
 
     # Get the tile string and split it into groups of 3 characters.
     tile_string = live_data["weekly_tile_string"]
-    split_tile_string = text.split_chunks(tile_string, 3)
+    split_tile_string = u_text.split_chunks(tile_string, 3)
 
     # Return an integer version of the objective id of the ticked tile.
     return (pre_tick, post_tick, int(split_tile_string[tile_id]))

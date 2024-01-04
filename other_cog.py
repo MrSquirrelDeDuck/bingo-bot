@@ -5,9 +5,9 @@ import typing
 import sys
 import importlib
 
-import utility.custom as custom
+import utility.custom as u_custom
 
-class Other_cog(custom.CustomCog, name="Other"):
+class Other_cog(u_custom.CustomCog, name="Other"):
     bot = None
     
     ###########################
@@ -23,7 +23,7 @@ class Other_cog(custom.CustomCog, name="Other"):
             target: typing.Optional[discord.Member] = commands.parameter(description = "The member to use, if nothing is provided it'll use you."),
             display: typing.Optional[str] = commands.parameter(description = "If 'display' is provided it will use server avatars.")
         ):
-        ctx = custom.CustomContext(ctx)
+        ctx = u_custom.CustomContext(ctx)
 
         # If a target was specified or not.
         if target is None:

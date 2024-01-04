@@ -4,19 +4,19 @@ import discord
 from discord.ext import commands
 import typing
 
-import utility.files as files
-import utility.custom as custom
+import utility.files as u_files
+import utility.custom as u_custom
 
 def get_permission(user_id: int, permission_name: str) -> bool:
     """Checks a permission via permissions.json."""
 
     # Load permission data.
-    permission_data = files.load("data/permissions.json")
+    permission_data = u_files.load("data/permissions.json")
 
     # Return a bool for if the user id is in the permissions.
     return user_id in permission_data[permission_name]
 
-async def bingo_tick_check(ctx: typing.Union[commands.Context, custom.CustomContext]) -> bool:
+async def bingo_tick_check(ctx: typing.Union[commands.Context, u_custom.CustomContext]) -> bool:
     """Checks if the user has the permission required to tick and untick tiles on the bingo boards."""
     
     if get_permission(ctx.author.id, "bingo_tick"):
@@ -40,7 +40,7 @@ def has_role(member: discord.Member, role_list: typing.Union[list[str], list[int
     
     return False
 
-async def in_authority(ctx: typing.Union[commands.Context, custom.CustomContext, discord.Member]) -> bool:
+async def in_authority(ctx: typing.Union[commands.Context, u_custom.CustomContext, discord.Member]) -> bool:
     """Returns a boolean for whether the author of the message (or a member provided) has Trusted or higher.
     This can be used as a check in a command with `@commands.check(checks.in_authority)` or as a standalone check in an if with `if await checks.in_authority(ctx):`"""
 

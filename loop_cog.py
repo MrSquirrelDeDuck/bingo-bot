@@ -6,7 +6,7 @@ import asyncio
 import sys
 import importlib
 
-import utility.custom as custom
+import utility.custom as u_custom
 
 bingo_time = datetime.time(
     hour = 23,
@@ -14,7 +14,7 @@ bingo_time = datetime.time(
     tzinfo = datetime.timezone.utc
 )
 
-class Loop_cog(custom.CustomCog, name="Loop"):
+class Loop_cog(u_custom.CustomCog, name="Loop"):
     bot = None
 
     def __init__(self) -> None:

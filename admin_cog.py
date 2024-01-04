@@ -6,11 +6,11 @@ import traceback
 import sys
 import importlib
 
-import utility.text as text
-import utility.interface as interface
-import utility.custom as custom
+import utility.text as u_text
+import utility.interface as u_interface
+import utility.custom as u_custom
 
-class Admin_cog(custom.CustomCog, name="Admin"):
+class Admin_cog(u_custom.CustomCog, name="Admin"):
     bot = None
 
     all_extensions = [
@@ -178,7 +178,7 @@ class Admin_cog(custom.CustomCog, name="Admin"):
     )
     @commands.is_owner()
     async def admin(self, ctx):
-        ctx = custom.CustomContext(ctx)
+        ctx = u_custom.CustomContext(ctx)
         
         await ctx.reply("You're missing a subcommand.")
 
@@ -198,7 +198,7 @@ class Admin_cog(custom.CustomCog, name="Admin"):
     )
     @commands.is_owner()
     async def load_cog(self, ctx, extension_name: typing.Optional[str]):
-        ctx = custom.CustomContext(ctx)
+        ctx = u_custom.CustomContext(ctx)
         
         if extension_name is None:
             await ctx.reply("You must provide a cog name.")
@@ -230,7 +230,7 @@ class Admin_cog(custom.CustomCog, name="Admin"):
     )
     @commands.is_owner()
     async def unload_cog(self, ctx, extension_name: typing.Optional[str]):
-        ctx = custom.CustomContext(ctx)
+        ctx = u_custom.CustomContext(ctx)
         
         if extension_name is None:
             await ctx.reply("You must provide a cog name.")
@@ -262,7 +262,7 @@ class Admin_cog(custom.CustomCog, name="Admin"):
     )
     @commands.is_owner()
     async def reload_cog(self, ctx, extension_name: typing.Optional[str]):
-        ctx = custom.CustomContext(ctx)
+        ctx = u_custom.CustomContext(ctx)
         
         if extension_name is None:
             await ctx.reply("You must provide a cog or utility name.")
@@ -273,10 +273,32 @@ class Admin_cog(custom.CustomCog, name="Admin"):
 
             reload_count = await self._smart_reload(extension_name)
 
-            await ctx.send("Done. {} reloaded.".format(text.smart_text(reload_count, "item")))
+            await ctx.send("Done. {} reloaded.".format(u_text.smart_text(reload_count, "item")))
         except:
             traceback.print_exc()
             await ctx.send("Failed.")
+
+    
+    
+    
+    
+    
+    
+    
+    @admin.command(
+        name="parse_test",
+        brief = "Tests the stats parser.",
+        description = "Tests the stats parser."
+    )
+    @commands.is_owner()
+    async def parse_test(self, ctx, extension_name: typing.Optional[str]):
+        ctx = u_custom.CustomContext(ctx)
+
+        if not u_interface.is_reply(ctx.message):
+            await ctx.reply("You need to reply to a message to run the parser.")
+            return
+
+        print(u_interface.parse_stats(ctx.message.reference.resolved))
 
     
 

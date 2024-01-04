@@ -9,7 +9,7 @@ from discord.ext import commands
 import importlib
 import inspect
 
-import utility.interface as interface
+import utility.interface as u_interface
 
 class CustomCog(commands.Cog):
     """Custom discord.ext.commands cog that is used by the cog files to allow for universal code."""
@@ -55,7 +55,7 @@ class CustomContext(commands.Context):
         self._old_ctx = old_ctx
 
     async def reply(self, content: str = "", **kwargs) -> discord.Message:
-        return await interface.smart_reply(self._old_ctx, content, **kwargs)
+        return await u_interface.smart_reply(self._old_ctx, content, **kwargs)
 
     async def send(self, content: str = "", **kwargs) -> discord.Message:
-        return await interface.safe_send(self._old_ctx, content, **kwargs)
+        return await u_interface.safe_send(self._old_ctx, content, **kwargs)

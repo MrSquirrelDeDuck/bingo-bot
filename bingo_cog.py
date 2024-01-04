@@ -7,14 +7,14 @@ import math
 import sys
 import importlib
 
-import utility.bingo as bingo
-import utility.images as images
-import utility.checks as checks
-import utility.text as text
-import utility.custom as custom
-import utility.interface as interface
+import utility.bingo as u_bingo
+import utility.images as u_images
+import utility.checks as u_checks
+import utility.text as u_text
+import utility.custom as u_custom
+import utility.interface as u_interface
 
-class Bingo_cog(custom.CustomCog, name="Bingo"):
+class Bingo_cog(u_custom.CustomCog, name="Bingo"):
     bot = None
     
     #############################
@@ -43,9 +43,9 @@ class Bingo_cog(custom.CustomCog, name="Bingo"):
         """Returns a tile list based on a string input. 'daily' will be the daily tile list and 'weekly' will be the weekly tile list."""
         match board:
             case "daily":
-                return bingo.tile_list_5x5()
+                return u_bingo.tile_list_5x5()
             case "weekly":
-                return bingo.tile_list_9x9()
+                return u_bingo.tile_list_9x9()
     
     def _generate_list(self, tile_list: list[dict], base_tile_list: list[dict], title: str, page: (int | None) = 0, type_text: str = "daily", command: str = "%objective list", page_size: int = 6, identifier: str = "in the daily tile list") -> discord.Embed:
         """Generates a list of objectives for the objective list and board stats commands. Returns a Discord.py embed object.
@@ -82,7 +82,7 @@ class Bingo_cog(custom.CustomCog, name="Bingo"):
 
             fields.append((objective_data["name"], "Objective #{}.\n\nDescription:\n{}".format(base_tile_list.index(objective_data), objective_data["description"]), True))
         
-        embed = interface.embed(
+        embed = u_interface.embed(
             title = "{} page {}".format(title, page + 1),
             description = f"Page {page + 1} of {page_count}. You can get other pages via `{command} [page number]`\n\nTo get more information about an objective, use `%objective {type_text} [objective id]`\n\nObjectives {lower_bound} to {upper_bound - 1} {identifier}:",
             fields = fields
@@ -116,7 +116,7 @@ class Bingo_cog(custom.CustomCog, name="Bingo"):
         if ctx.invoked_subcommand is not None:
             return
         
-        ctx = custom.CustomContext(ctx)
+        ctx = u_custom.CustomContext(ctx)
 
         if board not in ["daily", "weekly"]:
             await ctx.reply("You must specify what set of objectives you want. `daily` and `weekly` are the current options.")
@@ -140,7 +140,7 @@ class Bingo_cog(custom.CustomCog, name="Bingo"):
         solo = emojis[objective_data.get("solo", False)]
         disabled = emojis[objective_data.get("disabled", False)]
 
-        embed = interface.embed(
+        embed = u_interface.embed(
             title = objective_data["name"],
             description = f"Objective {objective} on the {board} board.\n\nDescription:\n{objective_data['description']}\n\nCenter objective: {center}\nSolo objective: {solo}\nDisabled: {disabled}\n\nYou can use `%objective search [daily|weekly] [search term]` to search for an objective.\nYou can also use `%objective list [daily|weekly]` to get a list of the possible objectives.",
         )
@@ -163,13 +163,13 @@ class Bingo_cog(custom.CustomCog, name="Bingo"):
             board: typing.Optional[str] = commands.parameter(description = "Which board to use, 'daily' or 'weekly'."),
             search: typing.Optional[str] = commands.parameter(description = "The text to search for.")
         ):
-        ctx = custom.CustomContext(ctx)
+        ctx = u_custom.CustomContext(ctx)
 
         if board not in ["daily", "weekly"]:
             await ctx.reply("You must specify what set of objectives you want. `daily` and `weekly` are the current options.")
             return
 
-        search = text.after_parameter(ctx, board)
+        search = u_text.after_parameter(ctx, board)
 
         if search in ["", None]:
             await ctx.reply("You must provide a search term.")
@@ -192,9 +192,9 @@ class Bingo_cog(custom.CustomCog, name="Bingo"):
 
         returned = fuzzy_search(search, tile_list)
 
-        embed = interface.embed(
+        embed = u_interface.embed(
             title = "Search results:",
-            description = f"You can use `%objective {board} <objective id>` to get more information about an objective.\nResult from searching the text `{text.ping_filter(search)}` in the {board} objective list:",
+            description = f"You can use `%objective {board} <objective id>` to get more information about an objective.\nResult from searching the text `{u_text.ping_filter(search)}` in the {board} objective list:",
             fields = [
                 (returned[i][0]["name"], f"Objective id: {returned[i][1]}\n\nDescription:\n{returned[i][0]['description']}", True)
                 for i in range(3)
@@ -219,7 +219,7 @@ class Bingo_cog(custom.CustomCog, name="Bingo"):
             board: typing.Optional[str] = commands.parameter(description = "Which board to use, 'daily' or 'weekly'."),
             page: typing.Optional[int] = commands.parameter(description = "An integer for what page to use.", displayed_default = 1)
         ):
-        ctx = custom.CustomContext(ctx)
+        ctx = u_custom.CustomContext(ctx)
 
         if board not in ["daily", "weekly"]:
             await ctx.reply("You must specify what set of objectives you want. `daily` and `weekly` are the current options.")
@@ -258,9 +258,9 @@ class Bingo_cog(custom.CustomCog, name="Bingo"):
         hidden = True
     )
     async def gen_board_5x5(self, ctx):
-        ctx = custom.CustomContext(ctx)
+        ctx = u_custom.CustomContext(ctx)
         
-        await ctx.reply("`{}`".format(bingo.generate_5x5_board()))
+        await ctx.reply("`{}`".format(u_bingo.generate_5x5_board()))
 
     
     
@@ -280,11 +280,11 @@ class Bingo_cog(custom.CustomCog, name="Bingo"):
         if ctx.invoked_subcommand is not None:
             return
         
-        ctx = custom.CustomContext(ctx)
+        ctx = u_custom.CustomContext(ctx)
         
-        live_data = bingo.live()
+        live_data = u_bingo.live()
 
-        images.render_board_5x5(
+        u_images.render_board_5x5(
             tile_string = live_data["daily_tile_string"],
             enabled = live_data["daily_enabled"]
         )
@@ -306,13 +306,13 @@ class Bingo_cog(custom.CustomCog, name="Bingo"):
     async def daily_stats(self, ctx,
             page: typing.Optional[int] = commands.parameter(description = "An integer for what page to use.", displayed_default = 1)
         ):
-        ctx = custom.CustomContext(ctx)
+        ctx = u_custom.CustomContext(ctx)
         
-        base_tile_list = bingo.tile_list_5x5()
+        base_tile_list = u_bingo.tile_list_5x5()
 
-        live_data = bingo.live()
+        live_data = u_bingo.live()
 
-        live_list = text.split_chunks(live_data["daily_tile_string"], 3)
+        live_list = u_text.split_chunks(live_data["daily_tile_string"], 3)
 
         tile_list = [base_tile_list[int(objective_id)] for objective_id in live_list]
 
@@ -340,7 +340,7 @@ class Bingo_cog(custom.CustomCog, name="Bingo"):
         brief = "Tick off a tile on the bingo board.",
         description = "Tick off a tile on the bingo board."
     )
-    @commands.check(checks.bingo_tick_check)
+    @commands.check(u_checks.bingo_tick_check)
     async def tick(self, ctx,
             coord_x: typing.Optional[int] = commands.parameter(description = "The X coordinate of the tile to tick."),
             coord_y: typing.Optional[int] = commands.parameter(description = "The Y coordinate of the tile to tick.")
@@ -348,7 +348,7 @@ class Bingo_cog(custom.CustomCog, name="Bingo"):
         if ctx.invoked_subcommand is not None:
             return
         
-        ctx = custom.CustomContext(ctx)
+        ctx = u_custom.CustomContext(ctx)
         
         # Ensure at least 1 number is provided, if just an x coordinate is provided, it is used as a tile id.
         if coord_x is None:
@@ -364,25 +364,25 @@ class Bingo_cog(custom.CustomCog, name="Bingo"):
             return
         
         # If the tile is already ticked.
-        if bingo.get_tile_state_5x5(tile_id):
+        if u_bingo.get_tile_state_5x5(tile_id):
             await ctx.reply("That tile is already ticked.")
             return
         
         # Tick the tile, and then convert the result into three variables.
-        pre_tick_bingos, post_tick_bingos, objective_id = bingo.tick_5x5(tile_id)
+        pre_tick_bingos, post_tick_bingos, objective_id = u_bingo.tick_5x5(tile_id)
 
-        pre_tick_bingos = bingo.count_bingos(pre_tick_bingos, 5)
-        post_tick_bingos = bingo.count_bingos(post_tick_bingos, 5)
+        pre_tick_bingos = u_bingo.count_bingos(pre_tick_bingos, 5)
+        post_tick_bingos = u_bingo.count_bingos(post_tick_bingos, 5)
 
         # Determine how many bingos were made.
         bingos_made = post_tick_bingos - pre_tick_bingos
         
         # Get the name and description of the tile that was ticked.
-        objective_data = bingo.get_objective_5x5(objective_id)
+        objective_data = u_bingo.get_objective_5x5(objective_id)
 
         # Make the bonus text sent if a bingo is made.
         if bingos_made >= 1:
-            bingo_bonus = "And that made {}! {}".format(text.smart_text(bingos_made, "bingo"), ":tada:" * bingos_made)
+            bingo_bonus = "And that made {}! {}".format(u_text.smart_text(bingos_made, "bingo"), ":tada:" * bingos_made)
         else:
             bingo_bonus = ""
 
@@ -400,12 +400,12 @@ class Bingo_cog(custom.CustomCog, name="Bingo"):
         brief = "Untick a tile on the bingo board.",
         description = "Untick a tile on the bingo board."
     )
-    @commands.check(checks.bingo_tick_check)
+    @commands.check(u_checks.bingo_tick_check)
     async def untick(self, ctx,
             coord_x: typing.Optional[int] = commands.parameter(description = "The X coordinate of the tile to untick."),
             coord_y: typing.Optional[int] = commands.parameter(description = "The Y coordinate of the tile to untick.")
         ):
-        ctx = custom.CustomContext(ctx)
+        ctx = u_custom.CustomContext(ctx)
         
         # Ensure at least 1 number is provided, if just an x coordinate is provided, it is used as a tile id.
         if coord_x is None:
@@ -421,19 +421,19 @@ class Bingo_cog(custom.CustomCog, name="Bingo"):
             return
         
         # If the tile isn't ticked in the first place.
-        if not bingo.get_tile_state_5x5(tile_id):
+        if not u_bingo.get_tile_state_5x5(tile_id):
             await ctx.reply("That tile isn't already ticked.")
             return
         
         # Tick the tile, and then convert the result into two variables.
-        pre_tick_bingos, post_tick_bingos = bingo.untick_5x5(tile_id)
+        pre_tick_bingos, post_tick_bingos = u_bingo.untick_5x5(tile_id)
 
         # Determine how many bingos were removed.
         bingos_unmade = pre_tick_bingos - post_tick_bingos
 
         # Make the bonus text sent if a bingo is reversed by this.
         if bingos_unmade >= 1:
-            bingo_bonus = "And that undid {}! {}".format(text.smart_text(bingos_unmade, "bingo"), ":tada:" * bingos_unmade)
+            bingo_bonus = "And that undid {}! {}".format(u_text.smart_text(bingos_unmade, "bingo"), ":tada:" * bingos_unmade)
         else:
             bingo_bonus = ""
 
@@ -451,11 +451,11 @@ class Bingo_cog(custom.CustomCog, name="Bingo"):
         brief = "Get a handy tile id guide for ticking.",
         description = "Get a handy tile id guide for ticking."
     )
-    @commands.check(checks.bingo_tick_check)
+    @commands.check(u_checks.bingo_tick_check)
     async def tick_guide(self, ctx):
-        ctx = custom.CustomContext(ctx)
+        ctx = u_custom.CustomContext(ctx)
         
-        images.render_board(
+        u_images.render_board(
             tile_string = "".join([f"{i:03}" for i in range(25)]),
             enabled = 0,
             board_size = 5,
@@ -484,9 +484,9 @@ class Bingo_cog(custom.CustomCog, name="Bingo"):
         hidden = True
     )
     async def gen_board_9x9(self, ctx):
-        ctx = custom.CustomContext(ctx)
+        ctx = u_custom.CustomContext(ctx)
         
-        await ctx.reply("`{}`".format(bingo.generate_9x9_board()))
+        await ctx.reply("`{}`".format(u_bingo.generate_9x9_board()))
     
     @commands.group(
         name = "weekly",
@@ -499,11 +499,11 @@ class Bingo_cog(custom.CustomCog, name="Bingo"):
         if ctx.invoked_subcommand is not None:
             return
         
-        ctx = custom.CustomContext(ctx)
+        ctx = u_custom.CustomContext(ctx)
         
-        live_data = bingo.live()
+        live_data = u_bingo.live()
 
-        images.render_board_9x9(
+        u_images.render_board_9x9(
             tile_string = live_data["weekly_tile_string"],
             enabled = live_data["weekly_enabled"]
         )
@@ -528,13 +528,13 @@ class Bingo_cog(custom.CustomCog, name="Bingo"):
     async def daily_stats(self, ctx,
             page: typing.Optional[int] = commands.parameter(description = "An integer for what page to use.", displayed_default = 1)
         ):
-        ctx = custom.CustomContext(ctx)
+        ctx = u_custom.CustomContext(ctx)
         
-        base_tile_list = bingo.tile_list_9x9()
+        base_tile_list = u_bingo.tile_list_9x9()
 
-        live_data = bingo.live()
+        live_data = u_bingo.live()
 
-        live_list = text.split_chunks(live_data["weekly_tile_string"], 3)
+        live_list = u_text.split_chunks(live_data["weekly_tile_string"], 3)
 
         tile_list = [base_tile_list[int(objective_id)] for objective_id in live_list]
 
@@ -562,7 +562,7 @@ class Bingo_cog(custom.CustomCog, name="Bingo"):
         brief = "Tick off a tile on the weekly board.",
         description = "Tick off a tile on the weekly board."
     )
-    @commands.check(checks.bingo_tick_check)
+    @commands.check(u_checks.bingo_tick_check)
     async def weekly_tick(self, ctx,
             coord_x: typing.Optional[int] = commands.parameter(description = "The X coordinate of the tile to tick."),
             coord_y: typing.Optional[int] = commands.parameter(description = "The Y coordinate of the tile to tick.")
@@ -570,7 +570,7 @@ class Bingo_cog(custom.CustomCog, name="Bingo"):
         if ctx.invoked_subcommand is not None:
             return
         
-        ctx = custom.CustomContext(ctx)
+        ctx = u_custom.CustomContext(ctx)
         
         # Ensure at least 1 number is provided, if just an x coordinate is provided, it is used as a tile id.
         if coord_x is None:
@@ -586,25 +586,25 @@ class Bingo_cog(custom.CustomCog, name="Bingo"):
             return
         
         # If the tile is already ticked.
-        if bingo.get_tile_state_9x9(tile_id):
+        if u_bingo.get_tile_state_9x9(tile_id):
             await ctx.reply("That tile is already ticked.")
             return
         
         # Tick the tile, and then convert the result into three variables.
-        pre_tick_bingos, post_tick_bingos, objective_id = bingo.tick_9x9(tile_id)
+        pre_tick_bingos, post_tick_bingos, objective_id = u_bingo.tick_9x9(tile_id)
 
-        pre_tick_bingos = bingo.count_bingos(pre_tick_bingos, 9)
-        post_tick_bingos = bingo.count_bingos(post_tick_bingos, 9)
+        pre_tick_bingos = u_bingo.count_bingos(pre_tick_bingos, 9)
+        post_tick_bingos = u_bingo.count_bingos(post_tick_bingos, 9)
 
         # Determine how many bingos were made.
         bingos_made = post_tick_bingos - pre_tick_bingos
         
         # Get the name and description of the tile that was ticked.
-        objective_data = bingo.get_objective_9x9(objective_id)
+        objective_data = u_bingo.get_objective_9x9(objective_id)
 
         # Make the bonus text sent if a bingo is made.
         if bingos_made >= 1:
-            bingo_bonus = "And that made {}! {}".format(text.smart_text(bingos_made, "bingo"), ":tada:" * bingos_made)
+            bingo_bonus = "And that made {}! {}".format(u_text.smart_text(bingos_made, "bingo"), ":tada:" * bingos_made)
         else:
             bingo_bonus = ""
 
@@ -622,12 +622,12 @@ class Bingo_cog(custom.CustomCog, name="Bingo"):
         brief = "Untick a tile on the weekly board.",
         description = "Untick a tile on the weekly board."
     )
-    @commands.check(checks.bingo_tick_check)
+    @commands.check(u_checks.bingo_tick_check)
     async def weekly_untick(self, ctx,
             coord_x: typing.Optional[int] = commands.parameter(description = "The X coordinate of the tile to untick."),
             coord_y: typing.Optional[int] = commands.parameter(description = "The Y coordinate of the tile to untick.")
         ):
-        ctx = custom.CustomContext(ctx)
+        ctx = u_custom.CustomContext(ctx)
         
         # Ensure at least 1 number is provided, if just an x coordinate is provided, it is used as a tile id.
         if coord_x is None:
@@ -643,19 +643,19 @@ class Bingo_cog(custom.CustomCog, name="Bingo"):
             return
         
         # If the tile isn't ticked in the first place.
-        if not bingo.get_tile_state_9x9(tile_id):
+        if not u_bingo.get_tile_state_9x9(tile_id):
             await ctx.reply("That tile isn't already ticked.")
             return
         
         # Tick the tile, and then convert the result into two variables.
-        pre_tick_bingos, post_tick_bingos = bingo.untick_9x9(tile_id)
+        pre_tick_bingos, post_tick_bingos = u_bingo.untick_9x9(tile_id)
 
         # Determine how many bingos were removed.
         bingos_unmade = pre_tick_bingos - post_tick_bingos
 
         # Make the bonus text sent if a bingo is reversed by this.
         if bingos_unmade >= 1:
-            bingo_bonus = "And that undid {}! {}".format(text.smart_text(bingos_unmade, "bingo"), ":tada:" * bingos_unmade)
+            bingo_bonus = "And that undid {}! {}".format(u_text.smart_text(bingos_unmade, "bingo"), ":tada:" * bingos_unmade)
         else:
             bingo_bonus = ""
 
@@ -673,11 +673,11 @@ class Bingo_cog(custom.CustomCog, name="Bingo"):
         brief = "Get a handy tile id guide for ticking.",
         description = "Get a handy tile id guide for ticking."
     )
-    @commands.check(checks.bingo_tick_check)
+    @commands.check(u_checks.bingo_tick_check)
     async def weekly_tick_guide(self, ctx):
-        ctx = custom.CustomContext(ctx)
+        ctx = u_custom.CustomContext(ctx)
         
-        images.render_board(
+        u_images.render_board(
             tile_string = "".join([f"{i:03}" for i in range(81)]),
             enabled = 0,
             board_size = 9,

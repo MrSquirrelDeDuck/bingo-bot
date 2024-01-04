@@ -4,9 +4,10 @@ import discord
 from discord.ext import commands
 import typing
 import datetime
+import re
 
-import utility.text as text
-import utility.custom as custom
+import utility.text as u_text
+import utility.custom as u_custom
 
 everyone_prevention = discord.AllowedMentions(everyone=False)
 
@@ -108,6 +109,9 @@ def combine_args(ctx: (commands.Context | str), args: (tuple | list), keep: int,
 def get_display_name(member):
     return (member.global_name if (member.global_name is not None and member.name == member.display_name) else member.display_name)
 
+def is_reply(message: discord.Message) -> bool:
+    return message.reference is not None
+
 async def smart_reply(ctx, content: str = "", **kwargs) -> discord.Message:
     """Attempts to reply, if there's an error it then tries to send it normally."""
 
@@ -118,11 +122,10 @@ async def smart_reply(ctx, content: str = "", **kwargs) -> discord.Message:
         if kwargs.get("mention_author", True):
             return await safe_send(ctx, f"{ctx.author.mention},\n\n{content}", **kwargs)
         else:
-            return await safe_send(ctx, f"{text.ping_filter(get_display_name(ctx.author))},\n\n{content}", **kwargs)
+            return await safe_send(ctx, f"{u_text.ping_filter(get_display_name(ctx.author))},\n\n{content}", **kwargs)
     except:
         # For other errors, this will fire and reraise the exception.
         raise
-
 
 async def safe_reply(ctx, content: str = "", **kwargs) -> discord.Message:
     """Replies in a safe manner."""
@@ -137,3 +140,80 @@ async def safe_send(ctx, content: str = "", **kwargs) -> discord.Message:
     kwargs["allowed_mentions"] = everyone_prevention
     
     return await ctx.send(content, **kwargs)
+
+def parse_stats(message: discord.Message) -> dict:
+    """Parses a Machine-Mind message and returns a dict of the figured out stats.
+    
+    The following messages can be parsed:
+    - $bread stats
+    - $bread stats chess
+    - $bread stats gambit
+    - $bread portfolio
+    - $bread invest
+    - $bread divest
+    - $bread shop
+    - $bread hidden
+    - $bread gambit
+    - $bread dough
+    - $bread stonks"""
+
+    def extract(pattern: str, text: str, group_id: int = 0) -> typing.Union[int, None]:
+        """Extracts a number from a string via regex."""
+        search_result = re.search(pattern, text)
+
+        if search_result is None:
+            return None
+
+        return u_text.return_numeric(search_result.group(group_id))
+
+    content = message.content
+
+    # $bread stonks
+    if content.startswith("Welcome to the stonk market!"):
+        """
+        Welcome to the stonk market, have a look around
+        All the dough that brain of yours can think of can be found
+        We've got mountains of cookies, some forty, they're best
+        If none of it is going up it's time to divest
+
+        Welcome to the stonk market, come and take a seat
+        Would you like to see b6 or a3's incredible feat
+        There's no need to panic, this isn't a test, haha
+        Just invest at the peak and we'll do the rest
+        """
+        
+        search_result = extract(
+            "You have (\*\*[\d|,]+) dough\*\* to spend\.",
+            message.content,
+            1
+        )
+
+        if search_result is None:
+            return {"parse_successful": False}
+
+        return {
+            "parse_successful": True,
+            "stats": {
+                "total_dough": search_result
+                }
+            }
+    
+    # $bread dough
+    if content.startswith("You have") and content.endswith(" dough**."):
+        if search_result is None:
+            return {"parse_successful": False}
+
+        search_result = re.search(
+            "You have \*\*[\d|,]+ dough\*\* to spend\.",
+            message.content
+        )
+
+        if search_result is None:
+            return {"parse_successful": False}
+
+        return {
+            "parse_successful": True,
+            "stats": {
+                "total_dough": u_text.return_numeric(search_result.group(0))
+                }
+            }
