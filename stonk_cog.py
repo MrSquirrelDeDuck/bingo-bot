@@ -1,3 +1,5 @@
+from os.path import sep as SLASH
+
 from discord.ext import commands
 import discord
 import typing
@@ -474,11 +476,12 @@ class Stonk_cog(u_custom.CustomCog, name="Stonks"):
     ######################################################################################################################################################
     
     @stonk.command(
-        name = "split",
-        description = "Get the number of splits in a time frame.\nIf no end is provided it'll use the current tick as the end.\nNote that this will not count double splits as 2 splits.",
+        name = "splits",
+        aliases = ["split"],
+        description = "Get the number of splits in a time frame.\nIf no end is provided it'll use the current tick as the end.",
         brief = "Get the number of splits in a time frame."
     )
-    async def stonk_split(self, ctx,
+    async def stonk_splits(self, ctx,
             start: typing.Optional[u_converters.parse_int] = commands.parameter(description = "The start of the time frame."),
             end: typing.Optional[u_converters.parse_int] = commands.parameter(description = "The end of the time frame."),
         ):
@@ -504,7 +507,12 @@ class Stonk_cog(u_custom.CustomCog, name="Stonks"):
 
             for tick in stonk_history[start + 1: end + 1]:
                 if previous_value is not None and tick[name] / previous_value <= 0.85:
-                    split_counts[stonk] += 1
+                    for i in range(50):
+                        previous_value /= 2
+                        split_counts[stonk] += 1
+                        if not(tick[name] / previous_value <= 0.85):
+                            break
+
                 previous_value = tick.get(name, None)
         
         embed = u_interface.embed(
@@ -535,9 +543,11 @@ class Stonk_cog(u_custom.CustomCog, name="Stonks"):
         ):
         ctx = u_custom.CustomContext(ctx)
 
+        current_tick = u_stonks.current_tick_number()
+
         log_scale = False
         start_tick = 0
-        end_tick = u_stonks.current_tick_number()
+        end_tick = current_tick
         stonks = []
         
         if parameters is None:
@@ -598,6 +608,9 @@ class Stonk_cog(u_custom.CustomCog, name="Stonks"):
             await ctx.reply("The end must be before the start.")
             return
         
+        start_tick = max(start_tick, 0)
+        end_tick = min(end_tick, current_tick)
+        
         stonk_history = u_stonks.stonk_history()
 
         lines = []
@@ -609,7 +622,7 @@ class Stonk_cog(u_custom.CustomCog, name="Stonks"):
                 if stonk.internal_name not in tick:
                     continue
 
-                values.append((tick_number, tick[stonk.internal_name]))
+                values.append((tick_number + start_tick, tick[stonk.internal_name]))
             
             if len(values) == 0:
                 continue
@@ -647,9 +660,94 @@ class Stonk_cog(u_custom.CustomCog, name="Stonks"):
         ctx = u_custom.CustomContext(ctx)
 
         try:
-            await ctx.reply(file=discord.File("images/generated/stonk_report.png"))
+            await ctx.reply(file=discord.File(f"images{SLASH}generated{SLASH}stonk_report.png"))
         except FileNotFoundError:
             await ctx.reply("Unfortunately I don't appear have a copy of the stonk report.")
+    
+
+
+
+
+
+    ######################################################################################################################################################
+    ##### STONK PORTFOLIO GRAPH ##########################################################################################################################
+    ######################################################################################################################################################
+    
+    @stonk.command(
+        name = "portfolio_graph",
+        description = "Shows a graph of a portfolio.\nThis does require you to reply to a portfolio.",
+        brief = "Shows a graph of a portfolio."
+    )
+    async def stonk_portfolio_graph(self, ctx,
+            start: typing.Optional[u_converters.parse_int] = commands.parameter(description = "The start tick of the graph."),
+            end: typing.Optional[u_converters.parse_int] = commands.parameter(description = "The end tick of the graph.")
+        ):
+        ctx = u_custom.CustomContext(ctx)
+
+        replied_to = u_interface.replying_mm_checks(ctx.message, require_reply=True, return_replied_to=True)
+
+        if not replied_to:
+            await ctx.reply("You must reply to a portfolio to get a graph of it.")
+            return
+        
+        parsed = u_bread.parse_stats(replied_to)
+
+        if parsed.get("stats_type") != "portfolio":
+            await ctx.reply("You must reply to a portfolio to get a graph of it.")
+            return
+
+        if start is None:
+            start = 0
+        if end is None:
+            end = u_stonks.current_tick_number()
+        
+        if end <= start:
+            await ctx.reply("The start must be before the end.")
+            return
+        
+        start = max(start, 0)
+        end = min(end, u_stonks.current_tick_number())
+
+        stonk_history = u_stonks.stonk_history()
+
+        def sum_portfolio(portfolio: dict, tick: dict) -> int:
+            return sum([portfolio[stonk] * tick.get(stonk.internal_name, 0) for stonk in portfolio])
+
+        portfolio = {stonk: parsed["stats"].get(stonk, 0) for stonk in u_values.stonks}
+
+        values = []
+
+        total_splits = 0
+
+        previous_tick = None
+        for tick_id, tick_data in enumerate(stonk_history[start:end]):
+            if previous_tick is not None:
+                for stonk in previous_tick:
+                    if not (tick_data[stonk] / previous_tick[stonk] < 0.85):
+                        continue
+
+                    for i in range(50):
+                        total_splits += 1
+                        previous_tick[stonk] /= 2
+                        portfolio[u_values.get_item(stonk)] *= 2
+                        if not tick_data[stonk] / previous_tick[stonk] < 0.85:
+                            break
+
+            values.append((tick_id + start, sum_portfolio(portfolio, tick_data)))
+            previous_tick = tick_data
+
+        file_name = u_images.generate_graph(
+            lines = [{
+                "label": "Portfolio", # Underscore at the start to not put it in the legend.
+                "color": "#1f77b4",
+                "values": values
+            }],
+            x_label = "Tick number",
+            y_label = "Portfolio value",
+        )
+
+        await ctx.reply(file=discord.File(file_name))
+
         
 
 
