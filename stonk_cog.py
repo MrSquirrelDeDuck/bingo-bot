@@ -1,9 +1,11 @@
 from discord.ext import commands
 import discord
 import typing
+import random
 
 import sys
 
+import utility.bread as u_bread
 import utility.stonks as u_stonks
 import utility.converters as u_converters
 import utility.interface as u_interface
@@ -269,12 +271,248 @@ class Stonk_cog(u_custom.CustomCog, name="Stonks"):
         ctx = u_custom.CustomContext(ctx)
 
         await ctx.reply(u_stonks.full_current_tick()["message_link"])
-
-                
-
+    
 
 
 
+
+
+    ######################################################################################################################################################
+    ##### STONK RANDOM ###################################################################################################################################
+    ######################################################################################################################################################
+    
+    @stonk.command(
+        name = "random",
+        description = "When you're having trouble deciding what to invest in.",
+        brief = "When you're having trouble deciding what to invest in."
+    )
+    async def stonk_message(self, ctx):
+        ctx = u_custom.CustomContext(ctx)
+
+        commands = [f"$bread invest all {stonk.internal_name}" for stonk in u_values.stonks]
+
+        random.shuffle(commands)
+
+        embed = u_interface.embed(
+            title = "Random stonk",
+            description = "\n".join(commands),
+            footer_text = "On mobile you can tap and hold on the commands to copy them."
+        )
+
+        await ctx.reply(embed=embed)
+    
+
+
+
+
+
+    ######################################################################################################################################################
+    ##### STONK ANALYZE ##################################################################################################################################
+    ######################################################################################################################################################
+    
+    @stonk.command(
+        name = "analyze",
+        description = "Calculate a portfolio's value on any stonk tick.\n\nNote that if a stonk is in the portfolio but did not exist for the tick you're analyzing it will not be used.",
+        brief = "Calculate a portfolio's value on any stonk tick."
+    )
+    async def stonk_analyze(self, ctx,
+            tick_id: typing.Optional[u_converters.parse_int] = commands.parameter(description = "The tick number to use the values from.")
+        ):
+        ctx = u_custom.CustomContext(ctx)
+
+        current_tick = u_stonks.current_tick_number()
+
+        if tick_id is None or not(current_tick * -1 <= tick_id <= current_tick):
+            await ctx.reply("You must provide a stonk tick id between 0 and {} to get the values from.\nHowever, negative numbers can be used to go back from the end, so -1 is the most recent tick.".format(u_text.smart_number(current_tick)))
+            return
+        
+        if tick_id < 0:
+            tick_id = current_tick + tick_id + 1
+        
+        replied_to = u_interface.replying_mm_checks(ctx.message, require_reply=True, return_replied_to=True)
+
+        if not replied_to:
+            await ctx.reply("You must reply to a portfolio to analyze it.")
+            return
+        
+        parsed = u_bread.parse_stats(replied_to)
+
+
+        if parsed.get("stats_type") != "portfolio":
+            await ctx.reply("You must reply to a portfolio to analyze it.")
+            return
+        
+        parsed = parsed["stats"]
+        
+        tick_data = u_stonks.stonk_history()[tick_id]
+        previous_tick_data = u_stonks.stonk_history()[max(tick_id - 1, 0)]
+
+        dough_value = []
+        previous_dough_value = []
+
+        output_lines = []
+        for stonk in u_values.stonks:
+            if stonk.internal_name not in tick_data:
+                output_lines.append("{} -- {}, however it did not exist on this tick.".format(stonk, u_text.smart_text(parsed[stonk], "stonk")))
+                continue
+
+            value = parsed[stonk] * tick_data[stonk.internal_name]
+            dough_value.append(value)
+
+            output_lines.append("{} -- {}, worth **{} dough**".format(stonk, u_text.smart_text(parsed[stonk], "stonk"), u_text.smart_number(value)))
+
+            if stonk.internal_name not in previous_tick_data:
+                previous_dough_value.append(value)
+                continue
+            
+            previous_dough_value.append(parsed[stonk] * previous_tick_data[stonk.internal_name])
+        
+        embed = u_interface.embed(
+            title = "Analyzed portfolio",
+            description = "That portfolio, using the values from stonk tick {}:".format(u_text.smart_number(tick_id)),
+            fields=[
+                ("", "\n".join(output_lines), False),
+                ("", "In total, that portfolio would be worth **{} dough**, and on that tick changed by **{} dough**.".format(u_text.smart_number(sum(dough_value)), u_text.smart_number(sum(dough_value) - sum(previous_dough_value))), False)
+            ]
+        )
+        await ctx.reply(embed=embed)
+    
+
+
+
+
+
+    ######################################################################################################################################################
+    ##### STONK FILE #####################################################################################################################################
+    ######################################################################################################################################################
+    
+    @stonk.command(
+        name = "file",
+        description = "Provides the entire stonk history as a json file.",
+        brief = "Provides the entire stonk history as a json file."
+    )
+    async def stonk_file(self, ctx):
+        ctx = u_custom.CustomContext(ctx)
+
+        await ctx.reply(file=discord.File(f"data/stonks/stonk_history.json"))
+    
+
+
+
+
+
+    ######################################################################################################################################################
+    ##### STONK SEARCH ###################################################################################################################################
+    ######################################################################################################################################################
+    
+    @stonk.command(
+        name = "search",
+        description = "Searches for stonk values in the stonk history.\n\nTo provide the values for your search, format each one as '<stonk> <value>', with a space in the middle. Multiple stonks can be provided, as well.\n\nFor example, '%stonk search cookie 25' would search for ticks where cookies are worth 25 dough.\n\nIf multiple stonks are provided, they all must be true, so if you provide 'cookie 30 pretzel 107' then it will search for every tick where cookies are worth 30 and pretzels are worth 107.",
+        brief = "Searches for stonk values in the stonk history."
+    )
+    async def stonk_search(self, ctx,
+            *, parameters: typing.Optional[str] = commands.parameter(description = "The stonk values to search. See above for more info.", displayed_name="values")
+        ):
+        ctx = u_custom.CustomContext(ctx)
+
+        if parameters is None:
+            await ctx.reply("Unfortunately, you must provide at least 1 stonk value.")
+            return
+
+        parameters = parameters.split(" ")
+
+        stonk_values = {}
+
+        for index, param in enumerate(parameters):
+            stonk = u_values.get_item(param, "stonk")
+
+            if not stonk:
+                continue
+
+            if index == len(parameters) - 1 or not u_converters.is_digit(parameters[index + 1]):
+                await ctx.reply("You specified the {} stonk but didn't provide a value.".format(stonk))
+                return
+            
+            stonk_values[stonk] = u_converters.parse_int(parameters[index + 1])
+
+        if len(stonk_values) == 0:
+            await ctx.reply("Unfortunately, you must provide at least 1 stonk value.")
+            return
+        
+        stonk_history = u_stonks.stonk_history()
+
+        matched_ticks = []
+
+        items = stonk_values.items()
+
+        for tick_id, tick_data in enumerate(stonk_history):
+            for stonk, value in items:
+                if tick_data[stonk.internal_name] != value:
+                    break
+            else:
+                matched_ticks.append(tick_id)
+        
+        embed = u_interface.embed(
+            title = "Stonk search",
+            description = "{} found:".format("1 tick was" if len(matched_ticks) == 1 else f"{u_text.smart_number(len(matched_ticks))} ticks were"),
+            fields = [
+                ("", ", ".join([str(item) for item in matched_ticks]), False),
+                ("", "You can use `%stonk history` to get values for a specific tick.", False)
+            ]
+        )
+        await ctx.reply(embed=embed)
+    
+
+
+
+
+
+    ######################################################################################################################################################
+    ##### STONK SPLIT ####################################################################################################################################
+    ######################################################################################################################################################
+    
+    @stonk.command(
+        name = "split",
+        description = "Get the number of splits in a time frame.\nIf no end is provided it'll use the current tick as the end.\nNote that this will not count double splits as 2 splits.",
+        brief = "Get the number of splits in a time frame."
+    )
+    async def stonk_split(self, ctx,
+            start: typing.Optional[u_converters.parse_int] = commands.parameter(description = "The start of the time frame."),
+            end: typing.Optional[u_converters.parse_int] = commands.parameter(description = "The end of the time frame."),
+        ):
+        ctx = u_custom.CustomContext(ctx)
+
+        if start is None:
+            start = 0
+        
+        if end is None:
+            end = u_stonks.current_tick_number()
+        
+        if end <= start:
+            await ctx.reply("The end must be after the start.")
+            return
+
+        split_counts = {stonk: 0 for stonk in u_values.stonks}
+
+        stonk_history = u_stonks.stonk_history()
+
+        for stonk in u_values.stonks:
+            name = stonk.internal_name
+            previous_value = stonk_history[start].get(name, None)
+
+            for tick in stonk_history[start + 1: end + 1]:
+                if previous_value is not None and tick[name] / previous_value <= 0.85:
+                    split_counts[stonk] += 1
+                previous_value = tick.get(name, None)
+        
+        embed = u_interface.embed(
+            title = "Splits",
+            description = "Number of times the stonks were split between ticks {} and {}:".format(u_text.smart_number(start), u_text.smart_number(end)),
+            fields = [
+                ("", "\n".join(["{}: {}".format(stonk, value) for stonk, value in split_counts.items()]), False)
+            ]
+        )
+        await ctx.reply(embed=embed)
 
 
 
