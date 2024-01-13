@@ -74,7 +74,8 @@ class StonkItem(Item):
                 emoji: str = None,
                 attributes: list[str] = [],
                 gambit_bonus: int = None,
-                aliases: list[str] = []
+                aliases: list[str] = [],
+                graph_color: str = None
             ) -> None:
         """Object specifcially for stonks.
 
@@ -88,14 +89,16 @@ class StonkItem(Item):
             attributes (list[str], optional): A list of attributes this has, like "['special_bread']" or "['chess_piece', 'black_chess_piece']". Defaults to [].
             gambit_bonus (int, optional): The amount of a dough bonus this item gets with the gambit shop. If this item isn't in the gambit shop, don't provide it or just provide None. Defaults to None.
             aliases (list[str], optional): A list of aliases that can be used to refer to this item. Like "['stuffed']" or "['black_pawn']". Defaults to [].
+            graph_color (str, optional): The color to use for this stonk on stonk graphs. Defaults to None.
         """
         super().__init__(name, internal_name, internal_emoji, emoji, attributes, gambit_bonus, aliases)
 
         self.base_value = base_value
+        self.graph_color = graph_color
 
         current_values = u_stonks.current_values()
 
-        self.value = current_values[self.internal_name]
+        self.value = current_values.get(self.internal_name)
 
 class ChessItem(Item):
     def __init__(self: typing.Self,
@@ -469,6 +472,7 @@ pretzel = StonkItem(
     emoji = "🥨",
     base_value = 100,
     attributes = ["stonk"],
+    graph_color = "#ff7f0e"
 )
 
 cookie = StonkItem(
@@ -477,7 +481,8 @@ cookie = StonkItem(
     internal_emoji = ":cookie:",
     emoji = "🍪",
     base_value = 25,
-    attributes = ["stonk"]
+    attributes = ["stonk"],
+    graph_color = "#1f77b4"
 )
 
 fortune_cookie = StonkItem(
@@ -487,7 +492,8 @@ fortune_cookie = StonkItem(
     emoji = "🥠",
     base_value = 500,
     attributes = ["stonk"],
-    aliases = ["fortune"]
+    aliases = ["fortune"],
+    graph_color = "#2ca02c"
 )
 
 pancakes = StonkItem(
@@ -496,7 +502,51 @@ pancakes = StonkItem(
     internal_emoji = ":pancakes:",
     emoji = "🥞",
     base_value = 2500,
-    attributes = ["stonk"]
+    attributes = ["stonk"],
+    graph_color = "#d62728"
+)
+
+###
+
+cake = StonkItem(
+    name = "Cake",
+    internal_name = "cake",
+    internal_emoji = ":cake:",
+    emoji = "🍰",
+    base_value = 21000,
+    attributes = ["shadow_stonk"],
+    graph_color = "#9467bd"
+)
+
+pizza = StonkItem(
+    name = "Pizza",
+    internal_name = "pizza",
+    internal_emoji = ":pizza:",
+    emoji = "🍕",
+    base_value = 168000,
+    attributes = ["shadow_stonk"],
+    graph_color = "#e377c2"
+)
+
+pie = StonkItem(
+    name = "Pie",
+    internal_name = "pie",
+    internal_emoji = ":pie:",
+    emoji = "🥧",
+    base_value = 1512000,
+    attributes = ["shadow_stonk"],
+    aliases = ["fortune"],
+    graph_color = "#bcbd22"
+)
+
+cupcake = StonkItem(
+    name = "Cupcake",
+    internal_name = "cupcake",
+    internal_emoji = ":cupcake:",
+    emoji = "🧁",
+    base_value = 15120000,
+    attributes = ["shadow_stonk"],
+    graph_color = "#17becf"
 )
 
 ### BASE LISTS ###

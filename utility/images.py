@@ -1,13 +1,22 @@
 """Functions for the generation of images."""
 
+from os.path import sep as SLASH
+
 from PIL import Image as PIL_Image
 from PIL import ImageDraw as PIL_ImageDraw
 from PIL import ImageFont as PIL_ImageFont
 import textwrap
+import matplotlib.pyplot as plt
+import matplotlib
+import typing
 
 import utility.bingo as u_bingo
 import utility.text as u_text
 import utility.files as u_files
+
+######################################################################################################################################
+##### BINGO BOARDS ###################################################################################################################
+######################################################################################################################################
 
 def bingo_board_base(board_size: int, solo: bool = False) -> PIL_Image:
     """Generates the base for a bingo board, allowing for any size."""
@@ -161,3 +170,64 @@ def render_board_9x9(tile_string: str, enabled: int) -> PIL_Image:
         tile_list = tile_list,
         board_size = 9
     )
+
+######################################################################################################################################
+##### GRAPHS #########################################################################################################################
+######################################################################################################################################
+
+def generate_graph(
+    lines: list[dict[str, typing.Union[str, tuple[int, int, int], list[tuple[int, int]]]]], # color, label, values
+    *,
+    x_label: str = "",
+    y_label: str = "",
+    log_scale: bool = False,
+    file_name: str = f"images{SLASH}generated{SLASH}generated_graph.png"
+) -> str:
+    """Generates a graph.
+
+    Args:
+        lines (list[dict[str, typing.Union[str, tuple[int, int, int], list[tuple[int, int]]]]]): The data to graph, should be a list of dicts, each dict with "color", "label" and "values" keys, the values one should be a list of tuples with x and y coordinates, "color" can be a string hex code or RGB, "label" should just be a string.
+        x_label (str, optional): The label of the x axis. Defaults to "".
+        y_label (str, optional): The label of the y axis. Defaults to "".
+        log_scale (bool, optional): Whether the y axis should be on a log scale. Defaults to False.
+        file_name (bool, optional): Custom file location. Defaults to "images/generated/generated_graph.png".
+
+    Returns:
+        str: The file name of the generated image, this is going to be the same as the file_name argument.
+    """
+    plt.clf()
+
+    for line_data in lines:
+        line_color = line_data.get("color")
+
+        if isinstance(line_color, tuple):
+            line_color = tuple([color / 255 for color in line_color])
+        elif isinstance(line_color, str):
+            line_color = line_color.replace("#", "")
+            line_color = [int(item, 16) / 255 for item in u_text.split_chunks(line_color, 2)]
+
+        line_label = line_data.get("label")
+
+        x_values = []
+        y_values = []
+
+        for x_val, y_val in line_data["values"]:
+            x_values.append(x_val)
+            y_values.append(y_val)
+        
+        plt.plot(x_values, y_values, label=line_label, color=line_color)
+    
+    plt.xlabel(x_label)
+    plt.ylabel(y_label)
+
+    if log_scale:
+        plt.yscale('log')
+
+    plt.legend(bbox_to_anchor=(1.04, 0.5), loc="center left", borderaxespad=0)
+    plt.grid()
+    
+    plt.savefig(file_name, bbox_inches='tight')
+
+    return file_name
+        
+
