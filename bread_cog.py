@@ -7,8 +7,6 @@ import copy
 import math
 import aiohttp
 import traceback
-import mediawiki
-import re
 
 import sys
 
@@ -83,7 +81,7 @@ class Bread_cog(u_custom.CustomCog, name="Bread"):
 
     @commands.group(
         name = "bread",
-        description = "Header command for Bread Game related utility commands.",
+        description = "You might want `$bread` instead of this.\n\nHeader command for Bread Game related utility commands.",
         brief = "Header for Bread Game related commands.",
         invoke_without_command = True,
         pass_context = True

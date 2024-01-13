@@ -4,15 +4,11 @@ import typing
 import traceback
 import copy
 import os
-import re
-import aiohttp
 
 import sys
 
 import utility.text as u_text
-import utility.interface as u_interface
 import utility.custom as u_custom
-import utility.solvers as u_solvers
 
 class Admin_cog(u_custom.CustomCog, name="Admin"):
     bot = None
@@ -21,7 +17,8 @@ class Admin_cog(u_custom.CustomCog, name="Admin"):
         "triggers_cog",
         "other_cog",
         "bingo_cog",
-        "bread_cog"
+        "bread_cog",
+        "stonk_cog"
     ]
 
     ######################
