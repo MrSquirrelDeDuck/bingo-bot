@@ -587,10 +587,7 @@ def parse_stats(message: discord.Message) -> dict[str, typing.Union[int, u_value
             stats["bling"] = 0
 
         for stonk in u_values.stonks:
-            print(stonk.internal_emoji, stonk.emoji)
             search_result = extract("&& -- ## stonks", emoji_discord=stonk.internal_emoji, emoji_ascii=stonk.emoji)
-
-            # print(stonk, search_result is None)
             
             if search_result is None:
                 stats[stonk] = 0
