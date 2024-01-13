@@ -4,19 +4,21 @@ import typing
 import traceback
 import copy
 import os
+import re
+import aiohttp
 
 import sys
-import importlib
 
 import utility.text as u_text
 import utility.interface as u_interface
 import utility.custom as u_custom
+import utility.solvers as u_solvers
 
 class Admin_cog(u_custom.CustomCog, name="Admin"):
     bot = None
 
     all_extensions = [
-        "loop_cog",
+        "triggers_cog",
         "other_cog",
         "bingo_cog",
         "bread_cog"
@@ -167,11 +169,11 @@ class Admin_cog(u_custom.CustomCog, name="Admin"):
 
         reloaded_count = 0
 
-        for cog_name in copy.deepcopy(list(dict(self.bot.cogs).keys())):
-            reloaded_count += await self._smart_reload(cog_name)
-
         for module_name in copy.deepcopy([i.replace(".py", "") for i in os.listdir("utility/") if i.endswith(".py")]):
             reloaded_count += await self._smart_reload("utility.{}".format(module_name))
+            
+        for cog_name in copy.deepcopy(list(dict(self.bot.cogs).keys())):
+            reloaded_count += await self._smart_reload(f"{cog_name.lower()}_cog")
         
         return reloaded_count
 
@@ -295,30 +297,6 @@ class Admin_cog(u_custom.CustomCog, name="Admin"):
         except:
             traceback.print_exc()
             await ctx.send("Failed.")
-
-    
-    
-    
-    
-    
-    
-    
-    @admin.command(
-        name="parse_test",
-        brief = "Tests the stats parser.",
-        description = "Tests the stats parser."
-    )
-    @commands.is_owner()
-    async def parse_test(self, ctx, extension_name: typing.Optional[str]):
-        ctx = u_custom.CustomContext(ctx)
-
-        if not u_interface.is_reply(ctx.message):
-            await ctx.reply("You need to reply to a message to run the parser.")
-            return
-
-        print(u_interface.parse_stats(ctx.message.reference.resolved))
-
-    
 
         
 async def setup(bot: commands.Bot):

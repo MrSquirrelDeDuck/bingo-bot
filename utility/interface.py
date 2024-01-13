@@ -6,10 +6,18 @@ import typing
 import datetime
 import re
 
+import utility.values as u_values
 import utility.text as u_text
+import utility.bread as u_bread
 import utility.custom as u_custom
-
 everyone_prevention = discord.AllowedMentions(everyone=False)
+
+import importlib
+
+importlib.reload(u_values)
+importlib.reload(u_text)
+importlib.reload(u_bread)
+importlib.reload(u_custom)
 
 def embed(
         title: str, title_link: str = None,
@@ -141,79 +149,143 @@ async def safe_send(ctx, content: str = "", **kwargs) -> discord.Message:
     
     return await ctx.send(content, **kwargs)
 
-def parse_stats(message: discord.Message) -> dict:
-    """Parses a Machine-Mind message and returns a dict of the figured out stats.
+def is_reply(message: discord.Message) -> bool:
+    """Returns a boolean for whether the message provided is a reply.
+
+    Args:
+        message (discord.Message): The message to check.
+
+    Returns:
+        bool: Whether the given message is a reply.
+    """
+    return message.reference is not None
+
+def is_mm(message: discord.Message) -> bool:
+    """Returns a boolean for whether the given message was sent by Machine-Mind, or a known Machine-Mind clone used for testing.
+
+    Args:
+        message (discord.Message): The message to check.
+
+    Returns:
+        bool: Whether the message was sent by Machine-Mind or a known Machine-Mind clone.
+    """
+    mm_ids = [960869046323134514, 1144833820940578847]
+
+    return message.author.id in mm_ids
+
+def mm_checks(message: discord.Message, check_reply: bool = False) -> bool:
+    """Checks whether a message was sent by Machine-Mind (or a known clone) and, if specified, will check whether the message is a reply.
+
+    Args:
+        message (discord.Message): The message to check.
+        check_reply (bool, optional): Whether to require the given message to be a reply. Defaults to False.
+
+    Returns:
+        bool: Whether the checks passed.
+    """
+    if not is_mm(message):
+        return False
     
-    The following messages can be parsed:
-    - $bread stats
-    - $bread stats chess
-    - $bread stats gambit
-    - $bread portfolio
-    - $bread invest
-    - $bread divest
-    - $bread shop
-    - $bread hidden
-    - $bread gambit
-    - $bread dough
-    - $bread stonks"""
+    if check_reply and not is_reply(message):
+        return False
+    
+    return True
 
-    def extract(pattern: str, text: str, group_id: int = 0) -> typing.Union[int, None]:
-        """Extracts a number from a string via regex."""
-        search_result = re.search(pattern, text)
+def replying_mm_checks(message: discord.Message, require_reply: bool = False, return_replied_to: bool = False) -> typing.Union[bool, discord.Message]:
+    """Takes a message and checks whether it's replying to Machine-Mind (or a known clone.)
+    If specified, it can also check whether Machine-Mind's message is also a reply.
 
-        if search_result is None:
-            return None
+    Args:
+        message (discord.Message): The user message that will be checked.
+        require_reply (bool, optional): Whether to check if Machine-Mind's messsage is also a reply. Defaults to False.
+        return_replied_to (bool, optional): Whether to return the replied to message. Defaults to False.
 
-        return u_text.return_numeric(search_result.group(group_id))
+    Returns:
+        bool: Whether the checks passed.
+    """
+    
+    # If the user message is not a reply, it's not what we're looking for.
+    if not is_reply(message):
+        return False
+    
+    replied_to = message.reference.resolved
 
-    content = message.content
+    # If the replied to message is not MM, we know it failed the checks.
+    if not is_mm(replied_to):
+        return False
+    
+    # If require_reply is True and the replied-to message is not a reply, then it fails the checks.
+    if require_reply and not is_reply(replied_to):
+        return False
+    
+    # If return_replied_to is True, then return the message that was replied to.
+    if return_replied_to:
+        return replied_to
+    
+    # If it gets here, all the checks have passed.
+    return True
+    
+def is_gamble(message: discord.Message) -> bool:
+    """Returns a boolean for whether a message is a Bread Game gamble.
 
-    # $bread stonks
-    if content.startswith("Welcome to the stonk market!"):
-        """
-        Welcome to the stonk market, have a look around
-        All the dough that brain of yours can think of can be found
-        We've got mountains of cookies, some forty, they're best
-        If none of it is going up it's time to divest
+    Args:
+        message (discord.Message): The message to check.
 
-        Welcome to the stonk market, come and take a seat
-        Would you like to see b6 or a3's incredible feat
-        There's no need to panic, this isn't a test, haha
-        Just invest at the peak and we'll do the rest
-        """
+    Returns:
+        bool: Whether the message is a gamble.
+    """
+
+    if not mm_checks(message, check_reply = True):
+        return False
+    
+    if any([message.content.endswith(_) for _ in ["?", "!", "."]]):
+        return False
+    
+    if message.content.count(" ") + message.content.count("\n") != 18:
+        return False
+    
+    return True
+
+def resolve_conflict(message: discord.Message, stats_type: str, user_provided: list[typing.Any], stat_keys: list[u_values.Item | u_values.ChessItem | u_values.StonkItem | str]) -> typing.Union[tuple[list[typing.Any], typing.Union[discord.Message, None]], bool]:
+    """
+    Resolves conflicts between user-provided input and the stats parser.
+    The method behind this is very simple, if it's provided by the user, use it, otherwise use the output from the stats parser.
+
+    Args:
+        message (discord.Message): The user's message.
+        stats_type (str): The type of stats to look for. A list of acceptable ones are in the parse_stats() in utility.bread.
+        user_provided (list[typing.Any]): A list of the user-provided values, where None is unprovided.
+        stat_keys (list[u_values.Item  |  u_values.ChessItem  |  u_values.StonkItem  |  str]): A list of keys to look for in the parsed stats, in the same order as user_provided.
+
+    Returns:
+        typing.Union[list[typing.Any], bool]: The list of resolved values, or False if it failed.
+    """
+
+    if None not in user_provided:
+        return user_provided
+    
+    replied_to = replying_mm_checks(message, require_reply=True, return_replied_to=True)
+
+    if not replied_to:
+        return False
+    
+    parsed = u_bread.parse_stats(replied_to)
+
+    if parsed.get("stats_type") != stats_type: # If the parse was unsuccessful, then the .get will be None.
+        return False
+    
+    parsed = parsed["stats"]
+
+    for index, item in enumerate(user_provided):
+        if item is not None:
+            continue
+
+        user_provided[index] = parsed.get(stat_keys[index], 0)
+    
+    if None in user_provided:
+        return False
+    
+    return user_provided
+
+
         
-        search_result = extract(
-            "You have (\*\*[\d|,]+) dough\*\* to spend\.",
-            message.content,
-            1
-        )
-
-        if search_result is None:
-            return {"parse_successful": False}
-
-        return {
-            "parse_successful": True,
-            "stats": {
-                "total_dough": search_result
-                }
-            }
-    
-    # $bread dough
-    if content.startswith("You have") and content.endswith(" dough**."):
-        if search_result is None:
-            return {"parse_successful": False}
-
-        search_result = re.search(
-            "You have \*\*[\d|,]+ dough\*\* to spend\.",
-            message.content
-        )
-
-        if search_result is None:
-            return {"parse_successful": False}
-
-        return {
-            "parse_successful": True,
-            "stats": {
-                "total_dough": u_text.return_numeric(search_result.group(0))
-                }
-            }

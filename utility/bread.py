@@ -6,10 +6,28 @@ import math
 
 import utility.text as u_text
 import utility.values as u_values
+import utility.interface as u_interface
 
 import importlib
 
 importlib.reload(u_values)
+
+def calculate_tron_value(ascension: int = 0, omega_count: int = 0, active_shadowmegas: int = 0, shadowmegas: int = 0, chessatron_contraption: int = 0) -> int:
+    """Calculates the value of a chessatron.
+
+    Args:
+        ascension (int, optional): The ascension the player is on. Defaults to 0.
+        omega_count (int, optional): The number of omegas the player has. Defaults to 0.
+        active_shadowmegas (int, optional): The number of active shadowmegas the player has, does not need to be provided if `shadowmegas` and `chessatron_contraption` is provided. Defaults to 0.
+        shadowmegas (int, optional): The total number of shadowmegas the player has, not the number of active shadowmegas. This and `chessatron_contraption` can be provided or `active_shadowmegas` can be provided. Defaults to 0.
+        chessatron_contraption (int, optional): The level of Chessatron Contraption the player has. This and `shadowmegas` can be provided or `active_shadowmegas` can be provided. Defaults to 0.
+
+    Returns:
+        int: The amount of dough the player gets for each chessatron they make.
+    """
+    active_shadowmegas = max(active_shadowmegas, min(shadowmegas, chessatron_contraption * 5))
+
+    return round((2000 + (250 * omega_count) + (100 * active_shadowmegas)) * (1 + (0.1 * ascension)))
 
 def get_ascension(tokens: int = 0, ddc: int = 0, scy: int = 0, mb: int = 0, cpe: int = 0, hrt: int = 0, cc: int = 0, es: int = 0, fcotd: int = 0) -> int:
     """Figures out what ascension someone is on based on their token number and their hidden bakery purchases."""
@@ -30,7 +48,33 @@ def get_ascension(tokens: int = 0, ddc: int = 0, scy: int = 0, mb: int = 0, cpe:
 
     return int(((token_sum - 31) / 6 + 6 if token_sum-1 > 30 else (token_sum - 1) / 5) + 1)
 
-def parse_stats(message: discord.Message) -> dict[str, typing.Union[int, u_values.Item, dict]]:
+def parse_attempt(message: discord.Message, require_reply: bool = False, custom_check: typing.Callable[[discord.Message], bool] = None) -> typing.Union[bool, dict[str, typing.Union[int, u_values.Item, dict[str, bool], bool]]]:
+    """Attempts to parse a Discord message. Returns the parser output, or False if any check failed.
+
+    Args:
+        message (discord.Message): The user message. This will check if it's replying to Machine-Mind (or a known clone.)
+        require_reply (bool, optional): Whether it should require the replied-to message to be replying. Defaults to False.
+        custom_check (typing.Callable[[discord.Message], bool], optional): A custom check that can be provided. The replied-to message will be passed to this. Defaults to None.
+
+    Returns:
+        typing.Union[bool, dict[str, typing.Union[int, u_values.Item, dict[str, bool], bool]]]: The parser output, or False if any check failed.
+    """
+    replied_to = u_interface.replying_mm_checks(message, require_reply=require_reply, return_replied_to=True)
+    
+    if not replied_to:
+        return False
+
+    if not replied_to.content.startswith("Stats for:"):
+        return False
+    
+    if custom_check is not None:
+        if custom_check(replied_to):
+            return False
+                    
+    return parse_stats(message.reference.resolved)
+
+
+def parse_stats(message: discord.Message) -> dict[str, typing.Union[int, u_values.Item, dict[str, bool], bool]]:
     """Parses a Machine-Mind message and returns a dict of as many stats as it can figure out, both user stats and internal stats, like stonks, will be returned in the `stats` dict.
     
     The following messages can be parsed:
@@ -49,7 +93,21 @@ def parse_stats(message: discord.Message) -> dict[str, typing.Union[int, u_value
         message (discord.Message): The discord message that will be parsed.
 
     Returns:
-        dict: A dictionary containing the found stats and the key "parse_successful". If parse_successful is True, then there will also be a "stats" dict. If parse_successful is False, then no stats will be returned, and something went wrong with the parsing of the stats.
+        dict: A dictionary containing the found stats and the key "parse_successful". If parse_successful is True, then there will be a "stats_type" key with the stats type and a "stats" dict. If parse_successful is False, then no stats will be returned, and something went wrong with the parsing of the stats.
+    
+    stats_type key:
+    - "main": `$bread stats`.
+    - "main_continued": The continued message sometimes sent from `$bread stats`.
+    - "hidden_bakery": `$bread hidden_bakery`.
+    - "bread_shop": `$bread shop`.
+    - "dough": `$bread dough`.
+    - "chess": `$bread stats chess`.
+    - "gambit": `$bread stats gambit`.
+    - "stonks": `$bread stonks`.
+    - "portfolio": `$bread portfolio`.
+    - "invest": `$bread invest`.
+    - "divest_specific": `$bread divest [all|amount] [stonk]`.
+    - "divest_all": `$bread divest all`.
     """
 
     content = message.content
@@ -149,6 +207,7 @@ def parse_stats(message: discord.Message) -> dict[str, typing.Union[int, u_value
             if content.startswith("Stats continued:"):
                 return {
                     "parse_successful": True,
+                    "stats_type": "main_continued",
                     "stats": stats
                 }
         
@@ -238,8 +297,16 @@ def parse_stats(message: discord.Message) -> dict[str, typing.Union[int, u_value
         else:
             stats["bling"] = 0
         
+        stats["tron_value"] = calculate_tron_value(
+            ascension = ascension_number,
+            omega_count = stats[u_values.omega_chessatron],
+            shadowmegas = stats[u_values.shadowmega_chessatron],
+            chessatron_contraption = chessatron_contraption
+        )
+        
         return {
             "parse_successful": True,
+            "stats_type": "main",
             "stats": stats
         }
 
@@ -307,6 +374,7 @@ def parse_stats(message: discord.Message) -> dict[str, typing.Union[int, u_value
 
         return {
             "parse_successful": True,
+            "stats_type": "hidden_bakery",
             "stats": stats
         }
 
@@ -366,6 +434,7 @@ def parse_stats(message: discord.Message) -> dict[str, typing.Union[int, u_value
         
         return {
             "parse_successful": True,
+            "stats_type": "bread_shop",
             "stats": stats
         }
     
@@ -383,6 +452,7 @@ def parse_stats(message: discord.Message) -> dict[str, typing.Union[int, u_value
 
         return {
                 "parse_successful": True,
+                "stats_type": "dough",
                 "stats": {
                     "total_dough": search_result
                 }
@@ -419,6 +489,7 @@ def parse_stats(message: discord.Message) -> dict[str, typing.Union[int, u_value
 
         return {
                 "parse_successful": True,
+                "stats_type": "chess",
                 "stats": stats
             }
     
@@ -453,6 +524,7 @@ def parse_stats(message: discord.Message) -> dict[str, typing.Union[int, u_value
 
         return {
                 "parse_successful": True,
+                "stats_type": "gambit",
                 "stats": {"dough_boosts": stats}
             }
 
@@ -492,6 +564,7 @@ def parse_stats(message: discord.Message) -> dict[str, typing.Union[int, u_value
 
         return {
                 "parse_successful": True,
+                "stats_type": "stonks",
                 "stats": stats
             }
     
@@ -543,6 +616,7 @@ def parse_stats(message: discord.Message) -> dict[str, typing.Union[int, u_value
 
         return {
                 "parse_successful": True,
+                "stats_type": "portfolio",
                 "stats": stats
             }
     
@@ -567,6 +641,7 @@ def parse_stats(message: discord.Message) -> dict[str, typing.Union[int, u_value
 
         return {
             "parse_successful": True,
+            "stats_type": "invest",
             "stats": stats
         }
     
@@ -599,6 +674,7 @@ def parse_stats(message: discord.Message) -> dict[str, typing.Union[int, u_value
 
         return {
             "parse_successful": True,
+            "stats_type": "divest_specific",
             "stats": stats
         }
     
@@ -606,6 +682,7 @@ def parse_stats(message: discord.Message) -> dict[str, typing.Union[int, u_value
     if content.startswith("You divested all of your stonks for"):
         return {
             "parse_successful": True,
+            "stats_type": "divest_all",
             "stats": {
                 "total_dough": extract("You now have **## dough**.")
             }

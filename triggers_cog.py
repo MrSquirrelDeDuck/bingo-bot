@@ -1,11 +1,14 @@
 from discord.ext import commands
 from discord.ext import tasks
+import discord
 import datetime
 import asyncio
 
 import sys
 import importlib
 
+import utility.files as u_files
+import utility.interface as u_interface
 import utility.custom as u_custom
 
 bingo_time = datetime.time(
@@ -14,7 +17,7 @@ bingo_time = datetime.time(
     tzinfo = datetime.timezone.utc
 )
 
-class Loop_cog(u_custom.CustomCog, name="Loop"):
+class Triggers_cog(u_custom.CustomCog, name="Triggers"):
     bot = None
 
     def __init__(self) -> None:
@@ -65,9 +68,9 @@ class Loop_cog(u_custom.CustomCog, name="Loop"):
         await asyncio.sleep(60*wait_time)
         print("Finished waiting at {}.".format(datetime.datetime.now()))
     
-    #######################
-    ###### DAILY LOOP #####
-    #######################
+    ######################
+    ##### DAILY LOOP #####
+    ######################
 
     @tasks.loop(
         time = bingo_time
@@ -75,10 +78,46 @@ class Loop_cog(u_custom.CustomCog, name="Loop"):
     async def daily_loop(self):
         print("Daily loop triggered at {}".format(datetime.datetime.now()))
     
+    ###########################
+    ###########################
+    ###########################
+    
+    #####################
+    ##### ON EVENTS #####
+    #####################
+        
+    async def on_gamble(self, message: discord.Message):
+        # Gamble messages.
+        gamble_messages = u_files.load("data/bread/gamble_messages.json")
+
+        gamble_messages[f"{message.channel.id}.{message.id}"] = message.content
+
+        if len(gamble_messages) > 500:
+            gamble_messages.pop(next(iter(gamble_messages)))
+        
+        u_files.save("data/bread/gamble_messages.json", gamble_messages)
+    
+    @commands.Cog.listener()
+    async def on_message(self, message):
+        # Autodetection.
+
+        # PluralKit replies.
+
+        # Counting
+        
+        # AskOuija
+
+        # ???
+
+        # Profit
+
+        # On gamble.
+        if u_interface.is_gamble(message):
+            await self.on_gamble(message)
     
 
 async def setup(bot: commands.Bot):
-    cog = Loop_cog()
+    cog = Triggers_cog()
     cog.bot = bot
     
     # Add attributes for sys.modules and globals() so the _reload_module() function in utility.custom can read it and get the module objects.
