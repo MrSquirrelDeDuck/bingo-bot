@@ -250,6 +250,25 @@ class Stonk_cog(u_custom.CustomCog, name="Stonks"):
         )
         
         await ctx.reply(embed=embed)
+    
+
+
+
+
+
+    ######################################################################################################################################################
+    ##### STONK MESSAGE ##################################################################################################################################
+    ######################################################################################################################################################
+    
+    @stonk.command(
+        name = "message",
+        description = "Get a link to the last stonk tick.",
+        brief = "Get a link to the last stonk tick."
+    )
+    async def stonk_message(self, ctx):
+        ctx = u_custom.CustomContext(ctx)
+
+        await ctx.reply(u_stonks.full_current_tick()["message_link"])
 
                 
 
