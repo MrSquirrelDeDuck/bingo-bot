@@ -112,7 +112,7 @@ def parse_stats(message: discord.Message) -> dict[str, typing.Union[int, u_value
 
     content = message.content
     
-    def extract(surrounding: str, text: str = None, emoji_discord: str = "", emoji_ascii: str = "", group_id: int = 1, default: int = None, escape: bool = True) -> typing.Union[int, None]:
+    def extract(surrounding: str, *, text: str = None, emoji_discord: str = "", emoji_ascii: str = "", group_id: int = 1, default: int = None, escape: bool = True) -> typing.Union[int, None]:
         """Extracts a number from a string via regex.
         If an emoji is important to the regex string, it should be replaced with "&&" in `surrounding` and the parameters `emoji_discord` and `emoji_ascii` must be provided.
 
@@ -555,7 +555,7 @@ def parse_stats(message: discord.Message) -> dict[str, typing.Union[int, u_value
         stats["total_dough"] = search_result
 
         for stonk in u_values.stonks:
-            search_result = extract("&& - ## dough", stonk.internal_emoji, stonk.emoji)
+            search_result = extract("&& - ## dough", emoji_discord=stonk.internal_emoji, emoji_ascii=stonk.emoji)
 
             if search_result is None:
                 continue
@@ -587,14 +587,18 @@ def parse_stats(message: discord.Message) -> dict[str, typing.Union[int, u_value
             stats["bling"] = 0
 
         for stonk in u_values.stonks:
-            search_result = extract("&& -- ## stonks", stonk.internal_emoji, stonk.emoji)
+            print(stonk.internal_emoji, stonk.emoji)
+            search_result = extract("&& -- ## stonks", emoji_discord=stonk.internal_emoji, emoji_ascii=stonk.emoji)
+
+            # print(stonk, search_result is None)
             
             if search_result is None:
                 stats[stonk] = 0
+                continue
 
             stats[stonk] = search_result
 
-            stats[f"{stonk.internal_emoji}_value"] = extract("&& -- ## stonks, worth **## dough**", stonk.internal_emoji, stonk.emoji, group_id=2)
+            stats[f"{stonk.internal_emoji}_value"] = extract("&& -- ## stonks, worth **## dough**", emoji_discord=stonk.internal_emoji, emoji_ascii=stonk.emoji, group_id=2)
         
         ## DETERMINING STONK VALUES ##
         
