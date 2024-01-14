@@ -19,7 +19,7 @@ import utility.custom as u_custom
 import utility.images as u_images
 import utility.algorithms as u_algorithms
 
-class Stonk_cog(u_custom.CustomCog, name="Stonk"):
+class Stonk_cog(u_custom.CustomCog, name="Stonk", description="Commands for working with the stonks in The Bread Game!"):
 
     @commands.group(
         name = "stonks",

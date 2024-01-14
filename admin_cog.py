@@ -13,7 +13,7 @@ import utility.text as u_text
 import utility.custom as u_custom
 import utility.checks as u_checks
 
-class Admin_cog(u_custom.CustomCog, name="Admin"):
+class Admin_cog(u_custom.CustomCog, name="Admin", description="Administration commands for the Bingo-Bot."):
     bot = None
 
     all_extensions = [

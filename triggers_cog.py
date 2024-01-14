@@ -17,7 +17,7 @@ bingo_time = datetime.time(
     tzinfo = datetime.timezone.utc
 )
 
-class Triggers_cog(u_custom.CustomCog, name="Triggers"):
+class Triggers_cog(u_custom.CustomCog, name="Triggers", description="Hey there! owo\n\nyou just lost the game >:3"):
     bot = None
 
     def __init__(self) -> None:

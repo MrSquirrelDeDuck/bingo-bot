@@ -19,7 +19,7 @@ import utility.bread as u_bread
 import utility.values as u_values
 import utility.custom as u_custom
 
-class Bread_cog(u_custom.CustomCog, name="Bread"):
+class Bread_cog(u_custom.CustomCog, name="Bread", description="Utility commands for The Bread Game!"):
     # bread_wiki_object = mediawiki.MediaWiki(user_agent='pyMediaWiki-Bingo-Bot', url="https://bread.miraheze.org/w/api.php")
     bread_wiki_searching = False
 

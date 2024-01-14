@@ -14,7 +14,7 @@ import utility.text as u_text
 import utility.custom as u_custom
 import utility.interface as u_interface
 
-class Bingo_cog(u_custom.CustomCog, name="Bingo"):
+class Bingo_cog(u_custom.CustomCog, name="Bingo", description="Commands for running the bingo game!"):
     bot = None
     
     #############################

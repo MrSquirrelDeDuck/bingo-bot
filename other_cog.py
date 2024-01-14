@@ -7,7 +7,7 @@ import importlib
 
 import utility.custom as u_custom
 
-class Other_cog(u_custom.CustomCog, name="Other"):
+class Other_cog(u_custom.CustomCog, name="Other", description="Commands that don't fit elsewhere, and are kind of silly."):
     bot = None
     
     ###########################
