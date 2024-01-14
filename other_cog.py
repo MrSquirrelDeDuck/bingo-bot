@@ -7,6 +7,8 @@ import wikipedia
 import mpmath
 import copy
 import re
+import aiohttp
+import traceback
 
 import sys
 
@@ -19,6 +21,8 @@ import utility.bread as u_bread
 
 class Other_cog(u_custom.CustomCog, name="Other", description="Commands that don't fit elsewhere, and are kind of silly."):
     bot = None
+
+    minecraft_wiki_searching = False
     
     ######################################################################################################################################################
     ##### AVATAR #########################################################################################################################################
@@ -480,6 +484,142 @@ class Other_cog(u_custom.CustomCog, name="Other", description="Commands that don
         ctx = u_custom.CustomContext(ctx)
         await ctx.reply(random.choice(["Heads.","Tails."]))
 
+        
+            
+
+        
+    ######################################################################################################################################################
+    ##### MINECRAFT ######################################################################################################################################
+    ######################################################################################################################################################
+    
+    @commands.command(
+        name = "minecraft",
+        brief = "Search the Minecraft Wiki!",
+        description = "Search the Minecraft Wiki."
+    )
+    async def minecraft(self, ctx,
+            *, search_term: typing.Optional[str] = commands.parameter(description = "The search term to search the wiki with.")
+        ):
+        ctx = u_custom.CustomContext(ctx)
+
+        if search_term is None:
+            await ctx.reply("Here's a link to the wiki:\n<https://minecraft.wiki/>\nIf you want to search the wiki, use `%minecraft wiki <search term>`.")
+            return
+        
+        if self.minecraft_wiki_searching:
+            await ctx.reply("This commmand is currently being used somewhere, please wait until it's done to try again.")
+            return
+        
+        async def error_message(embed: discord.Embed, sent_message: discord.Message) -> None:
+            """Changes all 'Waiting to be loaded' messages to 'Something went wrong'"""
+            modified = 0
+
+            for field_id, field in enumerate(embed.fields):
+                if "Waiting to be loaded" not in field.value:
+                    continue
+                
+                embed.set_field_at(field_id, name=field.name, value=field.value.replace("Waiting to be loaded", "Something went wrong"), inline=field.inline)
+                modified += 1
+            
+            if modified >= 1:
+                await sent_message.edit(content=sent_message.content, embed=embed)
+        
+        embed = None
+        sent_message = None
+
+        try:
+            self.minecraft_wiki_searching = True
+
+            async with aiohttp.ClientSession() as session:
+                async with session.get(f"https://minecraft.wiki/api.php?format=json&action=query&list=search&srlimit=3&srsearch={search_term}&redirects=true") as resp:
+                    if resp.status != 200:
+                        self.minecraft_wiki_searching = False
+                        await ctx.reply("Something went wrong.")
+                        return
+                    
+                    ret_json = await resp.json()
+
+                description_prefix = f"Search results after searching for '{search_term}' on [The Minecraft Wiki](https://minecraft.wiki/):"
+                
+                if ret_json["query"]["searchinfo"]["totalhits"] == 0:
+                    embed = u_interface.embed(
+                        title = "Minecraft Wiki",
+                        description = f"{description_prefix}\n\nThe search did not find any results, try different search terms."
+                    )
+                    await ctx.reply(embed=embed)
+                    self.minecraft_wiki_searching = False
+                    return
+                
+                search_results = []
+
+                for page_info in ret_json["query"]["search"]:                    
+                    search_results.append(page_info["title"])
+
+                fields = [
+                    (page_name, "[Link to wiki page.](https://minecraft.wiki/w/{})\n\n*Waiting to be loaded.*".format(page_name.replace(" ", "_")), True)
+                    for page_name in search_results
+                ]
+
+                embed = u_interface.embed(
+                    title = "Bread Wiki",
+                    description = f"{description_prefix}",
+                    fields = fields + [("", "Not what you're looking for? Try different search terms.", False)]
+                )
+
+                sent_message = await ctx.reply(embed=embed)
+
+                async with session.get("https://minecraft.wiki/api.php?action=query&prop=revisions&titles={}&rvslots=*&rvprop=content&formatversion=2&format=json&redirects=true".format("|".join(search_results))) as resp:
+                    if resp.status != 200:
+                        self.minecraft_wiki_searching = False
+                        await ctx.reply("Something went wrong.")
+                        return
+                    
+                    ret_json = await resp.json()
+
+                wiki_data = {}
+                for data in ret_json["query"]["pages"]:
+                    wiki_data[data["title"]] = data["revisions"][0]["slots"]["main"]["content"]
+
+                redirect_data = {}
+                if "redirects" in ret_json["query"]:
+                    for data in ret_json["query"]["redirects"]:
+                        redirect_data[data["from"]] = {"to": data["to"], "fragment": data.get("tofragment", None)}
+
+                for field_id, page in enumerate(search_results):
+                    page_get = page
+                    page_fragment = None
+
+                    redirect_text = ""
+                    
+                    for redirect_count in range(50):
+                        if page_get in redirect_data:
+                            page_fragment = redirect_data[page_get]["fragment"]
+                            page_get = redirect_data[page_get]["to"]
+                            redirect_text = f"*Redirected to {page_get}*\n"
+                            continue
+                        break
+
+                    if page_fragment is None:
+                        page_fragment = page_get
+                    
+                    sections = u_text.parse_wikitext(wiki_data[page_get], wiki_link="https://minecraft.wiki/w/", page_title=page_get, return_sections=True)
+                    
+                    summary = "[Link to wiki page.](https://minecraft.wiki/w/{})\n{}\n{}".format(page.replace(" ", "_"), redirect_text, sections[page_fragment])
+
+                    if len(summary) > 900:
+                        summary = self._wiki_correct_length(summary, 900)
+
+                    embed.set_field_at(field_id, name=page, value=summary, inline=True)
+
+                await sent_message.edit(content=sent_message.content, embed=embed)
+
+            self.minecraft_wiki_searching = False
+        except:
+            self.minecraft_wiki_searching = False
+            print(traceback.format_exc())
+
+            if embed is not None and sent_message is not None:
+                await error_message(embed, sent_message)
         
 
 
