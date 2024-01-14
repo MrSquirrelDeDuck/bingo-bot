@@ -75,7 +75,7 @@ def render_board(tile_string: str, enabled: int, tile_list: list[dict], board_si
     # Get the current data, since if the last image generated is the same as the one we're making, then we don't need to make anything new.
     if not force:
         # If force is true, then we don't do this check.
-        current_data = u_files.load("data/bingo/last_generated.json")
+        current_data = u_files.load(f"data{SLASH}bingo{SLASH}last_generated.json")
         if all([
                 board_size == current_data.get("last_size"),
                 tile_string == current_data.get(f"board"),
@@ -84,7 +84,7 @@ def render_board(tile_string: str, enabled: int, tile_list: list[dict], board_si
             ]):
             # If it's here, then the board is the same.
             # Now we load the existing image, and return it.
-            return PIL_Image.open("images/generated/bingo_board.png")
+            return PIL_Image.open(f"images{SLASH}generated{SLASH}bingo_board.png")
 
     # Split the tile string into groups of 3 characters.
     tile_string_split = u_text.split_chunks(tile_string, 3)
@@ -128,17 +128,17 @@ def render_board(tile_string: str, enabled: int, tile_list: list[dict], board_si
             )
     
     # Save the image to images/generated/bingo_board.png
-    img.save("images/generated/bingo_board.png")
+    img.save(f"images{SLASH}generated{SLASH}bingo_board.png")
 
     # Update the data in data/bingo/last_generated.json.
-    current_data = u_files.load("data/bingo/last_generated.json")
+    current_data = u_files.load(f"data{SLASH}bingo{SLASH}last_generated.json")
 
     current_data["board"] = tile_string
     current_data["enabled"] = enabled
     current_data["solo"] = solo
     current_data["last_size"] = board_size
 
-    u_files.save("data/bingo/last_generated.json", current_data)
+    u_files.save(f"data{SLASH}bingo{SLASH}last_generated.json", current_data)
 
     # Return the image.
     return img
