@@ -3,9 +3,9 @@ import discord
 import typing
 from fuzzywuzzy import fuzz
 import math
+from os.path import sep as SLASH
 
 import sys
-import importlib
 
 import utility.bingo as u_bingo
 import utility.images as u_images
@@ -13,6 +13,7 @@ import utility.checks as u_checks
 import utility.text as u_text
 import utility.custom as u_custom
 import utility.interface as u_interface
+import utility.converters as u_converters
 
 class Bingo_cog(u_custom.CustomCog, name="Bingo", description="Commands for running the bingo game!"):
     bot = None
@@ -249,26 +250,6 @@ class Bingo_cog(u_custom.CustomCog, name="Bingo", description="Commands for runn
     #######################
     ##### DAILY BOARD #####
     #######################
-
-    @commands.command(
-        name = "gen_board_5x5",
-        aliases = ["gen_board"],
-        brief = "Generates a bingo board.",
-        description = "Generates the tile string for a 5x5 bingo board.",
-        hidden = True
-    )
-    async def gen_board_5x5(self, ctx):
-        ctx = u_custom.CustomContext(ctx)
-        
-        await ctx.reply("`{}`".format(u_bingo.generate_5x5_board()))
-
-    
-    
-    
-    
-    
-    
-    
     @commands.group(
         name = "board",
         brief = "Shows the current 5x5 bingo board.",
@@ -465,6 +446,82 @@ class Bingo_cog(u_custom.CustomCog, name="Bingo", description="Commands for runn
 
         await ctx.reply(content="Here you go!", file=discord.File(r'images/generated/bingo_board.png'))
 
+
+    
+    
+    
+    
+    
+    
+    
+    @board.command(
+        name = "generate",
+        brief = "Generates a 5x5 bingo board.",
+        description = "Generates the tile string for a 5x5 bingo board.",
+        hidden = True
+    )
+    async def board_generate(self, ctx):
+        ctx = u_custom.CustomContext(ctx)
+        
+        await ctx.reply("`{}`".format(u_bingo.generate_5x5_board()))
+
+    
+    
+    
+    
+    
+    
+    
+    @board.command(
+        name = "render",
+        brief = "Renders a custom 5x5 board.",
+        description = "Renders a custom 5x5 board.\nYou can get a random tile string using the '%board generate' command."
+    )
+    async def board_render(self, ctx,
+            tile_string: typing.Optional[str] = commands.parameter(description = "A 75 character string that says what's on each tile."),
+            enabled_number: typing.Optional[u_converters.parse_int] = commands.parameter(description = "Number between 0 and 2^25 - 1 that defines completed tiles.")
+        ):
+        ctx = u_custom.CustomContext(ctx)
+
+        if tile_string is None:
+            await ctx.reply("You must provide a tile string.\nYou can get a random tile string via the `%board generate` command.")
+            return
+        
+        tile_string = tile_string.replace(",", "")
+        
+        if len(tile_string) != 75:
+            await ctx.reply("The length of the tile string must be 75.\nYou can get a random tile string via the `%board generate` command.")
+            return
+        
+        if not u_converters.is_digit(tile_string):
+            await ctx.reply("The tile string must be 75 numbers.\nYou can get a random tile string via the `%board generate` command.")
+            return
+        
+        split_tile_string = u_text.split_chunks(tile_string, 3)
+        objective_list = u_bingo.tile_list_5x5()
+
+        for objective_id in split_tile_string:
+            if int(objective_id) >= len(objective_list):
+                await ctx.reply(f"One of the objectives in the tile list ({objective_id}) is greater than the max accepted value ({len(objective_list) - 1}.)")
+                return
+        
+        if enabled_number is None:
+            enabled_number = 0
+
+        enabled_number = min(max(enabled_number, 0), 33554431)
+
+        u_images.render_board_5x5(
+            tile_string = tile_string,
+            enabled = enabled_number
+        )
+        
+        embed = u_interface.embed(
+            title = "Rendered board",
+            description = f"Using a tile string of \"{tile_string}\" and an enabled number of {u_text.smart_number(enabled_number)}:",
+            image_link = "attachment://bingo_board.png"
+        )
+        await ctx.reply(embed=embed, file=discord.File(f'images{SLASH}generated{SLASH}bingo_board.png'))
+
     
     
     
@@ -476,17 +533,6 @@ class Bingo_cog(u_custom.CustomCog, name="Bingo", description="Commands for runn
     ########################
     ##### WEEKLY BOARD #####
     ########################
-
-    @commands.command(
-        name = "gen_board_9x9",
-        brief = "Generates a 9x9 bingo board.",
-        description = "Generates the tile string for a 9x9 bingo board.",
-        hidden = True
-    )
-    async def gen_board_9x9(self, ctx):
-        ctx = u_custom.CustomContext(ctx)
-        
-        await ctx.reply("`{}`".format(u_bingo.generate_9x9_board()))
     
     @commands.group(
         name = "weekly",
@@ -686,6 +732,80 @@ class Bingo_cog(u_custom.CustomCog, name="Bingo", description="Commands for runn
         )
 
         await ctx.reply(content="Here you go!", file=discord.File(r'images/generated/bingo_board.png'))
+
+    
+    
+    
+    
+    
+    
+    
+    @weekly.command(
+        name = "generate",
+        brief = "Generates a 9x9 bingo board.",
+        description = "Generates the tile string for a 9x9 bingo board."
+    )
+    async def weekly_generate(self, ctx):
+        ctx = u_custom.CustomContext(ctx)
+        
+        await ctx.reply("`{}`".format(u_bingo.generate_9x9_board()))
+
+    
+    
+    
+    
+    
+    
+    
+    @weekly.command(
+        name = "render",
+        brief = "Renders a custom 9x9 board.",
+        description = "Renders a custom 9x9 board.\nYou can get a random tile string using the '%weekly generate' command."
+    )
+    async def board_render(self, ctx,
+            tile_string: typing.Optional[str] = commands.parameter(description = "A 243 character string that says what's on each tile."),
+            enabled_number: typing.Optional[u_converters.parse_int] = commands.parameter(description = "Number between 0 and 2^81 - 1 that defines completed tiles.")
+        ):
+        ctx = u_custom.CustomContext(ctx)
+
+        if tile_string is None:
+            await ctx.reply("You must provide a tile string.\nYou can get a random tile string via the `%weekly generate` command.")
+            return
+        
+        tile_string = tile_string.replace(",", "")
+        
+        if len(tile_string) != 243:
+            await ctx.reply("The length of the tile string must be 243.\nYou can get a random tile string via the `%weekly generate` command.")
+            return
+        
+        if not u_converters.is_digit(tile_string):
+            await ctx.reply("The tile string must be 243 numbers.\nYou can get a random tile string via the `%weekly generate` command.")
+            return
+        
+        split_tile_string = u_text.split_chunks(tile_string, 3)
+        objective_list = u_bingo.tile_list_9x9()
+
+        for objective_id in split_tile_string:
+            if int(objective_id) >= len(objective_list):
+                await ctx.reply(f"One of the objectives in the tile list ({objective_id}) is greater than the max accepted value ({len(objective_list) - 1}.)")
+                return
+        
+        if enabled_number is None:
+            enabled_number = 0
+
+        enabled_number = min(max(enabled_number, 0), 2417851639229258349412351)
+
+        u_images.render_board_9x9(
+            tile_string = tile_string,
+            enabled = enabled_number
+        )
+        
+        embed = u_interface.embed(
+            title = "Rendered board",
+            description = f"Using a tile string of \"{tile_string}\" and an enabled number of {u_text.smart_number(enabled_number)}:",
+            image_link = "attachment://bingo_board.png"
+        )
+        await ctx.reply(embed=embed, file=discord.File(f'images{SLASH}generated{SLASH}bingo_board.png'))
 
 
 
