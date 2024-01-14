@@ -40,6 +40,10 @@ def ping_filter(text: str) -> str:
     """Puts an invisible character (U+200B) after every @ symbol."""
     return text.replace("@", "@​")
 
+def has_ping(text: str) -> bool:
+    """Returns a boolean for whether a piece of text contains a ping."""
+    return re.match("<@&?\d+>|@(everyone|here)", text) is not None
+
 def after_parameter(ctx: commands.Context, parameter_text: str) -> str:
     """Gets all the text after a parameter."""
     return u_interface.msg_content(ctx).split(str(parameter_text), 1)[-1].lstrip('"\'').strip()

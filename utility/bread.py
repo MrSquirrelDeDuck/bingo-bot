@@ -88,6 +88,7 @@ def parse_stats(message: discord.Message) -> dict[str, typing.Union[int, u_value
     - $bread hidden
     - $bread dough
     - $bread stonks
+    - $brick stats
 
     Args:
         message (discord.Message): The discord message that will be parsed.
@@ -108,6 +109,7 @@ def parse_stats(message: discord.Message) -> dict[str, typing.Union[int, u_value
     - "invest": `$bread invest`.
     - "divest_specific": `$bread divest [all|amount] [stonk]`.
     - "divest_all": `$bread divest all`.
+    - "brick_stats": `$brick stats`.
     """
 
     content = message.content
@@ -687,6 +689,24 @@ def parse_stats(message: discord.Message) -> dict[str, typing.Union[int, u_value
             "stats": {
                 "total_dough": extract("You now have **## dough**.")
             }
+        }
+    
+    ####################
+    ### $brick stats ###
+    ####################
+
+    if content.startswith("Brick stats for"):
+        stats = {
+            "bricks": extract("&& - ##", emoji_discord=":bricks:", emoji_ascii="🧱"),
+            "brick_gold": extract("&& - ##", emoji_discord="<:brick_gold:971239215968944168>"),
+            "total_bricks": extract("Total bricks: ##"),
+            "total_timeout": extract("Total timeout: ## minute")
+        }
+
+        return {
+            "parse_successful": True,
+            "stats_type": "brick_stats",
+            "stats": stats
         }
     
     # If nothing is found, say the parsing was unsuccessful.

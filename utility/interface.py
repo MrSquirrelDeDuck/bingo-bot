@@ -114,7 +114,7 @@ def combine_args(ctx: (commands.Context | str), args: (tuple | list), keep: int,
     
     return [args[i] for i in range(keep)] + [content]
 
-def get_display_name(member):
+def get_display_name(member: discord.Member) -> str:
     return (member.global_name if (member.global_name is not None and member.name == member.display_name) else member.display_name)
 
 def is_reply(message: discord.Message) -> bool:

@@ -22,6 +22,16 @@ def parse_int(argument) -> int:
     """Converts an argument to an integer, will remove commas along the way."""
     return int(str(argument).replace(",", ""))
 
+def is_float(string: str) -> bool:
+    """Returns a boolean for whether a string represents a float."""
+    if string is None: 
+        return False
+    try:
+        float(string)
+        return True
+    except ValueError:
+        return False
+
 def is_digit(string) -> bool:
     """Same as str.isdigit(), but will remove commas first."""
     return str(string).replace(",", "").isdigit()

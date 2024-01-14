@@ -168,3 +168,4 @@ data/
 patch_notes.txt
 
 algorithms.py
+ciphers.py
