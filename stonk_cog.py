@@ -1031,6 +1031,49 @@ class Stonk_cog(u_custom.CustomCog, name="Stonk", description="Commands for work
 
         await ctx.reply(file=discord.File(file_name))
 
+        
+            
+
+        
+    ######################################################################################################################################################
+    ##### STONK GIFT #####################################################################################################################################
+    ######################################################################################################################################################
+    
+    @stonk.command(
+        name = "gift",
+        brief = "Automates stonk gifting math.",
+        description = "Figures out how much dough to invest in a stonk to get a specific amount of dough."
+    )
+    async def stonk_gift(self, ctx,
+            dough: typing.Optional[u_converters.parse_int] = commands.parameter(description = "The amount of dough to use."),
+            stonk: typing.Optional[u_values.StonkConverter] = commands.parameter(description = "The stonk to use. If nothing is provided it'll use whatever stonk is closest to the goal."),
+            user: typing.Optional[discord.Member] = commands.parameter(description = "Optional user to generate a gift command for.")
+        ):
+        ctx = u_custom.CustomContext(ctx)
+
+        if dough is None:
+            await ctx.reply("You must provide the amount of dough to use.")
+            return
+        
+        if stonk is None:
+            distance = {stonk: dough % stonk.value() for stonk in u_values.stonks}
+            stonk = min(distance, key=distance.get)
+        
+        invest_amount = dough // stonk.value()
+        
+        gift_command = ""
+
+        if user is not None:
+            gift_command = "\n$bread gift {} {} {}".format(user.id, u_text.smart_number(invest_amount), stonk.internal_emoji)
+        
+        embed = u_interface.embed(
+            title = "Stonk gifting",
+            description = "By investing in **{} {}** you would have {} dough remaining.".format(u_text.smart_number(invest_amount), stonk.internal_emoji, u_text.smart_number(dough - (invest_amount * stonk.value()))),
+            fields = [("Commands", "$bread invest {} {} {}".format(u_text.smart_number(invest_amount), stonk.internal_emoji, gift_command), True)],
+            footer_text = "On mobile, you can tap and hold on the Commands section's text to copy it."
+        )
+        await ctx.reply(embed=embed)
+
 
 
 
