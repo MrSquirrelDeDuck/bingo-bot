@@ -621,7 +621,7 @@ class Bread_cog(u_custom.CustomCog, name="Bread"):
                     if stonk not in attempted_parse["stats"]:
                         continue
 
-                    dough += stonk.value * attempted_parse["stats"][stonk]
+                    dough += stonk.value() * attempted_parse["stats"][stonk]
         
         SYNTAX = "Syntax: `%bread loaf_converter dough <amount of dough you have> <the current number of lcs> <scy level>`. You can reply to a stats message to automatically parse the stats, if this is done the amount of dough will be determinized, but an amount of dough can still be provided."
         
@@ -1086,10 +1086,10 @@ class Bread_cog(u_custom.CustomCog, name="Bread"):
             return
         
         if stonk is None:
-            distance = {stonk: dough % stonk.value for stonk in u_values.stonks}
+            distance = {stonk: dough % stonk.value() for stonk in u_values.stonks}
             stonk = min(distance, key=distance.get)
         
-        invest_amount = dough // stonk.value
+        invest_amount = dough // stonk.value()
         
         gift_command = ""
 

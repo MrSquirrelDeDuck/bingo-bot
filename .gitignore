@@ -166,3 +166,5 @@ images/generated/
 data/
 
 patch_notes.txt
+
+algorithms.py

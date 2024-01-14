@@ -17,8 +17,9 @@ import utility.text as u_text
 import utility.files as u_files
 import utility.custom as u_custom
 import utility.images as u_images
+import utility.algorithms as u_algorithms
 
-class Stonk_cog(u_custom.CustomCog, name="Stonks"):
+class Stonk_cog(u_custom.CustomCog, name="Stonk"):
 
     @commands.group(
         name = "stonks",
@@ -717,28 +718,24 @@ class Stonk_cog(u_custom.CustomCog, name="Stonks"):
 
         values = []
 
-        total_splits = 0
-
         previous_tick = None
         for tick_id, tick_data in enumerate(stonk_history[start:end]):
             if previous_tick is not None:
-                for stonk in previous_tick:
-                    if not (tick_data[stonk] / previous_tick[stonk] < 0.85):
+                split_filter = u_stonks.filter_splits(u_stonks.convert_tick(previous_tick), u_stonks.convert_tick(tick_data))
+                previous_tick = split_filter["new"]
+
+                for stonk in split_filter["split_amounts"]:
+                    if split_filter["split_amounts"][stonk] == 0:
                         continue
 
-                    for i in range(50):
-                        total_splits += 1
-                        previous_tick[stonk] /= 2
-                        portfolio[u_values.get_item(stonk)] *= 2
-                        if not tick_data[stonk] / previous_tick[stonk] < 0.85:
-                            break
+                    portfolio[stonk] *= 2 ** split_filter["split_amounts"][stonk]
 
             values.append((tick_id + start, sum_portfolio(portfolio, tick_data)))
             previous_tick = tick_data
 
         file_name = u_images.generate_graph(
             lines = [{
-                "label": "Portfolio", # Underscore at the start to not put it in the legend.
+                "label": "Portfolio",
                 "color": "#1f77b4",
                 "values": values
             }],
@@ -747,9 +744,292 @@ class Stonk_cog(u_custom.CustomCog, name="Stonks"):
         )
 
         await ctx.reply(file=discord.File(file_name))
+    
 
+
+
+
+
+    
+    ######################################################################################################################################################
+    ##### STONK ALGORITHM ################################################################################################################################
+    ######################################################################################################################################################
+
+    @stonk.group(
+        name = "algorithms",
+        aliases = ["algorithm", "algo", "algos"],
+        description = "Algorithms that try to make as much dough as they can.",
+        brief = "Algorithms that try to make as much dough as they can.",
+        invoke_without_command = True,
+        pass_context = True
+    )
+    async def stonk_algorithms(self, ctx):
+        ctx = u_custom.CustomContext(ctx)
         
+        if ctx.invoked_subcommand is not None:
+            return
+        
+        await ctx.send_help(self.stonk_algorithms)
+    
 
+
+
+
+
+    
+    ######################################################################################################################################################
+    ##### STONK ALGORITHM STATS ##########################################################################################################################
+    ######################################################################################################################################################
+
+    @stonk_algorithms.command(
+        name = "stats",
+        aliases = ["portfolio"],
+        description = "Get the stats of an algorithm.",
+        brief = "Get the stats of an algorithm."
+    )
+    async def stonk_algorithm_stats(self, ctx,
+            algorithm_name: typing.Optional[u_algorithms.AlgorithmConverter] = commands.parameter(description = "The name of the algorithm you want to get the stats of.")
+        ):
+        ctx = u_custom.CustomContext(ctx)
+
+        if algorithm_name is None:
+            algorithm_list = u_algorithms.all_live_algorithms()
+            embed = u_interface.embed(
+                title = "Stonk algorithm list",
+                description = "Here's a list of algorithms:\n\n" + ", ".join(algorithm_list) + "\n\nUse `%stonk algorithm stats <name>` to get a specific algorithm's portfolio."
+            )
+            await ctx.reply(embed=embed)
+            return
+        
+        algorithms = u_algorithms.StonkAlgorithms()
+
+        algorithm_info = u_algorithms.get_info(algorithm_name=algorithm_name, algorithms=algorithms)
+
+        title = algorithm_name.replace("_", " ").title()
+
+        converted_current = u_stonks.convert_tick(algorithm_info["data"]["current_portfolio"]["portfolio"])
+
+        portfolio_section = ["{} -- {}, worth **{} dough**".format(stonk, u_text.smart_text(converted_current[stonk], 'stonk'), u_text.smart_number(converted_current[stonk] * algorithms.current[stonk.internal_name])) for stonk in u_values.stonks]
+
+        embed = u_interface.embed(
+            title = "Stonk algorithm {}:".format(title),
+            description = "*Created by {}*\n\nDough -- **{} dough**\n{}\nIn total, {} has **{} dough**, and in the last tick it's portfolio changed by **{} dough**.".format(
+                algorithm_info["creator"],
+                u_text.smart_number(algorithm_info["data"]["current_portfolio"]["extra_dough"]),
+                "\n".join(portfolio_section),
+                title,
+                u_text.smart_number(algorithm_info["data"]["current_total"]),
+                u_text.smart_number(algorithm_info["data"]["dough_difference"])
+                ),
+            fields = [
+                ("", algorithm_info["description"], False)
+            ]
+        )
+
+        await ctx.reply(embed=embed)
+    
+
+
+
+
+
+    
+    ######################################################################################################################################################
+    ##### STONK ALGORITHM RANDOM #########################################################################################################################
+    ######################################################################################################################################################
+
+    @stonk_algorithms.command(
+        name = "random",
+        description = "Chooses a random algorithm.",
+        brief = "Chooses a random algorithm."
+    )
+    async def stonk_algorithm_random(self, ctx):
+        algorithm_list = u_algorithms.all_live_algorithms()
+        await self.stonk_algorithm_stats(ctx, algorithm_name=random.choice(algorithm_list))
+    
+
+
+
+
+
+    
+    ######################################################################################################################################################
+    ##### STONK ALGORITHM LEADERBOARD ####################################################################################################################
+    ######################################################################################################################################################
+
+    @stonk_algorithms.command(
+        name = "leaderboard",
+        aliases = ["lb"],
+        description = "Leaderboards for algorithms.",
+        brief = "Leaderboards for algorithms."
+    )
+    async def stonk_algorithm_leaderboard(self, ctx,
+            algorithm_name: typing.Optional[u_algorithms.AlgorithmConverter] = commands.parameter(description = "The name of the algorithm you want to get the stats of.")                    
+        ):
+        ctx = u_custom.CustomContext(ctx)
+        
+        def check(algorithm_info):
+            return algorithm_info["data"]["current_total"]
+        
+        sorted_list = u_algorithms.get_leaderboard(check)
+
+        highlight_point = -5
+
+        if algorithm_name is not None:
+            highlight_point = [index for index, item in enumerate(sorted_list) if item[0] == algorithm_name][0]
+        
+        lines = []
+        
+        previous = -1
+        algorithms_shown = 0
+        for index, data in enumerate(sorted_list):
+            if not(index <= 9 or abs(index - highlight_point) <= 2):
+                continue
+
+            if abs(index - previous) >= 2:
+                lines.append("")
+
+            previous = index
+
+            name, value = data
+
+            highlight = ""
+            if name == algorithm_name:
+                highlight = "**"
+            
+            title = name.replace("_", " ").title()
+
+            lines.append("{}. {}{}: {}{}".format(index + 1, highlight, title, value, highlight))
+
+            algorithms_shown += 1
+        
+        embed = u_interface.embed(
+            title = "Algorithm leaderboard",
+            description = "*Showing {} of {} algorithms.*".format(algorithms_shown, len(sorted_list)),
+            fields = [
+                ("", "\n".join(lines), False)
+            ]
+        )
+        await ctx.reply(embed=embed)
+    
+
+
+
+
+
+    
+    ######################################################################################################################################################
+    ##### STONK ALGORITHM GRAPH ##########################################################################################################################
+    ######################################################################################################################################################
+
+    @stonk_algorithms.command(
+        name = "graph",
+        description = "Graphs of algorithm performances.",
+        brief = "Graphs of algorithm performances."
+    )
+    async def stonk_algorithm_graph(self, ctx,
+            *, parameters: typing.Optional[str] = commands.parameter(description = "The parameters to use. See above for more information.")
+        ):
+        ctx = u_custom.CustomContext(ctx)
+
+        current_tick = u_stonks.current_tick_number()
+
+        all_algorithms = u_algorithms.all_live_algorithms()
+
+        log_scale = False
+        start_tick = 2000
+        end_tick = current_tick
+        algorithms = []
+        
+        if parameters is None:
+            algorithms = copy.deepcopy(u_algorithms.all_live_algorithms(filter_list=["hide_graph"]))
+        else:
+            parameters = parameters.split(" ")
+
+            negated = []
+
+            for param_id, param in enumerate(parameters):
+                if param == "all":
+                    algorithms = copy.deepcopy(u_algorithms.all_live_algorithms(filter_list=["hide_graph"]))
+                    continue
+
+                if param == "log":
+                    log_scale = True
+                    continue
+
+                if param == "start":
+                    if param_id == len(parameters) - 1:
+                        continue # "start" is not going to be the name of a stonk algorithm, and does not start with an exclamation mark.
+                    
+                    if u_converters.is_digit(parameters[param_id + 1]):
+                        start_tick = u_converters.parse_int(parameters[param_id + 1])
+
+                    continue
+
+                if param == "end":
+                    if param_id == len(parameters) - 1:
+                        continue # "end" is not going to be the name of a stonk algorithm, and does not start with an exclamation mark.
+                    
+                    if u_converters.is_digit(parameters[param_id + 1]):
+                        end_tick = u_converters.parse_int(parameters[param_id + 1])
+
+                    continue
+                
+                if param.startswith("!"):
+                    param = param.replace("!", "", 1)
+                    modify = negated # Set "modify" to a reference to "negated".
+                else:
+                    modify = algorithms # Set "modify" to a reference to "algorithms".
+
+                if param in all_algorithms:
+                    if param not in modify:
+                        modify.append(param)
+                    continue
+            
+            if len(algorithms) == 0:
+                algorithms = copy.deepcopy(u_algorithms.all_live_algorithms(filter_list=["hide_graph"]))
+            
+            for algorithm in negated:
+                if algorithms in algorithms:
+                    algorithms.remove(algorithm)
+        
+        if end_tick <= start_tick:
+            await ctx.reply("The end must be before the start.")
+            return
+        
+        if start_tick < 2000:
+            await ctx.reply("The start must be tick 2,000 or later.")
+            return
+        
+        start_tick = max(start_tick, 2000)
+        end_tick = min(end_tick, current_tick)
+
+        stonk_history = u_stonks.stonk_history()
+
+        lines = []
+
+        for algorithm in algorithms:
+            portfolio_history = u_algorithms.get_portfolio_history(algorithm)
+            algoirthm_function = u_algorithms.get_algorithm(algorithm)["func"]
+
+            values = []
+            for tick, portfolio in enumerate(portfolio_history[start_tick - 2000 + 1: end_tick - 2000 + 1]):
+                values.append((tick + start_tick + 1, u_algorithms.dough_sum(portfolio, stonk_history[tick + start_tick + 1])))
+            
+            lines.append({
+                "label": algorithm.replace("_", " ").title(),
+                "color": algoirthm_function.color,
+                "values": values
+            })
+        
+        file_name = u_images.generate_graph(
+            lines = lines,
+            x_label = "Tick number",
+            y_label = "Algorithm net worth",
+            log_scale = log_scale
+        )
+
+        await ctx.reply(file=discord.File(file_name))
 
 
 

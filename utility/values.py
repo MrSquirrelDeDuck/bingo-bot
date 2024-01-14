@@ -5,11 +5,6 @@ This is essentially a modified copy of values.py from Machine-Mind"""
 import typing
 from discord.ext import commands
 
-import utility.stonks as u_stonks
-
-import importlib
-
-importlib.reload(u_stonks)
 
 class Item:
     def __init__(self: typing.Self,
@@ -96,9 +91,11 @@ class StonkItem(Item):
         self.base_value = base_value
         self.graph_color = graph_color
 
-        current_values = u_stonks.current_values()
 
-        self.value = current_values.get(self.internal_name)
+    def value(self) -> int:
+        """Returns this stonk's current value."""
+        current_values = u_stonks.current_values()
+        return current_values.get(self.internal_name)
 
 class ChessItem(Item):
     def __init__(self: typing.Self,
@@ -581,6 +578,9 @@ def get_item(item_identifier: str, attributes: typing.Union[str, list[str]] = No
     """Attempts to get an item from a string. Returns None if no item is found.
     
     If an attribute (or multiples attributes) is provided the item must fall into one or more of the provided attributes."""
+
+    if isinstance(item_identifier, Item):
+        return item_identifier
 
     item_identifier = item_identifier.lower()
     
@@ -1116,3 +1116,10 @@ gambit_shop_items = {
         "official_name": "Gold Ring"
     }
 }
+
+# Imports down here to avoid circular imports.
+import utility.stonks as u_stonks
+
+import importlib
+
+importlib.reload(u_stonks)

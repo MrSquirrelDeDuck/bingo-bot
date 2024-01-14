@@ -1,4 +1,4 @@
-"""This is a bunch of converters that can be used in places to check for stuff.
+"""This is a bunch of general converters that can be used in places to check for stuff. There are other, more specific converters in other utility files.
 The primary use is in command parameters via typing.Optional, however it can also be used to parse integers that contain commas."""
 
 import utility.text as u_text
