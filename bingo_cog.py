@@ -162,7 +162,7 @@ class Bingo_cog(u_custom.CustomCog, name="Bingo", description="Commands for runn
     )
     async def objective_search(self, ctx,
             board: typing.Optional[str] = commands.parameter(description = "Which board to use, 'daily' or 'weekly'."),
-            search: typing.Optional[str] = commands.parameter(description = "The text to search for.")
+            *, search: typing.Optional[str] = commands.parameter(description = "The text to search for.")
         ):
         ctx = u_custom.CustomContext(ctx)
 
@@ -170,9 +170,7 @@ class Bingo_cog(u_custom.CustomCog, name="Bingo", description="Commands for runn
             await ctx.reply("You must specify what set of objectives you want. `daily` and `weekly` are the current options.")
             return
 
-        search = u_text.after_parameter(ctx, board)
-
-        if search in ["", None]:
+        if search is None:
             await ctx.reply("You must provide a search term.")
             return
         
@@ -571,7 +569,7 @@ class Bingo_cog(u_custom.CustomCog, name="Bingo", description="Commands for runn
         brief = "Get information about the current board.",
         description = "Get information about the current board."
     )
-    async def daily_stats(self, ctx,
+    async def weekly_stats(self, ctx,
             page: typing.Optional[int] = commands.parameter(description = "An integer for what page to use.", displayed_default = 1)
         ):
         ctx = u_custom.CustomContext(ctx)
