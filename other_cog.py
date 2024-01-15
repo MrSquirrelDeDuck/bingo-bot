@@ -58,6 +58,32 @@ class Other_cog(u_custom.CustomCog, name="Other", description="Commands that don
             return await ctx.reply("I will not ping anyone.")
         
         return await ctx.reply(translated)
+    
+    async def _cipher_wikipedia(self: typing.Self, ctx: typing.Union[commands.Context, u_custom.CustomContext], cipher_function: typing.Callable) -> discord.Message:
+        """Does all the logic required for the cipher Wikipedia messages.
+
+        Args:
+            ctx (typing.Union[commands.Context, u_custom.CustomContext]): The context.
+            cipher_function (typing.Callable): The function that will be called.
+
+        Returns:
+            discord.Message: The sent message
+        """
+        
+        page = wikipedia.page(wikipedia.random(pages=1))
+        page_content = page.content.split("\n")[0]
+
+        if len(page_content) >= 1000:
+            page_content = page_content.split(".")[0]
+
+        title = cipher_function(page.title)
+        page_content = cipher_function(page_content)
+
+        embed = u_interface.embed(
+            title = title,
+            description = page_content
+        )
+        await ctx.reply(embed=embed)
 
     ######################################################################################################################################################
     ##### AVATAR #########################################################################################################################################
@@ -320,20 +346,7 @@ class Other_cog(u_custom.CustomCog, name="Other", description="Commands that don
         if ctx.invoked_subcommand is not None:
             return
         
-        page = wikipedia.page(wikipedia.random(pages=1))
-        page_content = page.content.split("\n")[0]
-
-        if len(page_content) >= 1000:
-            page_content = page_content.split(".")[0]
-
-        title = u_ciphers.ewr_encode(page.title)
-        page_content = u_ciphers.ewr_encode(page_content)
-
-        embed = u_interface.embed(
-            title = title,
-            description = page_content
-        )
-        await ctx.reply(embed=embed)
+        await self._cipher_wikipedia(ctx, u_ciphers.ewr_encode)
 
     @ewr.command(
         name = "encode",
@@ -380,20 +393,7 @@ class Other_cog(u_custom.CustomCog, name="Other", description="Commands that don
         if ctx.invoked_subcommand is not None:
             return
         
-        page = wikipedia.page(wikipedia.random(pages=1))
-        page_content = page.content.split("\n")[0]
-
-        if len(page_content) >= 1000:
-            page_content = page_content.split(".")[0]
-
-        title = u_ciphers.fdg_encode(page.title)
-        page_content = u_ciphers.fdg_encode(page_content)
-
-        embed = u_interface.embed(
-            title = title,
-            description = page_content
-        )
-        await ctx.reply(embed=embed)
+        await self._cipher_wikipedia(ctx, u_ciphers.fdg_encode)
 
     @fdg.command(
         name = "encode",
@@ -441,21 +441,13 @@ class Other_cog(u_custom.CustomCog, name="Other", description="Commands that don
 
         if ctx.invoked_subcommand is not None:
             return
-        
-        page = wikipedia.page(wikipedia.random(pages=1))
-        page_content = page.content.split("\n")[0]
 
-        if len(page_content) >= 1000:
-            page_content = page_content.split(".")[0]
+        func = u_ciphers.fake_r_circle_section_encode
 
-        title = u_ciphers.r_circle_section_encode(page.title)
-        page_content = u_ciphers.r_circle_section_encode(page_content)
+        if hasattr(ctx.guild, "id") and ctx.guild.id in [1101194105041719468, 1105943535804493955]:
+            func = u_ciphers.r_circle_section_encode
 
-        embed = u_interface.embed(
-            title = title,
-            description = page_content
-        )
-        await ctx.reply(embed=embed)
+        await self._cipher_wikipedia(ctx, func)
 
     @r_circle_section.command(
         name = "encode",
