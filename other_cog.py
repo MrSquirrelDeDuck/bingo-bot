@@ -9,15 +9,18 @@ import copy
 import re
 import aiohttp
 import traceback
+import time
 
 import sys
 
 import utility.custom as u_custom
 import utility.ciphers as u_ciphers
+import utility.checks as u_checks
 import utility.converters as u_converters
 import utility.interface as u_interface
 import utility.text as u_text
 import utility.bread as u_bread
+import utility.bingo as u_bingo
 
 class Other_cog(u_custom.CustomCog, name="Other", description="Commands that don't fit elsewhere, and are kind of silly."):
     bot = None
@@ -55,6 +58,105 @@ class Other_cog(u_custom.CustomCog, name="Other", description="Commands that don
         # Send the url.
         await ctx.reply(avatar_url)
 
+        
+            
+
+        
+    ######################################################################################################################################################
+    ##### SAY ############################################################################################################################################
+    ######################################################################################################################################################
+    
+    @commands.command(
+        name = "say",
+        brief = "Use wisely, and follow the rules.",
+        description = "Use wisely, and follow the rules."
+    )
+    async def say(self, ctx,
+            *, message: typing.Optional[str] = commands.parameter(description = "What you want me to say.")
+        ):
+        ctx = u_custom.CustomContext(ctx)
+
+        if message is None:
+            await ctx.reply("||\n||")
+            return
+        
+        bingo_data = u_bingo.live()
+        
+        # Rules list:
+        # Must start with a capital letter.
+        # Must end in a punctuation mark.
+        # Must contain at least 1 number.
+        # Must have the digits sum to a prime number.
+        # Must contain at least 1 chess move in algebraic chess notation.
+        # Must contain a number in the fibbonachi sequence that's between 100 and 1,000.
+        # Must contain the first 7 digits of pi (after the decimal place).
+        # Must contain the objective id of the objective in the top left of the daily board (3 characters)
+        # Must contain the number of completed objectives on the weekly board.
+
+        if not message[0].isupper():
+            await ctx.reply("Please use proper capitalization.")
+            return
+
+        if not message[-1] in ".?!":
+            await ctx.reply("Please use proper grammar.")
+            return
+
+        if not any([digit in message for digit in "0123456789"]):
+            await ctx.reply("Please include at least one digit.")
+            return
+        
+        if not u_checks.is_prime(sum([int(i) for i in list(str(u_text.return_numeric(message)))])):
+            await ctx.reply("Please have the numbers in the message sum to a prime number.")
+            return
+        
+        if len(re.findall("([BNRQK]?([a-h]|[1-8])?x?[a-h][1-8](=[BNRQ])?(\+\+?|#)?)|(O-O(-O)?(\+\+?|#)?)", message)) == 0:
+            await ctx.reply("Please include at least one Chess move in algebraic notation.")
+            return
+        
+        if not str(bingo_data["daily_board_id"]) in message:
+            await ctx.reply("Please include the board number of today's bingo board.")
+            return
+
+        if not any([digit in message for digit in ["144", "233", "377", "610", "987"]]):
+            await ctx.reply("Please include at least one number between 100 and 1,000 that's in the Fibonacci sequence.")
+            return
+        
+        if not "3.1415926" in message:
+            await ctx.reply("Please include the first seven digits of pi in your message.")
+            return
+        
+        if not bingo_data["daily_tile_string"][0:3] in message:
+            await ctx.reply("Please include the 3 character objective id of the objective in the top left of today's bingo board.")
+            return
+        
+        if not str((int(time.time()) // 3600 + 1) * 3600) in message:
+            await ctx.reply("Please include the Unix Timestamp of the change of the next hour.")
+            return
+        
+        if not str(sum(u_bingo.decompile_enabled(bingo_data["weekly_enabled"], 9))) in message:
+            await ctx.reply("Please include the amount of objectives completed on this week's bingo board.")
+            return
+        
+        if u_text.has_ping(message):
+            await ctx.reply("Please remove all pings from your message.")
+            return
+        
+        if random.randint(1, 10) == 1:
+            await ctx.reply("Hmm, that's a weird message.")
+            return
+        
+        print("Executing say command for {} with text: {}".format(message.author, message))
+        await ctx.send(message)
+
+        try:
+            await ctx.message.delete()
+        except discord.Forbidden:
+            # Missing permissions to delete the command message, oh well.
+            pass
+    
+
+
+        
         
             
 
