@@ -28,6 +28,38 @@ class Other_cog(u_custom.CustomCog, name="Other", description="Commands that don
     minecraft_wiki_searching = False
     
     ######################################################################################################################################################
+    ##### UTILITY FUNCTIONS ##############################################################################################################################
+    ######################################################################################################################################################
+
+    async def _cipher_translate(self: typing.Self, ctx: typing.Union[commands.Context, u_custom.CustomContext], cipher_function: typing.Callable, text: str, translation_type: str) -> discord.Message:
+        """Does all the logic required to translate a piece of text with a cipher. Returns the sent message.
+
+        Args:
+            ctx (typing.Union[discord.Context, u_custom.CustomContext]): The context object.
+            cipher_function (typing.Callable): The function that will be called.
+            text (str): The text to translate.
+            translation_type (str): String for what type of translation this is, "encode" or "decode"
+
+        Returns:
+            discord.Message: The sent message.
+        """
+        if u_interface.is_reply(ctx.message):
+            text = ctx.message.reference.resolved.content
+        
+        if text is None or len(text) == 0:
+            return await ctx.reply("I don't see anything to {} and unfortunately will not {} embeds.".format(translation_type, translation_type))
+        
+        translated = cipher_function(text)
+
+        if len(translated) >= 2000:
+            return await ctx.reply("Unfortunately that is simply to long to {}.".format(translation_type))
+        
+        if u_text.has_ping(translated):
+            return await ctx.reply("I will not ping anyone.")
+        
+        return await ctx.reply(translated)
+
+    ######################################################################################################################################################
     ##### AVATAR #########################################################################################################################################
     ######################################################################################################################################################
 
@@ -275,13 +307,18 @@ class Other_cog(u_custom.CustomCog, name="Other", description="Commands that don
     ##### EWR ############################################################################################################################################
     ######################################################################################################################################################
     
-    @commands.command(
+    @commands.group(
         name = "ewr",
         brief = "Siwa ainwrgubf qurg rgw wqe xuogwe.",
-        description = "Siwa ainwrgubf qurg rgw wqe xuogwe."
+        description = "Siwa ainwrgubf qurg rgw wqe xuogwe.",
+        invoke_without_command = True,
+        pass_context = True
     )
     async def ewr(self, ctx):
         ctx = u_custom.CustomContext(ctx)
+
+        if ctx.invoked_subcommand is not None:
+            return
         
         page = wikipedia.page(wikipedia.random(pages=1))
         page_content = page.content.split("\n")[0]
@@ -297,6 +334,162 @@ class Other_cog(u_custom.CustomCog, name="Other", description="Commands that don
             description = page_content
         )
         await ctx.reply(embed=embed)
+
+    @ewr.command(
+        name = "encode",
+        brief = "Wbxisw rwzr ubri rgw wqe xuogwe.",
+        description = "Wbxisw rwzr ubri rgw wqe xuogwe.",
+    )
+    async def ewr_encode(self, ctx,
+            *, text: typing.Optional[str] = commands.parameter(description = "Rgw rwzr ri wbxisw.", displayed_name = "rwzr")
+        ):
+        ctx = u_custom.CustomContext(ctx)
+
+        await self._cipher_translate(ctx, u_ciphers.ewr_encode, text, "encode")
+
+    @ewr.command(
+        name = "decode",
+        brief = "Decode text from the ewr cipher.",
+        description = "Decode text from the ewr cipher.",
+    )
+    async def ewr_decode(self, ctx,
+            *, text: typing.Optional[str] = commands.parameter(description = "The text to decode.")
+        ):
+        ctx = u_custom.CustomContext(ctx)
+        
+        await self._cipher_translate(ctx, u_ciphers.ewr_decode, text, "decode")
+
+        
+            
+
+        
+    ######################################################################################################################################################
+    ##### FDG ############################################################################################################################################
+    ######################################################################################################################################################
+    
+    @commands.group(
+        name = "fdg",
+        brief = "Cldx xludgnkyb skgn gnd vcb ekpndf.",
+        description = "Cldx xludgnkyb skgn gnd vcb ekpndf.",
+        invoke_without_command = True,
+        pass_context = True
+    )
+    async def fdg(self, ctx):
+        ctx = u_custom.CustomContext(ctx)
+
+        if ctx.invoked_subcommand is not None:
+            return
+        
+        page = wikipedia.page(wikipedia.random(pages=1))
+        page_content = page.content.split("\n")[0]
+
+        if len(page_content) >= 1000:
+            page_content = page_content.split(".")[0]
+
+        title = u_ciphers.fdg_encode(page.title)
+        page_content = u_ciphers.fdg_encode(page_content)
+
+        embed = u_interface.embed(
+            title = title,
+            description = page_content
+        )
+        await ctx.reply(embed=embed)
+
+    @fdg.command(
+        name = "encode",
+        brief = "Dyelcd gdwg kygl gnd vcb ekpndf.",
+        description = "Dyelcd gdwg kygl gnd vcb ekpndf.",
+    )
+    async def fdg_encode(self, ctx,
+            *, text: typing.Optional[str] = commands.parameter(description = "Gnd gdwg gl dyelcd.", displayed_name = "gdwg")
+        ):
+        ctx = u_custom.CustomContext(ctx)
+
+        await self._cipher_translate(ctx, u_ciphers.fdg_encode, text, "encode")
+
+    @fdg.command(
+        name = "decode",
+        brief = "Decode text from the fdg cipher.",
+        description = "Decode text from the fdg cipher.",
+    )
+    async def fdg_decode(self, ctx,
+            *, text: typing.Optional[str] = commands.parameter(description = "The text to decode.")
+        ):
+        ctx = u_custom.CustomContext(ctx)
+
+        await self._cipher_translate(ctx, u_ciphers.fdg_decode, text, "decode")
+
+        
+            
+
+        
+
+    ######################################################################################################################################################
+    ##### R○§ ############################################################################################################################################
+    ######################################################################################################################################################
+    
+    @commands.group(
+        name = "r○§",
+        aliases = ["rp5", "r_circle_section"],
+        brief = "Dd;{ ÷WJ0uh§°$ (GG3 tØ; $M5 ytpØ;?.",
+        description = "Dd;{ ÷WJ0uh§°$ (GG3 tØ; $M5 ytpØ;?.",
+        invoke_without_command = True,
+        pass_context = True
+    )
+    async def r_circle_section(self, ctx):
+        ctx = u_custom.CustomContext(ctx)
+
+        if ctx.invoked_subcommand is not None:
+            return
+        
+        page = wikipedia.page(wikipedia.random(pages=1))
+        page_content = page.content.split("\n")[0]
+
+        if len(page_content) >= 1000:
+            page_content = page_content.split(".")[0]
+
+        title = u_ciphers.r_circle_section_encode(page.title)
+        page_content = u_ciphers.r_circle_section_encode(page_content)
+
+        embed = u_interface.embed(
+            title = title,
+            description = page_content
+        )
+        await ctx.reply(embed=embed)
+
+    @r_circle_section.command(
+        name = "encode",
+        brief = "Ec':]X G08t }'^] G3p g@= VGM3pr.",
+        description = "Ec':]X G08t }'^] G3p g@= VGM3pr.",
+    )
+    async def r_circle_section_encode(self, ctx,
+            *, text: typing.Optional[str] = commands.parameter(description = "TØ; ^X>G uo ;'[]LB.", displayed_name = "t○b}")
+        ):
+        ctx = u_custom.CustomContext(ctx)
+
+        func = u_ciphers.fake_r_circle_section_encode
+
+        if hasattr(ctx.guild, "id") and ctx.guild.id in [1101194105041719468, 1105943535804493955]:
+            func = u_ciphers.r_circle_section_encode
+
+        await self._cipher_translate(ctx, func, text, "encode")
+
+    @r_circle_section.command(
+        name = "decode",
+        brief = "Decode text from the r○§ cipher.",
+        description = "Decode text from the r○§ cipher.",
+    )
+    async def r_circle_section_decode(self, ctx,
+            *, text: typing.Optional[str] = commands.parameter(description = "The text to decode.")
+        ):
+        ctx = u_custom.CustomContext(ctx)
+
+        func = u_ciphers.fake_r_circle_section_decode
+
+        if hasattr(ctx.guild, "id") and ctx.guild.id in [1101194105041719468, 1105943535804493955]:
+            func = u_ciphers.r_circle_section_decode
+
+        await self._cipher_translate(ctx, func, text, "decode")
 
         
             
