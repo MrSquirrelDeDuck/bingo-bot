@@ -5,6 +5,7 @@ from os.path import sep as SLASH
 import discord
 from discord.ext import commands
 import typing
+import math
 
 import utility.files as u_files
 import utility.custom as u_custom
@@ -30,6 +31,15 @@ def has_role(member: discord.Member, role_list: typing.Union[list[str], list[int
     
     return False
 
+def is_prime(number: int) -> bool:
+    if number <= 1:
+        return False
+    
+    for i in range(2, int(math.sqrt(number)) + 1):
+        if number % i == 0:
+            return False
+    
+    return True
 
 ##### COMMAND CHECKS #####
 
