@@ -899,7 +899,7 @@ class Stonk_cog(u_custom.CustomCog, name="Stonk", description="Commands for work
             
             title = name.replace("_", " ").title()
 
-            lines.append("{}. {}{}: {}{}".format(index + 1, highlight, title, value, highlight))
+            lines.append("{}. {}{}: {}{}".format(index + 1, highlight, title, u_text.smart_number(value), highlight))
 
             algorithms_shown += 1
         
@@ -908,7 +908,8 @@ class Stonk_cog(u_custom.CustomCog, name="Stonk", description="Commands for work
             description = "*Showing {} of {} algorithms.*".format(algorithms_shown, len(sorted_list)),
             fields = [
                 ("", "\n".join(lines), False)
-            ]
+            ],
+            footer_text = "You can use '%stonk algo <name>' to highlight a specific algorithm."
         )
         await ctx.reply(embed=embed)
     

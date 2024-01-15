@@ -52,6 +52,11 @@ def return_numeric(text: str) -> int:
     """Returns just all the numbers in a string as an integer, ignoring all other characters."""
     return int("".join([i for i in str(text) if i.isdigit()]))
 
+def return_alphanumeric(text: str) -> int:
+    """Returns just all the letters, numbers, spaces, dashes, and underscores in a string, ignoring all other characters."""
+    character_filter = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLNOPQRSTUVWXYZ0123456789-_ "
+    return "".join([i for i in str(text) if i in character_filter])
+
 def parse_wikitext(wikitext: str, wiki_link: str, page_title: str = None, return_sections: bool = False) -> typing.Union[str, dict[str, str]]:
     """Parses wikitext into something that can be sent in Discord.
 

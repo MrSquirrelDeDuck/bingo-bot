@@ -1,5 +1,6 @@
 from discord.ext import commands
 from scipy.stats import binom
+from fuzzywuzzy import fuzz
 import discord
 import typing
 import random
@@ -10,6 +11,8 @@ import re
 import aiohttp
 import traceback
 import time
+import datetime, pytz
+import cairosvg, chess, chess.svg
 
 import sys
 
@@ -21,11 +24,110 @@ import utility.interface as u_interface
 import utility.text as u_text
 import utility.bread as u_bread
 import utility.bingo as u_bingo
+import utility.files as u_files
+
+class TruthOrDare_Buttons(discord.ui.View):
+    def __init__(self, timeout=3600.0):
+        super().__init__(timeout=timeout)
+        self.state = None
+        self.interaction = None
+
+    @discord.ui.button(label='Truth', style=discord.ButtonStyle.green)
+    async def truth(self, interaction: discord.Interaction, button: discord.ui.Button):
+        self.state = "truth"
+        self.interaction = interaction
+        self.stop()
+
+    @discord.ui.button(label='Dare', style=discord.ButtonStyle.red)
+    async def dare(self, interaction: discord.Interaction, button: discord.ui.Button):
+        self.state = "dare"
+        self.interaction = interaction
+        self.stop()
+        
+    @discord.ui.button(label='Random', style=discord.ButtonStyle.blurple)
+    async def random(self, interaction: discord.Interaction, button: discord.ui.Button):
+        self.state = "random"
+        self.interaction = interaction
+        self.stop()
+
+class TruthOrDare_Buttons_Disabled(discord.ui.View):
+    def __init__(self, timeout=3600.0):
+        super().__init__(timeout=timeout)
+        self.state = None
+        self.interaction = None
+
+    @discord.ui.button(label='Truth', style=discord.ButtonStyle.green, disabled=True)
+    async def truth(self, interaction: discord.Interaction, button: discord.ui.Button):
+        self.stop()
+
+    @discord.ui.button(label='Dare', style=discord.ButtonStyle.red, disabled=True)
+    async def dare(self, interaction: discord.Interaction, button: discord.ui.Button):
+        self.stop()
+        
+    @discord.ui.button(label='Random', style=discord.ButtonStyle.blurple, disabled=True)
+    async def random(self, interaction: discord.Interaction, button: discord.ui.Button):
+        self.stop()
+
+async def send_truth_or_dare(ctx, type_input="truth", interaction=None):
+    prompt_type = None
+
+    if type_input == "random":
+        if random.randint(1, 2) == 1:
+            type_input = "truth"
+            prompt_type = "RANDOM: TRUTH"
+        else:
+            type_input = "dare"
+            prompt_type = "RANDOM: DARE"
+
+    prompts = u_files.load("data/truth_or_dare.json")
+    options = prompts[type_input]
+    if prompt_type is None:
+        prompt_type = type_input.upper()
+
+    if interaction is None:
+        author = ctx.author
+    else:
+        author = interaction.user
+
+    embed = u_interface.embed(
+        title = random.choice(options),
+        footer_text = f"Type: {prompt_type}",
+        author_name = f"Requested by {u_interface.get_display_name(author)}",
+        author_icon = author.display_avatar
+    )
+
+    buttons = TruthOrDare_Buttons()
+    
+    if interaction is not None:
+        try:
+            await interaction.response.send_message(embed=embed, view=buttons)
+        except:
+            await ctx.channel.send(embed=embed, view=buttons)
+    else:
+        await ctx.channel.send(embed=embed, view=buttons)
+
+    async def clear(message):
+        await message.edit(view = TruthOrDare_Buttons_Disabled())
+
+    await buttons.wait()
+
+    if buttons.state == "truth":
+        await clear(buttons.interaction.message)
+        await send_truth_or_dare(ctx, "truth", interaction=buttons.interaction)
+    elif buttons.state == "dare":
+        await clear(buttons.interaction.message)
+        await send_truth_or_dare(ctx, "dare", interaction=buttons.interaction)
+    elif buttons.state == "random":
+        await clear(buttons.interaction.message)
+        await send_truth_or_dare(ctx, "random", interaction=buttons.interaction)
 
 class Other_cog(u_custom.CustomCog, name="Other", description="Commands that don't fit elsewhere, and are kind of silly."):
     bot = None
 
     minecraft_wiki_searching = False
+    lichess_cooldown = 0
+
+    card_keys = card_keys = {'c1': '<a:ace_clubs:1122942670793363466>', 'd1': '<a:ace_diamonds:1122943540549386360>', 'h1': '<a:ace_hearts:1122943541379874838>', 's1': '<a:ace_spades:1122943543472820285>', 'c10': '<:10_clubs:1122941731319582720>', 'd10': '<:10_diamonds:1122941732728873041>', 'h10': '<:10_hearts:1122941734461112320>', 's10': '<:10_spades:1122941735190925496>', 'c2': '<:2_clubs:1122930420158312448>', 'd2': '<:2_diamonds:1122930421043318814>', 'h2': '<:2_hearts:1122930422934945932>', 's2': '<:2_spades:1122930424088379441>', 'c3': '<:3_clubs:1122930451246481458>', 'd5': '<:5_diamonds:1122930499887833160>', 'c5': '<:5_clubs:1122930498860220479>', 's4': '<:4_spades:1122930475414065185>', 'h4': '<:4_hearts:1122930474214510703>', 'd4': '<:4_diamonds:1122930471878271198>', 'c4': '<:4_clubs:1122930470653526066>', 's3': '<:3_spades:1122930454878769283>', 'h3': '<:3_hearts:1122930454044094484>', 'd3': '<:3_diamonds:1122930452416700548>', 'h5': '<:5_hearts:1122930501230006302>', 's5': '<:5_spades:1122930502458953889>', 'c6': '<:6_clubs:1122930520041455666>', 'd6': '<:6_diamonds:1122930521446567936>', 'h6': '<:6_hearts:1122930523145261167>', 's6': '<:6_spades:1122930524072198154>', 'c7': '<:7_clubs:1122930541327560752>', 'd7': '<:7_diamonds:1122930543139487814>', 'h7': '<:7_hearts:1122930544087408660>', 's9': '<:9_spades:1122941711438589952>', 'h9': '<:9_hearts:1122941710473904168>', 'd9': '<:9_diamonds:1122941709169463387>', 'c9': '<:9_clubs:1122941708125081762>', 's8': '<:8_spades:1122941690697748510>', 'h8': '<:8_hearts:1122941689271701664>', 'd8': '<:8_diamonds:1122930562777239674>', 'c8': '<:8_clubs:1122930561133072555>', 's7': '<:7_spades:1122930545043722342>', 'c11': '<:jack_clubs:1122941753759125525>', 'd11': '<:jack_diamonds:1122941755776569464>', 'h11': '<:jack_hearts:1122941756841926757>', 's11': '<:jack_spades:1122941757856952350>', 's12': '<:queen_spades:1122941804036239553>', 'h12': '<:queen_hearts:1122941803272884334>', 'd12': '<:queen_diamonds:1122941802442407936>', 'c12': '<:queen_clubs:1122941800722726992>', 's13': '<:king_spades:1122941784465608724>', 'h13': '<:king_hearts:1123679597188354208>', 'd13': '<:king_diamonds:1122941782028734484>', 'c13': '<:king_clubs:1122941779776381028>'}
     
     ######################################################################################################################################################
     ##### UTILITY FUNCTIONS ##############################################################################################################################
@@ -203,7 +305,7 @@ class Other_cog(u_custom.CustomCog, name="Other", description="Commands that don
             await ctx.reply("Hmm, that's a weird message.")
             return
         
-        print("Executing say command for {} with text: {}".format(message.author, message))
+        print("Executing say command for {} with text: {}".format(ctx.message.author, message))
         await ctx.send(message)
 
         try:
@@ -212,6 +314,47 @@ class Other_cog(u_custom.CustomCog, name="Other", description="Commands that don
             # Missing permissions to delete the command message, oh well.
             pass
     
+
+
+        
+        
+            
+
+        
+    ######################################################################################################################################################
+    ##### CARD ###########################################################################################################################################
+    ######################################################################################################################################################
+    
+    @commands.group(
+        name = "card",
+        brief = "Take a card, any card.",
+        description = "Take a card, any card.",
+        invoke_without_command = True,
+        pass_context = True
+    )
+    async def card_command(self, ctx,
+            card: typing.Optional[str] = commands.parameter(description = "The key of the card.")
+        ):
+        ctx = u_custom.CustomContext(ctx)
+        
+        if ctx.invoked_subcommand is not None:
+            return
+        
+        if card not in self.card_keys:
+            await ctx.reply("https://cdn.discordapp.com/attachments/1032117556154204180/1122750787588730890/image.png")
+            return
+        
+        await ctx.reply(self.card_keys[card])
+        
+    @card_command.command(
+        name = "random",
+        brief = "A random card, because why not?",
+        description = "A random card, because why not?"
+    )
+    async def card_random(self, ctx):
+        ctx = u_custom.CustomContext(ctx)
+        
+        await ctx.reply(self.card_keys[random.choice(list(self.card_keys.keys()))])
 
 
         
@@ -770,6 +913,326 @@ class Other_cog(u_custom.CustomCog, name="Other", description="Commands that don
     async def flip_coin(self, ctx):
         ctx = u_custom.CustomContext(ctx)
         await ctx.reply(random.choice(["Heads.","Tails."]))
+
+        
+            
+
+        
+    ######################################################################################################################################################
+    ##### WEEKDAY ########################################################################################################################################
+    ######################################################################################################################################################
+    
+    @commands.command(
+        name = "weekday",
+        brief = "Tells you the current day of the week in EDT.",
+        description = "Tells you the current day of the week in EDT."
+    )
+    async def weekday(self, ctx):
+        ctx = u_custom.CustomContext(ctx)
+
+        await ctx.reply(datetime.datetime.today().astimezone(pytz.timezone("US/Eastern")).strftime('%A') + ".")
+
+        
+            
+
+        
+    ######################################################################################################################################################
+    ##### TRUTH OR DARE ##################################################################################################################################
+    ######################################################################################################################################################
+    
+    @commands.command(
+        name = "truth_or_dare",
+        brief = "Truth or dare?",
+        description = "Truth or dare?"
+    )
+    async def truth_or_dare(self, ctx):
+        ctx = u_custom.CustomContext(ctx)
+
+        await send_truth_or_dare(ctx, "random")
+    
+    @commands.command(
+        name = "truth",
+        brief = "The truth part of Truth or Dare.",
+        description = "The truth part of Truth or Dare."
+    )
+    async def truth(self, ctx):
+        ctx = u_custom.CustomContext(ctx)
+
+        await send_truth_or_dare(ctx, "truth")
+
+    @commands.command(
+        name = "dare",
+        brief = "The dare part of Truth or Dare.",
+        description = "The dare part of Truth or Dare."
+    )
+    async def dare(self, ctx):
+        ctx = u_custom.CustomContext(ctx)
+
+        await send_truth_or_dare(ctx, "dare")
+
+        
+            
+
+        
+    ######################################################################################################################################################
+    ##### ROLE LEADERBOARD ##########################################################################################################################################
+    ######################################################################################################################################################
+    
+    @commands.command(
+        name = "role_leaderboard",
+        brief = "A leaderboard for roles.",
+        description = "A leaderboard for roles."
+    )
+    async def role_leaderboard(self, ctx,
+            member: typing.Optional[discord.Member] = commands.parameter(description = "The member to view.")
+        ):
+        ctx = u_custom.CustomContext(ctx)
+
+        if member is None:
+            member = ctx.author
+
+        role_data = u_interface.get_role_list(ctx.guild)
+
+        prune_ids = [958920155025539132, 959220485672026142, 980602604847501362, 958920201557119036, 958920265792892938, 958920326006308914, 970619771374690345, 960928696368259113, 961216939198410792, 960928234273394689, 958737602859655178, 958737525139177492, 958737469635981362, 958737300236406905, 958737243885932564, 958736931246706698, 970574059727380520, 958736670323269742, 958736276415205436, 982060564077498418, 970550144477040650, 962130208700379216, 1118418774966665276, 1118415419125026857, 1118415313277558794, 1118415111124701184, 1138140416064102410, 1118415718065635329, 1118415622599098390, 1118415511752024105, 1177067611348008970, 1177067684744142888, 1177067733695864942, 975082724501098557, 959247044701216848, 1157009850455302234, 1119317224604307586, 958920124314816532, 970549665055522850, 1119445209923723396, 958512048306815056, 958755031820161025, 1023757953687363634]
+        prune_ids.append(ctx.guild.id)
+
+        role_counts = [
+            (
+                key,
+                len([role_id for role_id in role_data[key] if role_id not in prune_ids])
+            )
+            for key in role_data
+        ]
+
+        sorted_data = sorted(role_counts, key=lambda x: x[1], reverse=True)
+
+        target_location = 0
+        for i in range(len(sorted_data)):
+            if sorted_data[i][0] == member.id:
+                target_location = i
+                break
+
+        lines = []
+        last = 0
+        for index, data in enumerate(sorted_data):
+            if not (index <= 9 or abs(target_location - index) <= 3):
+                continue
+
+            if abs(last - index) >= 2:
+                lines.append("")
+            
+            bold = "**" if data[0] == member.id else ""
+            
+            iter_member = discord.utils.find(lambda m: m.id == data[0], ctx.guild.members)
+
+            display_name = u_interface.get_display_name(iter_member)
+            if u_text.has_ping(display_name):
+                display_name = iter_member.name
+
+            lines.append(f"{index + 1}. {bold}{display_name}: {data[1]}{bold}")
+            last = index
+        
+        embed = u_interface.embed(
+            title = "Role leaderboard",
+            description = "*This is excluding reaction roles.*",
+            fields = [("", "\n".join(lines), False)],
+            footer_text = "You can use '%role_leaderboard <user>' to highlight someone else."
+        )
+        
+        await ctx.reply(embed=embed)
+
+        
+            
+
+        
+    ######################################################################################################################################################
+    ##### LICHESS ########################################################################################################################################
+    ######################################################################################################################################################
+
+    @commands.command(
+        name = "lichess",
+        brief = "Get information about a Lichess tournament.",
+        description = "Get information about a Lichess tournament."
+    )
+    async def lichess(self, ctx,
+            tournament: typing.Optional[str] = commands.parameter(description = "The id of the tournament to look up.")
+        ):
+        ctx = u_custom.CustomContext(ctx)
+
+        if time.time() <= self.lichess_cooldown:
+            await ctx.reply("This command is on cooldown, please wait a minute before trying again.")
+            return
+        
+        if tournament is None:
+            # tournament = "winter23"
+            async with aiohttp.ClientSession() as session:
+                returned = await session.get(f"https://lichess.org/api/tournament")
+                await session.close()
+            tournament = (await returned.json())["started"][0]["id"]
+
+        async with aiohttp.ClientSession() as session:
+            returned = await session.get(f"https://lichess.org/api/tournament/{tournament}")
+            await session.close()
+        
+        if returned.status == 249:
+            self.lichess_cooldown = time.time() + 65
+            await ctx.reply("This command is on cooldown, please wait a minute before trying again.")
+            return
+        
+        if returned.status == 404:
+            await ctx.reply("That tournament does not exist.")
+            return
+        
+        if returned.status != 200:
+            await ctx.reply("Something went wrong in the request, make sure you have the tournament id correct.")
+            return
+        
+        ret_json = await returned.json()
+
+        time_control = ret_json["clock"]["limit"]
+
+        time_control /= 60
+
+        if time_control % 1 == 0:
+            time_control = int(time_control)
+        elif time_control == "0.25":
+            time_control = "¼"
+        elif time_control == "0.5":
+            time_control = "½"
+        elif time_control == "0.75":
+            time_control = "¾"
+
+        checkboxes = ["<:x_:1189696918645907598>", "<:check:1189696905077325894>"]
+
+        length_days = ret_json["minutes"] // 1440
+        length_hours = (ret_json["minutes"] % 1440) // 60
+        length_minutes = (ret_json["minutes"] % 1440) % 60
+
+        footer = None
+        if "quote" in ret_json:
+            footer = "\"{}\" - {}".format(ret_json["quote"]["text"], ret_json["quote"]["author"])
+        
+        finish_info = "Finished."
+
+        if "isFinished" in ret_json:
+            finish_info = "Finished."
+        elif "isStarted" in ret_json:
+            finish_info = f"In progress, ends <t:{int(time.time() + ret_json['secondsToFinish'])}:R>"
+        else:
+            finish_info = f"Hasn't started yet! Starts <t:{int(time.time() + ret_json['secondsToStart'])}:R>."
+
+        spotlight = ""
+        if "spotlight" in ret_json:
+            spotlight = f'*{ret_json["spotlight"]["headline"]}*'
+
+        description = ""
+        if "description" in ret_json:
+            description = f'*{ret_json["description"]}*'
+
+        fields = []
+
+        fields.append(
+            ("Game information:", f"Time control: {ret_json['perf']['name']} {time_control}+{ret_json['clock']['increment']}\nVariant: {ret_json['variant'].title()}\nRated: {checkboxes[ret_json['rated']]}\nBeserkable: {checkboxes[ret_json['berserkable']]}", True),
+        )
+        fields.append(
+            ("Leaderboard:", "\n".join(["**#{}:** [{}](<https://lichess.org/@/{}>) (*{}*) **{}** points.".format(player + 1, ret_json["standing"]["players"][player]["name"], ret_json["standing"]["players"][player]["name"], u_text.smart_number(ret_json["standing"]["players"][player]["rating"]), u_text.smart_number(ret_json["standing"]["players"][player]["score"])) for player in range(5)]), True)
+        )
+
+        image = None
+        image_file = None
+
+        if "isStarted" in ret_json:
+            # Game in progress.
+            board_fen = ret_json["featured"]["fen"]
+            last_move = ret_json["featured"]["lastMove"]
+
+            last_move = chess.Move(chess.parse_square(last_move[:2]), chess.parse_square(last_move[2:]))
+
+            board = chess.Board(board_fen)
+
+            board_svg = chess.svg.board(board, lastmove=last_move)
+
+            cairosvg.svg2png(bytestring=board_svg,write_to='images/chess_position.png')
+
+            fields.append(
+                ("Highlighted game:", f"White: {ret_json['featured']['white']['name']} (*{u_text.smart_number(ret_json['featured']['white']['rating'])}*)\nBlack: {ret_json['featured']['black']['name']} (*{u_text.smart_number(ret_json['featured']['black']['rating'])}*)", False)
+            )
+
+            image = "attachment://chess_position.png"
+            
+            image_file = discord.File("images/chess_position.png", filename="chess_position.png")
+
+        
+        embed = u_interface.embed(
+            title = ret_json["fullName"],
+            title_link = f"https://lichess.org/tournament/{tournament}",
+            description = "{}\n\n{}\n\nNumber of players: **{}**\n\nTournament status:\n{}\n\nTournament length: {} {} and {}\nTournament id: {}".format(
+                spotlight,
+                description,
+                u_text.smart_number(ret_json['nbPlayers']),
+                finish_info,
+                u_text.smart_text(length_days, "day"), u_text.smart_text(length_hours, "hour"), u_text.smart_text(length_minutes, "minute"),
+                ret_json["id"]
+            ),
+            fields = fields,
+            footer_text = footer,
+            image_link = image
+        )
+
+        await ctx.reply(embed = embed, file = image_file)
+        
+            
+
+        
+    ######################################################################################################################################################
+    ##### EMOJI ##########################################################################################################################################
+    ######################################################################################################################################################
+    
+    @commands.command(
+        name = "emoji",
+        brief = "Searches for an emoji, or gives an image.",
+        description = "If given a custom emoji, it will send the image for that emoji, otherwise it will search for whatever text is given."
+    )
+    async def emoji_command(self, ctx,
+            *, text: typing.Optional[str] = commands.parameter(description = "The emoji, or text to search for.")
+        ):
+        ctx = u_custom.CustomContext(ctx)
+
+        matched = re.search("<a?:\w+:(\d+)>", text)
+        
+        if matched is None:
+            await ctx.reply(await self._emoji_search(text))
+            return
+    
+        emoji_id = matched.group(1)
+        file_extension = "gif" if matched.group(0)[1] == "a" else "png"
+
+        embed = u_interface.embed(
+            title = "Emoji image",
+            image_link = f"https://cdn.discordapp.com/emojis/{emoji_id}.{file_extension}"
+        )
+        await ctx.reply(embed=embed)
+        
+
+
+    async def _emoji_search(self, text: str) -> str:
+        
+        def score_emoji(emoji_text: str) -> float:
+            return fuzz.partial_ratio(text.lower(), u_text.return_alphanumeric(emoji_text.lower()))
+        
+        emoji_list = [] # type: list[tuple[str, float]]
+
+        for guild in self.bot.guilds:
+            for emoji in guild.emojis:
+                emoji_list.append((str(emoji), score_emoji(emoji.name)))
+        
+        emoji_data = u_files.load("data/emoji_data.json")
+        for data in emoji_data:
+            emoji_list.append((data["text"], score_emoji(data["name"])))
+        
+        emoji_list = sorted(emoji_list, key=lambda x: x[1], reverse=True)
+
+        return " ".join([emoji_list[i][0] for i in range(25)])
 
         
             

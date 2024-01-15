@@ -182,7 +182,6 @@ class Bingo_cog(u_custom.CustomCog, name="Bingo", description="Commands for runn
                 name_similarity = fuzz.partial_ratio(search.lower(), objective_data.get("name", "").lower())
                 description_similarity = fuzz.partial_ratio(search.lower(), objective_data.get("description", "").lower())
 
-                # You can adjust the threshold based on your preferences
                 result.append((objective_data, objective_id, max(name_similarity, description_similarity)))
 
             return sorted(result, key=lambda x: x[2], reverse=True)

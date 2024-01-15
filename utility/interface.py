@@ -287,5 +287,13 @@ def resolve_conflict(message: discord.Message, stats_type: str, user_provided: l
     
     return user_provided
 
+def get_role_list(guild: discord.Guild) -> dict[str, list[int]]:
+    out = {}
+    for member in guild.members:
+        data = [role.id for role in member.roles]
+        out[member.id] = data
+    
+    return out
+
 
         
