@@ -4,6 +4,8 @@ from discord.ext import commands
 import dotenv
 import os
 
+import utility.custom as u_custom
+
 dotenv.load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
 COMMAND_PREFIX = os.getenv('COMMAND_PREFIX')
@@ -16,7 +18,7 @@ intents.presences = True
 intents.reactions = True
 
 
-bot = commands.Bot(
+bot = u_custom.CustomBot(
     command_prefix=COMMAND_PREFIX,
     intents=intents, 
     owner_id=OWNER_ID

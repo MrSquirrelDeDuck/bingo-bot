@@ -9,7 +9,10 @@ from discord.ext import commands
 import importlib
 import inspect
 
+import utility.text as u_text
 import utility.interface as u_interface
+
+everyone_prevention = discord.AllowedMentions(everyone=False)
 
 class CustomCog(commands.Cog):
     """Custom discord.ext.commands cog that is used by the cog files to allow for universal code."""
@@ -46,16 +49,29 @@ class CustomCog(commands.Cog):
         # Return True, since it has been reloaded in theory.
         return True
 
-class CustomContext(commands.Context):
-    """
-    This custom version of the commands.Context object automatically uses smart replies when using ctx.reply, and disables everyone and here pings for both ctx.reply and ctx.send.
-    """
-    def __init__(self, old_ctx: commands.Context) -> None:
-        self.__dict__.update(old_ctx.__dict__)
-        self._old_ctx = old_ctx
+class CustomContext(commands.Context):    
+    async def safe_reply(ctx, content: str = "", **kwargs) -> discord.Message:        
+        kwargs["allowed_mentions"] = everyone_prevention
 
+        return await super().reply(content, **kwargs)
+    
+    async def send(ctx, content: str = "", **kwargs) -> discord.Message:
+        kwargs["allowed_mentions"] = everyone_prevention
+
+        return await super().send(content, **kwargs)
+    
     async def reply(self, content: str = "", **kwargs) -> discord.Message:
-        return await u_interface.smart_reply(self._old_ctx, content, **kwargs)
+        try:
+            return await self.safe_reply(content, **kwargs)
+        except discord.HTTPException:
+            # If something went wrong replying.
+            if kwargs.get("mention_author", True):
+                return await self.send(f"{self.author.mention},\n\n{content}", **kwargs)
+            else:
+                return await self.send(f"{u_text.ping_filter(u_interface.get_display_name(self.author))},\n\n{content}", **kwargs)
 
-    async def send(self, content: str = "", **kwargs) -> discord.Message:
-        return await u_interface.safe_send(self._old_ctx, content, **kwargs)
+class CustomBot(commands.Bot):
+    async def get_context(self, message: discord.Message, *, cls=CustomContext):
+        return await super().get_context(message, cls=cls)
+
+

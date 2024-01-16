@@ -244,8 +244,6 @@ class Admin_cog(u_custom.CustomCog, name="Admin", description="Administration co
     )
     @commands.is_owner()
     async def admin(self, ctx):
-        ctx = u_custom.CustomContext(ctx)
-        
         await ctx.reply("You're missing a subcommand.")
 
     
@@ -263,8 +261,6 @@ class Admin_cog(u_custom.CustomCog, name="Admin", description="Administration co
     )
     @commands.check(u_checks.shutdown_check)
     async def admin_shutdown(self, ctx):
-        ctx = u_custom.CustomContext(ctx)
-
         letters = list("abcdefghijklmnopqrstuvwxyABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789")
         security_code = "".join(random.choice(letters) for i in range(16))
 
@@ -291,8 +287,6 @@ class Admin_cog(u_custom.CustomCog, name="Admin", description="Administration co
     )
     @commands.is_owner()
     async def admin_load(self, ctx, extension_name: typing.Optional[str]):
-        ctx = u_custom.CustomContext(ctx)
-        
         if extension_name is None:
             await ctx.reply("You must provide a cog name.")
             return
@@ -321,8 +315,6 @@ class Admin_cog(u_custom.CustomCog, name="Admin", description="Administration co
     )
     @commands.is_owner()
     async def admin_unload(self, ctx, extension_name: typing.Optional[str]):
-        ctx = u_custom.CustomContext(ctx)
-        
         if extension_name is None:
             await ctx.reply("You must provide a cog name.")
             return
@@ -351,8 +343,6 @@ class Admin_cog(u_custom.CustomCog, name="Admin", description="Administration co
     )
     @commands.is_owner()
     async def admin_reload(self, ctx, extension_name: typing.Optional[str]):
-        ctx = u_custom.CustomContext(ctx)
-        
         if extension_name is None:
             await ctx.reply("You must provide a cog or utility name.")
             return
@@ -381,8 +371,6 @@ class Admin_cog(u_custom.CustomCog, name="Admin", description="Administration co
     )
     @commands.is_owner()
     async def admin_resimulate_algorithms(self, ctx):
-        ctx = u_custom.CustomContext(ctx)
-
         await ctx.reply("Resimulating stonk algorithms, this will take some time.")
 
         u_algorithms.resimulate_all()

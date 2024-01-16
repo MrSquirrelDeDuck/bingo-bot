@@ -117,8 +117,6 @@ class Bingo_cog(u_custom.CustomCog, name="Bingo", description="Commands for runn
         if ctx.invoked_subcommand is not None:
             return
         
-        ctx = u_custom.CustomContext(ctx)
-
         if board not in ["daily", "weekly"]:
             await ctx.reply("You must specify what set of objectives you want. `daily` and `weekly` are the current options.")
             return
@@ -164,8 +162,6 @@ class Bingo_cog(u_custom.CustomCog, name="Bingo", description="Commands for runn
             board: typing.Optional[str] = commands.parameter(description = "Which board to use, 'daily' or 'weekly'."),
             *, search: typing.Optional[str] = commands.parameter(description = "The text to search for.")
         ):
-        ctx = u_custom.CustomContext(ctx)
-
         if board not in ["daily", "weekly"]:
             await ctx.reply("You must specify what set of objectives you want. `daily` and `weekly` are the current options.")
             return
@@ -217,8 +213,6 @@ class Bingo_cog(u_custom.CustomCog, name="Bingo", description="Commands for runn
             board: typing.Optional[str] = commands.parameter(description = "Which board to use, 'daily' or 'weekly'."),
             page: typing.Optional[int] = commands.parameter(description = "An integer for what page to use.", displayed_default = 1)
         ):
-        ctx = u_custom.CustomContext(ctx)
-
         if board not in ["daily", "weekly"]:
             await ctx.reply("You must specify what set of objectives you want. `daily` and `weekly` are the current options.")
             return
@@ -258,8 +252,6 @@ class Bingo_cog(u_custom.CustomCog, name="Bingo", description="Commands for runn
         if ctx.invoked_subcommand is not None:
             return
         
-        ctx = u_custom.CustomContext(ctx)
-        
         live_data = u_bingo.live()
 
         u_images.render_board_5x5(
@@ -284,8 +276,6 @@ class Bingo_cog(u_custom.CustomCog, name="Bingo", description="Commands for runn
     async def daily_stats(self, ctx,
             page: typing.Optional[int] = commands.parameter(description = "An integer for what page to use.", displayed_default = 1)
         ):
-        ctx = u_custom.CustomContext(ctx)
-        
         base_tile_list = u_bingo.tile_list_5x5()
 
         live_data = u_bingo.live()
@@ -325,8 +315,6 @@ class Bingo_cog(u_custom.CustomCog, name="Bingo", description="Commands for runn
         ):
         if ctx.invoked_subcommand is not None:
             return
-        
-        ctx = u_custom.CustomContext(ctx)
         
         # Ensure at least 1 number is provided, if just an x coordinate is provided, it is used as a tile id.
         if coord_x is None:
@@ -383,8 +371,6 @@ class Bingo_cog(u_custom.CustomCog, name="Bingo", description="Commands for runn
             coord_x: typing.Optional[int] = commands.parameter(description = "The X coordinate of the tile to untick."),
             coord_y: typing.Optional[int] = commands.parameter(description = "The Y coordinate of the tile to untick.")
         ):
-        ctx = u_custom.CustomContext(ctx)
-        
         # Ensure at least 1 number is provided, if just an x coordinate is provided, it is used as a tile id.
         if coord_x is None:
             await ctx.reply("You must provide a coordinate, as a single tile id or an X and Y coordinate.\nYou can use `%tick guide` to get a guide.")
@@ -431,8 +417,6 @@ class Bingo_cog(u_custom.CustomCog, name="Bingo", description="Commands for runn
     )
     @commands.check(u_checks.bingo_tick_check)
     async def tick_guide(self, ctx):
-        ctx = u_custom.CustomContext(ctx)
-        
         u_images.render_board(
             tile_string = "".join([f"{i:03}" for i in range(25)]),
             enabled = 0,
@@ -458,8 +442,6 @@ class Bingo_cog(u_custom.CustomCog, name="Bingo", description="Commands for runn
         hidden = True
     )
     async def board_generate(self, ctx):
-        ctx = u_custom.CustomContext(ctx)
-        
         await ctx.reply("`{}`".format(u_bingo.generate_5x5_board()))
 
     
@@ -478,8 +460,6 @@ class Bingo_cog(u_custom.CustomCog, name="Bingo", description="Commands for runn
             tile_string: typing.Optional[str] = commands.parameter(description = "A 75 character string that says what's on each tile."),
             enabled_number: typing.Optional[u_converters.parse_int] = commands.parameter(description = "Number between 0 and 2^25 - 1 that defines completed tiles.")
         ):
-        ctx = u_custom.CustomContext(ctx)
-
         if tile_string is None:
             await ctx.reply("You must provide a tile string.\nYou can get a random tile string via the `%board generate` command.")
             return
@@ -542,8 +522,6 @@ class Bingo_cog(u_custom.CustomCog, name="Bingo", description="Commands for runn
         if ctx.invoked_subcommand is not None:
             return
         
-        ctx = u_custom.CustomContext(ctx)
-        
         live_data = u_bingo.live()
 
         u_images.render_board_9x9(
@@ -571,8 +549,6 @@ class Bingo_cog(u_custom.CustomCog, name="Bingo", description="Commands for runn
     async def weekly_stats(self, ctx,
             page: typing.Optional[int] = commands.parameter(description = "An integer for what page to use.", displayed_default = 1)
         ):
-        ctx = u_custom.CustomContext(ctx)
-        
         base_tile_list = u_bingo.tile_list_9x9()
 
         live_data = u_bingo.live()
@@ -612,8 +588,6 @@ class Bingo_cog(u_custom.CustomCog, name="Bingo", description="Commands for runn
         ):
         if ctx.invoked_subcommand is not None:
             return
-        
-        ctx = u_custom.CustomContext(ctx)
         
         # Ensure at least 1 number is provided, if just an x coordinate is provided, it is used as a tile id.
         if coord_x is None:
@@ -670,8 +644,6 @@ class Bingo_cog(u_custom.CustomCog, name="Bingo", description="Commands for runn
             coord_x: typing.Optional[int] = commands.parameter(description = "The X coordinate of the tile to untick."),
             coord_y: typing.Optional[int] = commands.parameter(description = "The Y coordinate of the tile to untick.")
         ):
-        ctx = u_custom.CustomContext(ctx)
-        
         # Ensure at least 1 number is provided, if just an x coordinate is provided, it is used as a tile id.
         if coord_x is None:
             await ctx.reply("You must provide a coordinate, as a single tile id or an X and Y coordinate.\nYou can use `%weekly tick guide` to get a guide.")
@@ -718,8 +690,6 @@ class Bingo_cog(u_custom.CustomCog, name="Bingo", description="Commands for runn
     )
     @commands.check(u_checks.bingo_tick_check)
     async def weekly_tick_guide(self, ctx):
-        ctx = u_custom.CustomContext(ctx)
-        
         u_images.render_board(
             tile_string = "".join([f"{i:03}" for i in range(81)]),
             enabled = 0,
@@ -743,8 +713,6 @@ class Bingo_cog(u_custom.CustomCog, name="Bingo", description="Commands for runn
         description = "Generates the tile string for a 9x9 bingo board."
     )
     async def weekly_generate(self, ctx):
-        ctx = u_custom.CustomContext(ctx)
-        
         await ctx.reply("`{}`".format(u_bingo.generate_9x9_board()))
 
     
@@ -763,8 +731,6 @@ class Bingo_cog(u_custom.CustomCog, name="Bingo", description="Commands for runn
             tile_string: typing.Optional[str] = commands.parameter(description = "A 243 character string that says what's on each tile."),
             enabled_number: typing.Optional[u_converters.parse_int] = commands.parameter(description = "Number between 0 and 2^81 - 1 that defines completed tiles.")
         ):
-        ctx = u_custom.CustomContext(ctx)
-
         if tile_string is None:
             await ctx.reply("You must provide a tile string.\nYou can get a random tile string via the `%weekly generate` command.")
             return

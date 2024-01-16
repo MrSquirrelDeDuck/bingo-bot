@@ -69,7 +69,6 @@ class Bread_cog(u_custom.CustomCog, name="Bread", description="Utility commands 
         reminder_data = Bread_cog._get_reminder_data(Bread_cog)
 
         if ctx.author.id in reminder_data["disallowed"]:
-            ctx = u_custom.CustomContext(ctx)
             await ctx.reply("I am sorry, but you have been disallowed from using reminders.\nIf you believe this was an error, please let the moderators know.")
             return False
         
@@ -87,8 +86,6 @@ class Bread_cog(u_custom.CustomCog, name="Bread", description="Utility commands 
         pass_context = True
     )
     async def bread(self, ctx):
-        ctx = u_custom.CustomContext(ctx)
-
         if ctx.invoked_subcommand is not None:
             return
         
@@ -107,8 +104,6 @@ class Bread_cog(u_custom.CustomCog, name="Bread", description="Utility commands 
         hidden = True
     )
     async def bread_help(self, ctx):
-        ctx = u_custom.CustomContext(ctx)
-
         await ctx.send_help(self.bread)
 
     
@@ -125,8 +120,6 @@ class Bread_cog(u_custom.CustomCog, name="Bread", description="Utility commands 
         hidden = True
     )
     async def bread_stonks(self, ctx):
-        ctx = u_custom.CustomContext(ctx)
-
         await ctx.reply("To use the Bingo-Bot's stonk-related commands, use `%stonks` instead of `%bread stonks`.")
 
     
@@ -145,8 +138,6 @@ class Bread_cog(u_custom.CustomCog, name="Bread", description="Utility commands 
         brief = "Get the current time in Bread Standard Time."
     )
     async def bread_time(self, ctx):
-        ctx = u_custom.CustomContext(ctx)
-
         def is_dst(dt=None, timezone="UTC"):
             if dt is None:
                 dt = datetime.datetime.utcnow()
@@ -237,8 +228,6 @@ class Bread_cog(u_custom.CustomCog, name="Bread", description="Utility commands 
         brief = "Setup hourly reminders."
     )
     async def bread_reminder(self, ctx):
-        ctx = u_custom.CustomContext(ctx)
-
         if ctx.invoked_subcommand is not None:
             return
         
@@ -262,8 +251,6 @@ class Bread_cog(u_custom.CustomCog, name="Bread", description="Utility commands 
             hour: typing.Optional[int] = commands.parameter(description = "The hour of the new reminder."),
             reminder_text: typing.Optional[str] = commands.parameter(description = "The text of the new reminder.")
         ):
-        ctx = u_custom.CustomContext(ctx)
-
         if hour is None:
             await ctx.reply("You must provide an hour in Bread Standard time.")
             return
@@ -311,8 +298,6 @@ class Bread_cog(u_custom.CustomCog, name="Bread", description="Utility commands 
     async def bread_reminder_remove(self, ctx,
             hour: typing.Optional[int] = commands.parameter(description = "The hour of the reminder you want to remove.")
         ):
-        ctx = u_custom.CustomContext(ctx)
-
         reminder_data = self._get_reminder_data()
         
         if hour is None or not(0 <= hour <= 23):
@@ -356,8 +341,6 @@ class Bread_cog(u_custom.CustomCog, name="Bread", description="Utility commands 
             modification_type: typing.Optional[str] = commands.parameter(description = "The type of data that will be modified: 'hour' or 'text'."),
             new_information: typing.Optional[str] = commands.parameter(description = "The new information that will be used.")
         ):
-        ctx = u_custom.CustomContext(ctx)
-
         target = ctx.author
 
         if await u_checks.in_authority(ctx):
@@ -447,8 +430,6 @@ class Bread_cog(u_custom.CustomCog, name="Bread", description="Utility commands 
     )
     @commands.check(u_checks.in_authority)
     async def bread_reminder_allow(self, ctx, target: typing.Optional[discord.Member] = commands.parameter(description = "Some identifier for the user to allow reminder usage.")):
-        ctx = u_custom.CustomContext(ctx)
-
         if target is None:
             await ctx.reply("You must provide some identifier for the user to allow reminder usage.\nAn id or username will suffice.")
             return
@@ -478,8 +459,6 @@ class Bread_cog(u_custom.CustomCog, name="Bread", description="Utility commands 
     )
     @commands.check(u_checks.in_authority)
     async def bread_reminder_disallow(self, ctx, target: typing.Optional[discord.Member] = commands.parameter(description = "Some identifier for the user to disallow reminder usage.")):
-        ctx = u_custom.CustomContext(ctx)
-
         if target is None:
             await ctx.reply("You must provide some identifier for the user to disallow reminder usage.\nAn id or username will suffice.")
             return
@@ -515,8 +494,6 @@ class Bread_cog(u_custom.CustomCog, name="Bread", description="Utility commands 
             current: typing.Optional[u_converters.parse_int] = commands.parameter(description = "The amount of Loaf Converters you currently have."),
             self_converting_yeast: typing.Optional[u_converters.parse_int] = commands.parameter(description = "The amount of Self Converting Yeast you currently have.")
         ):
-        ctx = u_custom.CustomContext(ctx)
-
         if ctx.invoked_subcommand is not None:
             return
 
@@ -557,8 +534,6 @@ class Bread_cog(u_custom.CustomCog, name="Bread", description="Utility commands 
             goal: typing.Optional[u_converters.parse_int] = commands.parameter(description = "The amount of Loaf Converters you would like to have."),
             self_converting_yeast: typing.Optional[u_converters.parse_int] = commands.parameter(description = "The amount of Self Converting Yeast you currently have.")
         ):
-        ctx = u_custom.CustomContext(ctx)
-
         attempted_parse = u_bread.parse_attempt(ctx.message, require_reply=True)
 
         if attempted_parse:
@@ -607,8 +582,6 @@ class Bread_cog(u_custom.CustomCog, name="Bread", description="Utility commands 
             current: typing.Optional[u_converters.parse_int] = commands.parameter(description = "The amount of Loaf Converters you currently have."),
             self_converting_yeast: typing.Optional[u_converters.parse_int] = commands.parameter(description = "The amount of Self Converting Yeast you currently have.")
         ):
-        ctx = u_custom.CustomContext(ctx)
-
         attempted_parse = u_bread.parse_attempt(ctx.message, require_reply=True)
 
         if attempted_parse:
@@ -671,8 +644,6 @@ class Bread_cog(u_custom.CustomCog, name="Bread", description="Utility commands 
         invoked_without_command = True
     )
     async def bread_gamble(self, ctx):
-        ctx = u_custom.CustomContext(ctx)
-
         if ctx.invoked_subcommand is not None:
             return
         
@@ -688,8 +659,6 @@ class Bread_cog(u_custom.CustomCog, name="Bread", description="Utility commands 
         description = "Get the initial board of a gamble."
     )
     async def bread_gamble_initial(self, ctx):
-        ctx = u_custom.CustomContext(ctx)
-
         replied_to = u_interface.replying_mm_checks(ctx.message, require_reply = True, return_replied_to = True)
 
         if not replied_to:
@@ -762,8 +731,6 @@ class Bread_cog(u_custom.CustomCog, name="Bread", description="Utility commands 
     async def bread_wiki(self, ctx,
             *, search_term: typing.Optional[str] = commands.parameter(description = "The search term to search the wiki with.")
         ):
-        ctx = u_custom.CustomContext(ctx)
-
         if search_term is None:
             await ctx.reply("Here's a link to the wiki:\n<https://bread.miraheze.org/wiki/The_Bread_Game_Wiki>\nIf you want to search the wiki, use `%bread wiki <search term>`.")
             return
@@ -903,8 +870,6 @@ class Bread_cog(u_custom.CustomCog, name="Bread", description="Utility commands 
             green_gems: typing.Optional[u_converters.parse_int] = commands.parameter(description = "The amount of green gems you have."),
             gold_gems: typing.Optional[u_converters.parse_int] = commands.parameter(description = "The amount of gold gems you have.")
         ):
-        ctx = u_custom.CustomContext(ctx)
-
         ISSUE_TEXT = "If not replying to a stats message, provide the amount of dough per tron and the quantity of each gem. Reply to a stats message for automatic information retrieval. You can also specify the dough per tron to override the stats parser, as well as the quantity of each gem you possess."
 
         resolved_conflict = u_interface.resolve_conflict(
@@ -951,8 +916,6 @@ class Bread_cog(u_custom.CustomCog, name="Bread", description="Utility commands 
             cc_level: typing.Optional[u_converters.parse_int] = commands.parameter(description = "The level of Chessatron Contraption you have."),
             ascension: typing.Optional[u_converters.parse_int] = commands.parameter(description = "The ascension you're on.")
         ):
-        ctx = u_custom.CustomContext(ctx)
-
         def generate_embed(omega, shadow, cc, a):
             return u_interface.embed(
                 title = "Chessatron value",
@@ -1011,8 +974,6 @@ class Bread_cog(u_custom.CustomCog, name="Bread", description="Utility commands 
         description = "Provides a list of useful timestamps, automatically converted into your time zone."
     )
     async def bread_timestamps(self, ctx):
-        ctx = u_custom.CustomContext(ctx)
-
         timestamp_list = [
             ("Bread o' clock", 1648591500),
             ("1st stonk tick", 1648602300),
@@ -1049,8 +1010,6 @@ class Bread_cog(u_custom.CustomCog, name="Bread", description="Utility commands 
             percent: typing.Optional[u_converters.parse_percent] = commands.parameter(description = "The percentage to use."),
             value: typing.Optional[u_converters.parse_int] = commands.parameter(description = "The number to get the precentage of."),
         ):
-        ctx = u_custom.CustomContext(ctx)
-
         if percent is None or value is None:
             await ctx.reply("You must provide the percentage to use and the value to use.\nSyntax: `%bread percent <percentage> <value>`.\nFor example, `%bread percent 75% 1,738,983`")
             return

@@ -30,8 +30,6 @@ class Stonk_cog(u_custom.CustomCog, name="Stonk", description="Commands for work
         pass_context = True
     )
     async def stonk(self, ctx):
-        ctx = u_custom.CustomContext(ctx)
-
         if ctx.invoked_subcommand is not None:
             return
         
@@ -54,8 +52,6 @@ class Stonk_cog(u_custom.CustomCog, name="Stonk", description="Commands for work
     async def stonk_history(self, ctx,
             tick_id: typing.Optional[u_converters.parse_int] = commands.parameter(description = "An optional specific tick to look at.")
         ):
-        ctx = u_custom.CustomContext(ctx)
-
         stonk_history = u_stonks.stonk_history()
 
         if tick_id is None:
@@ -98,8 +94,6 @@ class Stonk_cog(u_custom.CustomCog, name="Stonk", description="Commands for work
         brief = "Get information about the current tick."
     )
     async def stonk_current(self, ctx):
-        ctx = u_custom.CustomContext(ctx)
-
         stonk_data = u_stonks.full_current_values()
 
         tick_data = stonk_data["values"]
@@ -135,8 +129,6 @@ class Stonk_cog(u_custom.CustomCog, name="Stonk", description="Commands for work
     async def stonk_ping(self, ctx,
             state: typing.Optional[str] = commands.parameter(description = "'on' to join the ping list, 'off' to leave.")
         ):
-        ctx = u_custom.CustomContext(ctx)
-
         new_state = False
 
         if state in ["on", "off"]:
@@ -173,8 +165,6 @@ class Stonk_cog(u_custom.CustomCog, name="Stonk", description="Commands for work
             ticks: typing.Optional[u_converters.parse_int] = commands.parameter(description = "The number of ticks to show, must be between 2 and 50."),
             *, modifiers: typing.Optional[str] = commands.parameter(description = "Optional modifiers, see above for modifier list."),
         ):
-        ctx = u_custom.CustomContext(ctx)
-
         if ticks is None:
             await ctx.reply("You must provide the number of ticks to show.")
             return
@@ -273,8 +263,6 @@ class Stonk_cog(u_custom.CustomCog, name="Stonk", description="Commands for work
         brief = "Get a link to the last stonk tick."
     )
     async def stonk_message(self, ctx):
-        ctx = u_custom.CustomContext(ctx)
-
         await ctx.reply(u_stonks.full_current_values()["message_link"])
     
 
@@ -292,8 +280,6 @@ class Stonk_cog(u_custom.CustomCog, name="Stonk", description="Commands for work
         brief = "When you're having trouble deciding what to invest in."
     )
     async def stonk_message(self, ctx):
-        ctx = u_custom.CustomContext(ctx)
-
         commands = [f"$bread invest all {stonk.internal_name}" for stonk in u_values.stonks]
 
         random.shuffle(commands)
@@ -323,8 +309,6 @@ class Stonk_cog(u_custom.CustomCog, name="Stonk", description="Commands for work
     async def stonk_analyze(self, ctx,
             tick_id: typing.Optional[u_converters.parse_int] = commands.parameter(description = "The tick number to use the values from.")
         ):
-        ctx = u_custom.CustomContext(ctx)
-
         current_tick = u_stonks.current_tick_number()
 
         if tick_id is None or not(current_tick * -1 <= tick_id <= current_tick):
@@ -397,8 +381,6 @@ class Stonk_cog(u_custom.CustomCog, name="Stonk", description="Commands for work
         brief = "Provides the entire stonk history as a json file."
     )
     async def stonk_file(self, ctx):
-        ctx = u_custom.CustomContext(ctx)
-
         await ctx.reply(file=discord.File(f"data/stonks/stonk_history.json"))
     
 
@@ -418,8 +400,6 @@ class Stonk_cog(u_custom.CustomCog, name="Stonk", description="Commands for work
     async def stonk_search(self, ctx,
             *, parameters: typing.Optional[str] = commands.parameter(description = "The stonk values to search. See above for more info.", displayed_name="values")
         ):
-        ctx = u_custom.CustomContext(ctx)
-
         if parameters is None:
             await ctx.reply("Unfortunately, you must provide at least 1 stonk value.")
             return
@@ -486,8 +466,6 @@ class Stonk_cog(u_custom.CustomCog, name="Stonk", description="Commands for work
             start: typing.Optional[u_converters.parse_int] = commands.parameter(description = "The start of the time frame."),
             end: typing.Optional[u_converters.parse_int] = commands.parameter(description = "The end of the time frame."),
         ):
-        ctx = u_custom.CustomContext(ctx)
-
         if start is None:
             start = 0
         
@@ -542,8 +520,6 @@ class Stonk_cog(u_custom.CustomCog, name="Stonk", description="Commands for work
     async def stonk_graph(self, ctx,
             *, parameters: typing.Optional[str] = commands.parameter(description = "The parameters to use. See above for more information.")
         ):
-        ctx = u_custom.CustomContext(ctx)
-
         current_tick = u_stonks.current_tick_number()
 
         log_scale = False
@@ -658,8 +634,6 @@ class Stonk_cog(u_custom.CustomCog, name="Stonk", description="Commands for work
         brief = "Sends the last stonk report."
     )
     async def stonk_report(self, ctx):
-        ctx = u_custom.CustomContext(ctx)
-
         try:
             await ctx.reply(file=discord.File(f"images{SLASH}generated{SLASH}stonk_report.png"))
         except FileNotFoundError:
@@ -683,8 +657,6 @@ class Stonk_cog(u_custom.CustomCog, name="Stonk", description="Commands for work
             start: typing.Optional[u_converters.parse_int] = commands.parameter(description = "The start tick of the graph."),
             end: typing.Optional[u_converters.parse_int] = commands.parameter(description = "The end tick of the graph.")
         ):
-        ctx = u_custom.CustomContext(ctx)
-
         replied_to = u_interface.replying_mm_checks(ctx.message, require_reply=True, return_replied_to=True)
 
         if not replied_to:
@@ -764,8 +736,6 @@ class Stonk_cog(u_custom.CustomCog, name="Stonk", description="Commands for work
         pass_context = True
     )
     async def stonk_algorithms(self, ctx):
-        ctx = u_custom.CustomContext(ctx)
-        
         if ctx.invoked_subcommand is not None:
             return
         
@@ -790,8 +760,6 @@ class Stonk_cog(u_custom.CustomCog, name="Stonk", description="Commands for work
     async def stonk_algorithm_stats(self, ctx,
             algorithm_name: typing.Optional[u_algorithms.AlgorithmConverter] = commands.parameter(description = "The name of the algorithm you want to get the stats of.")
         ):
-        ctx = u_custom.CustomContext(ctx)
-
         if algorithm_name is None:
             algorithm_list = u_algorithms.all_live_algorithms()
             embed = u_interface.embed(
@@ -866,8 +834,6 @@ class Stonk_cog(u_custom.CustomCog, name="Stonk", description="Commands for work
     async def stonk_algorithm_leaderboard(self, ctx,
             algorithm_name: typing.Optional[u_algorithms.AlgorithmConverter] = commands.parameter(description = "The name of the algorithm you want to get the stats of.")                    
         ):
-        ctx = u_custom.CustomContext(ctx)
-        
         def check(algorithm_info):
             return algorithm_info["data"]["current_total"]
         
@@ -931,8 +897,6 @@ class Stonk_cog(u_custom.CustomCog, name="Stonk", description="Commands for work
     async def stonk_algorithm_graph(self, ctx,
             *, parameters: typing.Optional[str] = commands.parameter(description = "The parameters to use. See above for more information.")
         ):
-        ctx = u_custom.CustomContext(ctx)
-
         current_tick = u_stonks.current_tick_number()
 
         all_algorithms = u_algorithms.all_live_algorithms()
@@ -1050,8 +1014,6 @@ class Stonk_cog(u_custom.CustomCog, name="Stonk", description="Commands for work
             stonk: typing.Optional[u_values.StonkConverter] = commands.parameter(description = "The stonk to use. If nothing is provided it'll use whatever stonk is closest to the goal."),
             user: typing.Optional[discord.Member] = commands.parameter(description = "Optional user to generate a gift command for.")
         ):
-        ctx = u_custom.CustomContext(ctx)
-
         if dough is None:
             await ctx.reply("You must provide the amount of dough to use.")
             return
