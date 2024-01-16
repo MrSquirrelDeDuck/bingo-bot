@@ -1045,7 +1045,7 @@ class Other_cog(u_custom.CustomCog, name="Other", description="Commands that don
         
         counting_data = u_files.get_counting_data(ctx.channel.id)
 
-        if counting_data["sender"] == 0:
+        if counting_data["count"] == 0:
             await ctx.reply("There is no count here yet! Send `1` to start it.")
             return
         

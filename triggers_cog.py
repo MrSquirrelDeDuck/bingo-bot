@@ -133,7 +133,7 @@ class Triggers_cog(u_custom.CustomCog, name="Triggers", description="Hey there! 
 
         if sent_number > counting_data["count"]:
             if sent_number > counting_data["count"] + 1:
-                if counting_data["sender"] == 0: # If 1 hasn't been sent since the last break.
+                if counting_data["count"] == 0: # If 1 hasn't been sent since the last break.
                     return
                 
                 u_files.set_counting_data(
