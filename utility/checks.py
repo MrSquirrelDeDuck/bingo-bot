@@ -40,6 +40,13 @@ def is_prime(number: int) -> bool:
             return False
     
     return True
+    
+def sensitive_check(channel: typing.Union[discord.TextChannel, discord.Thread]) -> bool:
+    """Returns a boolean for whether a channel is a sensitive channel."""
+    if isinstance(channel, discord.Thread):
+        channel = channel.parent
+        
+    return channel.id in [958562231921025054, 969881291740811264, 958487694676205628, 980267115821035550, 994460122875174942]
 
 ##### COMMAND CHECKS #####
 

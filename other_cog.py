@@ -269,7 +269,7 @@ class Other_cog(u_custom.CustomCog, name="Other", description="Commands that don
             return
         
         if not u_checks.is_prime(sum([int(i) for i in list(str(u_text.return_numeric(message)))])):
-            await ctx.reply("Please have the numbers in the message sum to a prime number.")
+            await ctx.reply("Please have the digits in the message sum to a prime number.")
             return
         
         if len(re.findall("([BNRQK]?([a-h]|[1-8])?x?[a-h][1-8](=[BNRQ])?(\+\+?|#)?)|(O-O(-O)?(\+\+?|#)?)", message)) == 0:
@@ -1000,6 +1000,10 @@ class Other_cog(u_custom.CustomCog, name="Other", description="Commands that don
         ):
         ctx = u_custom.CustomContext(ctx)
 
+        if u_checks.sensitive_check(ctx.channel):
+            await ctx.reply("This is not the channel for that.")
+            return
+
         if question is None:
             channel_data = u_files.get_ouija_data(ctx.channel.id)
             if channel_data["active"]:
@@ -1042,6 +1046,10 @@ class Other_cog(u_custom.CustomCog, name="Other", description="Commands that don
     )
     async def get_count(self, ctx):
         ctx = u_custom.CustomContext(ctx)
+
+        if u_checks.sensitive_check(ctx.channel):
+            await ctx.reply("This is not the channel for that.")
+            return
         
         counting_data = u_files.get_counting_data(ctx.channel.id)
 

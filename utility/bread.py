@@ -3,6 +3,7 @@ import discord
 import re
 import typing
 import math
+import datetime, pytz
 
 import utility.text as u_text
 import utility.values as u_values
@@ -11,6 +12,28 @@ import utility.interface as u_interface
 import importlib
 
 importlib.reload(u_values)
+
+def bread_time() -> datetime.timedelta:
+    def is_dst(dt=None, timezone="UTC"):
+        if dt is None:
+            dt = datetime.datetime.utcnow()
+        timezone = pytz.timezone(timezone)
+        timezone_aware_date = timezone.localize(dt, is_dst=None)
+        return timezone_aware_date.tzinfo._dst.seconds != 0
+
+    apply_dst = is_dst(datetime.datetime.now(), timezone="US/Pacific")
+
+    timestamp = datetime.datetime.utcnow().replace(microsecond=0, tzinfo=None)
+
+    if apply_dst:
+        timestamp = timestamp + datetime.timedelta(hour=1)
+    
+    breadoclock = datetime.datetime(timestamp.year, timestamp.month, timestamp.day, 23, 5, 0).replace(tzinfo=None)
+    
+    if not (timestamp.hour >= 23 and timestamp.minute >= 5):
+        breadoclock = breadoclock - datetime.timedelta(days=1)
+
+    return timestamp - breadoclock
 
 def calculate_tron_value(ascension: int = 0, omega_count: int = 0, active_shadowmegas: int = 0, shadowmegas: int = 0, chessatron_contraption: int = 0) -> int:
     """Calculates the value of a chessatron.

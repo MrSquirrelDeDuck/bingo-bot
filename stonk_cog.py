@@ -100,7 +100,7 @@ class Stonk_cog(u_custom.CustomCog, name="Stonk", description="Commands for work
     async def stonk_current(self, ctx):
         ctx = u_custom.CustomContext(ctx)
 
-        stonk_data = u_stonks.full_current_tick()
+        stonk_data = u_stonks.full_current_values()
 
         tick_data = stonk_data["values"]
         
@@ -275,7 +275,7 @@ class Stonk_cog(u_custom.CustomCog, name="Stonk", description="Commands for work
     async def stonk_message(self, ctx):
         ctx = u_custom.CustomContext(ctx)
 
-        await ctx.reply(u_stonks.full_current_tick()["message_link"])
+        await ctx.reply(u_stonks.full_current_values()["message_link"])
     
 
 

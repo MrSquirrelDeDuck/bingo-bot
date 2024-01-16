@@ -12,6 +12,7 @@ import sys
 import utility.text as u_text
 import utility.custom as u_custom
 import utility.checks as u_checks
+import utility.algorithms as u_algorithms
 
 class Admin_cog(u_custom.CustomCog, name="Admin", description="Administration commands for the Bingo-Bot."):
     bot = None
@@ -365,6 +366,28 @@ class Admin_cog(u_custom.CustomCog, name="Admin", description="Administration co
         except:
             traceback.print_exc()
             await ctx.send("Failed.")
+
+    
+    
+    
+    
+    
+    
+    
+    @admin.command(
+        name="resimulate_algorithms",
+        brief = "Resimulates the stonk algorithms.",
+        description = "Resimulates the stonk algorithms."
+    )
+    @commands.is_owner()
+    async def admin_resimulate_algorithms(self, ctx):
+        ctx = u_custom.CustomContext(ctx)
+
+        await ctx.reply("Resimulating stonk algorithms, this will take some time.")
+
+        u_algorithms.resimulate_all()
+
+        await ctx.reply("Done.")
 
         
 async def setup(bot: commands.Bot):
