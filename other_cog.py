@@ -8,6 +8,7 @@ import wikipedia
 import mpmath
 import copy
 import re
+import asyncio
 import aiohttp
 import traceback
 import time
@@ -126,6 +127,8 @@ class Other_cog(u_custom.CustomCog, name="Other", description="Commands that don
 
     minecraft_wiki_searching = False
     lichess_cooldown = 0
+
+    traitor_game_going = False
 
     card_keys = card_keys = {'c1': '<a:ace_clubs:1122942670793363466>', 'd1': '<a:ace_diamonds:1122943540549386360>', 'h1': '<a:ace_hearts:1122943541379874838>', 's1': '<a:ace_spades:1122943543472820285>', 'c10': '<:10_clubs:1122941731319582720>', 'd10': '<:10_diamonds:1122941732728873041>', 'h10': '<:10_hearts:1122941734461112320>', 's10': '<:10_spades:1122941735190925496>', 'c2': '<:2_clubs:1122930420158312448>', 'd2': '<:2_diamonds:1122930421043318814>', 'h2': '<:2_hearts:1122930422934945932>', 's2': '<:2_spades:1122930424088379441>', 'c3': '<:3_clubs:1122930451246481458>', 'd5': '<:5_diamonds:1122930499887833160>', 'c5': '<:5_clubs:1122930498860220479>', 's4': '<:4_spades:1122930475414065185>', 'h4': '<:4_hearts:1122930474214510703>', 'd4': '<:4_diamonds:1122930471878271198>', 'c4': '<:4_clubs:1122930470653526066>', 's3': '<:3_spades:1122930454878769283>', 'h3': '<:3_hearts:1122930454044094484>', 'd3': '<:3_diamonds:1122930452416700548>', 'h5': '<:5_hearts:1122930501230006302>', 's5': '<:5_spades:1122930502458953889>', 'c6': '<:6_clubs:1122930520041455666>', 'd6': '<:6_diamonds:1122930521446567936>', 'h6': '<:6_hearts:1122930523145261167>', 's6': '<:6_spades:1122930524072198154>', 'c7': '<:7_clubs:1122930541327560752>', 'd7': '<:7_diamonds:1122930543139487814>', 'h7': '<:7_hearts:1122930544087408660>', 's9': '<:9_spades:1122941711438589952>', 'h9': '<:9_hearts:1122941710473904168>', 'd9': '<:9_diamonds:1122941709169463387>', 'c9': '<:9_clubs:1122941708125081762>', 's8': '<:8_spades:1122941690697748510>', 'h8': '<:8_hearts:1122941689271701664>', 'd8': '<:8_diamonds:1122930562777239674>', 'c8': '<:8_clubs:1122930561133072555>', 's7': '<:7_spades:1122930545043722342>', 'c11': '<:jack_clubs:1122941753759125525>', 'd11': '<:jack_diamonds:1122941755776569464>', 'h11': '<:jack_hearts:1122941756841926757>', 's11': '<:jack_spades:1122941757856952350>', 's12': '<:queen_spades:1122941804036239553>', 'h12': '<:queen_hearts:1122941803272884334>', 'd12': '<:queen_diamonds:1122941802442407936>', 'c12': '<:queen_clubs:1122941800722726992>', 's13': '<:king_spades:1122941784465608724>', 'h13': '<:king_hearts:1123679597188354208>', 'd13': '<:king_diamonds:1122941782028734484>', 'c13': '<:king_clubs:1122941779776381028>'}
     
@@ -901,6 +904,289 @@ class Other_cog(u_custom.CustomCog, name="Other", description="Commands that don
 
         
     ######################################################################################################################################################
+    ##### XKCD #######################################################################################################################################
+    ######################################################################################################################################################
+        
+    @commands.group(
+        name = "xkcd",
+        brief = "Get an xkcd strip.",
+        description = "Get an xkcd strip.\n`random` can be used to get a random strip.",
+        invoke_without_command = True,
+        pass_context = True
+    )
+    async def xkcd(self, ctx,
+            strip_id: typing.Optional[str] = commands.parameter(description = "The strip id to get, or 'random' for a random strip.")
+        ):
+        ctx = u_custom.CustomContext(ctx)
+
+        if ctx.invoked_subcommand is not None:
+            return
+
+        async with aiohttp.ClientSession() as session:
+            if strip_id is None or strip_id == "random":
+                returned = await session.get("https://xkcd.com/info.0.json")
+                if returned.status != 200:
+                    await ctx.reply("Something went wrong when getting the comic strip.")
+                    return
+                
+                json_data = await returned.json()
+                
+                if strip_id == "random":
+                    strip_id = random.randint(1, json_data["num"])
+            
+            if strip_id is not None:
+                returned = await session.get("https://xkcd.com/{}/info.0.json".format(strip_id))
+                if returned.status != 200:
+                    await ctx.reply("That strip was not found.")
+                    return
+                
+                json_data = await returned.json()
+        
+        strip_id = json_data["num"]
+        
+        embed = u_interface.embed(
+            title = "{}: {}".format(strip_id, json_data["safe_title"]),
+            title_link = "https://xkcd.com/{}/".format(strip_id),
+            image_link = json_data["img"],
+            footer_text = json_data["alt"]
+        )
+
+        await ctx.reply(embed=embed)
+    
+    @xkcd.command(
+        name = "ping",
+        description = "Pinglist for new xkcd strips!\nUse '%xkcd ping on' to get on the pinglist and '%xkcd ping off' to leave it.",
+        brief = "Pinglist for new xkcd strips!"
+    )
+    async def xkcd_ping(self, ctx,
+            state: typing.Optional[str] = commands.parameter(description = "'on' to join the ping list, 'off' to leave.")
+        ):
+        ctx = u_custom.CustomContext(ctx)
+
+        new_state = False
+
+        if state in ["on", "off"]:
+            new_state = state == "on"
+        else:
+            on_pinglist = u_files.user_on_ping_list("xkcd_strips", ctx.author.id)
+
+            new_state = not on_pinglist
+
+        u_files.update_ping_list("xkcd_strips", ctx.author.id, new_state)
+
+        embed = u_interface.embed(
+            title = "xkcd strip ping list",
+            description = "You will {} be pinged for new xkcd strips.".format("now" if new_state else "no longer")
+        )
+        await ctx.reply(embed=embed)
+
+
+        
+            
+
+        
+    ######################################################################################################################################################
+    ##### ASKOUIJA #######################################################################################################################################
+    ######################################################################################################################################################
+        
+    @commands.command(
+        name = "askouija",
+        aliases = ["ask_ouija"],
+        brief = "Ask the spirits a question.",
+        description = "Ask the spirits a question."
+    )
+    async def askouija(self, ctx,
+            *, question: typing.Optional[str] = commands.parameter(description = "The question to ask the spirits.")
+        ):
+        ctx = u_custom.CustomContext(ctx)
+
+        if question is None:
+            channel_data = u_files.get_ouija_data(ctx.channel.id)
+            if channel_data["active"]:
+                await ctx.reply("Current letters: {}".format(channel_data["letters"]))
+            else:
+                await ctx.reply("There is no question going on in this channel.\nYou can ask a question via `%askouija <question>`.")
+            return
+        
+        if u_files.get_ouija_data(ctx.channel.id)["active"]:
+            await ctx.reply("There is already a question going on in this channel.")
+            return
+        
+        if u_text.has_ping(question):
+            await ctx.reply("Question cannot contain any pings.")
+            return
+        
+        u_files.set_ouija_data(
+            channel_id = ctx.channel.id,
+            active = True,
+            letters = "",
+            message_id = ctx.message.id,
+            author_id = ctx.author.id
+        )
+
+        await ctx.send("Spirits, you are being asked a question:\n{}".format(question))
+
+
+        
+            
+
+        
+    ######################################################################################################################################################
+    ##### GET COUNT ######################################################################################################################################
+    ######################################################################################################################################################
+        
+    @commands.command(
+        name = "get_count",
+        brief = "Retrieves the current count.",
+        description = "Retrieves the current count."
+    )
+    async def get_count(self, ctx):
+        ctx = u_custom.CustomContext(ctx)
+        
+        counting_data = u_files.get_counting_data(ctx.channel.id)
+
+        if counting_data["sender"] == 0:
+            await ctx.reply("There is no count here yet! Send `1` to start it.")
+            return
+        
+        await ctx.reply("The current count is {}.".format(u_text.smart_number(counting_data["count"])))
+        
+
+
+        
+            
+
+        
+    ######################################################################################################################################################
+    ##### TRAITOR #######################################################################################################################################
+    ######################################################################################################################################################
+        
+    @commands.command(
+        name = "traitor",
+        brief = "Starts a game of Traitor.",
+        description = "Starts a game of Traitor, a game where one player is the traitor and everyone else is innocent.\nThis will DM players involved whether they are the traitor or not 2 minutes after the game starts."
+    )
+    async def traitor(self, ctx):
+        ctx = u_custom.CustomContext(ctx)
+
+        if self.traitor_game_going:
+            await ctx.reply("I am sorry, but there is already a game going.")
+            return
+        
+        # Everything is in a big try except to catch any errors and reset self.traitor_game_going so another game can be started.
+        try:
+            # So new games can't be started.
+            self.traitor_game_going = True
+
+            # Setup a few things that will be used later.
+            players_participating = [ctx.author]
+            last_join_timestamp = time.time()
+
+            # Get the time of the start, so we know how long is 2 minutes after.
+            start_time = time.time()
+
+            # Check that's used for bot.wait_for.
+            def player_check(message):
+                return message.author not in players_participating and message.content == "join" and message.channel == ctx.channel and hasattr(message, "webhook_id") and message.webhook_id is None
+            
+            # Useful function that generates the initial message, since it's edited whenever a player joins.
+            def generate_initial():
+                return "You have started a game of Traitor.\nThe game will start 60 seconds after the last player joined.\n\nCurrent players:\n{}\n\nTo join, say \"join\".\nThe game will start <t:{}:R>.".format("\n".join([f"- {user.mention}" for user in players_participating]), round(last_join_timestamp + 60))
+            
+            # Send the "You've started a game" message.
+            initial_message = await ctx.reply(generate_initial())
+            
+            # Main player join loop.
+            print("Starting Tratior Company game.")
+            print(f"- {ctx.author} has joined.")
+            while True:
+                # Catch any timeout errors, which are the indicator that the time is up.
+                try:
+                    # Wait for a message that passes the check in player_check().
+                    message = await self.bot.wait_for('message', check = player_check, timeout = 60.0)
+
+                    # Add the player that just joined to the list of players, and update the timestamp of the last join.
+                    players_participating.append(message.author)
+                    last_join_timestamp = time.time()
+                    print(f"- {message.author} has joined.")
+                    
+                    # Edit the initial message using generate_initial(), and send a message saying you've joined.
+                    await initial_message.edit(content=generate_initial())
+                    await message.reply("You have joined the game of Traitor.\nThe game will start <t:{}:R>.".format(round(last_join_timestamp + 60)))
+                except asyncio.TimeoutError:
+                    # The wait time is up, so break out of the while loop.
+                    break
+            
+            # Get the current time, so we can get
+            current_time = time.time()
+
+            # Get the time until 2 minutes after the start.
+            time_wait = (start_time + 120) - current_time
+            
+            # Announce that the game has started, and wait for 120 seconds (2 minutes.)
+            print(f"Announcing Traitor Company game, time to wait is {time_wait}.")
+            print("Player list:\n- {}".format("\n- ".join([str(user) for user in players_participating])))
+            await ctx.send("{}\nThe game is starting!\nYou will recieve your role <t:{}:R>.".format("".join([user.mention for user in players_participating]), round(time_wait + current_time)))
+            await asyncio.sleep(round(time_wait))
+            print("Time to wait is up.")
+
+            # Setup the messages that will be sent. The index of each item here will line up with the indices of the players in players_participaring.
+            # The first item is the message to send, the second item is what to print to the console.
+            messages = [
+                ("You are a great asset to the company.", "Normal")
+            ]
+            
+            # List of extra roles, formatted as dicts, containing 'data', the tuples like in the `messages` list, and 'chance' which is the percent chance of it being included..
+            all_roles = [
+                {
+                    "data": ("You are a super great asset the company.\nYou are required to make at least 2 trips to the base.", "Super"),
+                    "chance": 25
+                },
+                {
+                    "data": ("You are *not* a great asset to the company. <:shock:1026568812507701259>", "Traitor"),
+                    "chance": 80
+                }
+            ]
+
+            # Shuffle list of extra roles, so they'll be included in a random order.
+            random.shuffle(all_roles)
+
+            # Go through the roles.
+            for role_data in all_roles:
+                # If a random number between 1 and 100 is less than or equal to the chance, then it'll be added.
+                if random.randint(1, 100) <= role_data["chance"]:
+                    # Insert the item in slot 0 of the messages list.
+                    messages.insert(0, role_data["data"])
+
+            # 10% chance of shuffling the messages list.
+            if random.randint(1, 10) == 1:
+                random.shuffle(messages)
+            
+            # Shuffle players_participating, which will mean it will choose a random person to be the traitor due to the `messages` list.
+            random.shuffle(players_participating)
+
+            # Send the messages.
+            print("Sending Traitor Company messages:")
+            for user_id, user in enumerate(players_participating):
+                # Send a message as listed in `messages`. The index of the item in `messages` is capped at the last one.
+                message_id = min(user_id, len(messages) - 1)
+                print(f"- {user}: {messages[message_id][1]}")
+                await user.send(messages[message_id][0])
+            
+            # Allow another game to be started.
+            self.traitor_game_going = False
+            return
+        except:
+            # If something went wrong anywhere in the code, set traitor_game_going to False so another game can start.
+            self.traitor_game_going = False
+            await ctx.reply("Something went wrong, sorry.")
+            print(f"Traitor went wrong :(.\n{traceback.format_exc()}")
+
+        
+            
+
+        
+    ######################################################################################################################################################
     ##### FLIP COIN ######################################################################################################################################
     ######################################################################################################################################################
     
@@ -1063,14 +1349,11 @@ class Other_cog(u_custom.CustomCog, name="Other", description="Commands that don
             await ctx.reply("This command is on cooldown, please wait a minute before trying again.")
             return
         
-        if tournament is None:
-            # tournament = "winter23"
-            async with aiohttp.ClientSession() as session:
-                returned = await session.get(f"https://lichess.org/api/tournament")
-                await session.close()
-            tournament = (await returned.json())["started"][0]["id"]
-
         async with aiohttp.ClientSession() as session:
+            if tournament is None:
+                returned = await session.get(f"https://lichess.org/api/tournament")
+                tournament = (await returned.json())["started"][0]["id"]
+
             returned = await session.get(f"https://lichess.org/api/tournament/{tournament}")
             await session.close()
         

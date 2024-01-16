@@ -5,11 +5,12 @@ import datetime
 import asyncio
 
 import sys
-import importlib
 
 import utility.files as u_files
 import utility.interface as u_interface
 import utility.custom as u_custom
+import utility.text as u_text
+import utility.converters as u_converters
 
 bingo_time = datetime.time(
     hour = 23,
@@ -97,15 +98,98 @@ class Triggers_cog(u_custom.CustomCog, name="Triggers", description="Hey there! 
         
         u_files.save("data/bread/gamble_messages.json", gamble_messages)
     
+    async def ask_ouija(self, message: discord.Message):
+        ouija_data = u_files.get_ouija_data(message.channel.id)
+
+        if not ouija_data["active"]:
+            return
+        
+        if message.content.lower() == "goodbye":
+            u_files.set_ouija_data(message.channel.id, active = False)
+
+            reply_message = message.channel.get_partial_message(ouija_data["message_id"])
+
+            try:
+                await u_interface.smart_reply(reply_message, "Ouija says:\n{}".format(u_text.ping_filter(ouija_data["letters"])))
+            except AttributeError: # If the message was deleted.
+                await u_interface.safe_send(message, "<@{}>,\nOuija says:\n{}".format(ouija_data["author_id"], u_text.ping_filter(ouija_data["letters"])))
+            except:
+                # Reraise any other exceptions.
+                raise
+
+            return
+        
+        content = message.content.strip()
+
+        if content == "** **":
+            content = " "
+
+        u_files.set_ouija_data(message.channel.id, letters = "{}{}".format(ouija_data["letters"], content))
+    
+    async def counting(self, message: discord.Message):
+        sent_number = u_converters.parse_int(message.content)
+
+        counting_data = u_files.get_counting_data(message.channel.id)
+
+        if sent_number > counting_data["count"]:
+            if sent_number > counting_data["count"] + 1:
+                if counting_data["sender"] == 0: # If 1 hasn't been sent since the last break.
+                    return
+                
+                u_files.set_counting_data(
+                    channel_id = message.channel.id,
+                    count = 0,
+                    sender = 0
+                )
+                embed = u_interface.embed(
+                    title = "You broke the counting!",
+                    description = "The counting was broken at **{}** by {}!\nYou must restart at 1.\nGet ready for the brick <:trol:1015821884450947173>".format(
+                        u_text.smart_number(counting_data["count"]),
+                        message.author.mention
+                    )
+                )
+                try:
+                    await message.add_reaction("<a:you_cant_count:1134902783095603300>")
+                    await u_interface.smart_reply(message, embed=embed)
+                except discord.errors.Forbidden:
+                    u_files.set_counting_data(channel_id = message.channel.id, count = counting_data["count"], sender = counting_data["sender"])
+                
+                return
+            
+            if message.author.id == counting_data["sender"]:
+                return # So someone can't go twice in a row.
+            
+            u_files.set_counting_data(
+                channel_id = message.channel.id,
+                count = sent_number,
+                sender = message.author.id
+            )
+            try:
+                await message.add_reaction("<a:you_can_count:1133795506099867738>")
+            except discord.errors.Forbidden:
+                u_files.set_counting_data(channel_id = message.channel.id, count = counting_data["count"], sender = counting_data["sender"])
+                
+
+
+            
+            
+
+    
     @commands.Cog.listener()
     async def on_message(self, message):
+        # Just a note, while there's u_custom.CustomContext for context objects, there is no CustomMessage, so u_interface.smart_reply still needs to be used.
+
         # Autodetection.
 
         # PluralKit replies.
 
         # Counting
+        if u_converters.is_digit(message.content):
+            await self.counting(message)
         
         # AskOuija
+        if len(message.content) == 1 or message.content.strip() == "** **" or message.content.lower() == "goodbye":
+            await self.ask_ouija(message)
 
         # ???
 

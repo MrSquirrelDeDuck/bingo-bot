@@ -147,7 +147,14 @@ async def safe_send(ctx, content: str = "", **kwargs) -> discord.Message:
 
     kwargs["allowed_mentions"] = everyone_prevention
     
-    return await ctx.send(content, **kwargs)
+    try:
+        return await ctx.send(content, **kwargs)
+    except AttributeError: # If the context passed was a discord.Message object.
+        return await ctx.channel.send(content, **kwargs)
+    except:
+        # Reraise any other exceptions.
+        raise
+
 
 def is_reply(message: discord.Message) -> bool:
     """Returns a boolean for whether the message provided is a reply.

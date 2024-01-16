@@ -2,6 +2,7 @@
 
 import json
 import typing
+from os.path import sep as SLASH
 
 def load(path: str, default = None) -> dict | list:
     """Loads a json file. The provided default will be returned if the file does not exist or there is a problem loading it."""
@@ -85,3 +86,103 @@ def update_ping_list(ping_list_name: str, user_id: int, new_state: bool) -> None
     ping_list_file[ping_list_name].remove(user_id)
     set_ping_list_file(ping_list_file)
     return
+
+def get_ouija_data(channel_id: typing.Union[str, int]) -> dict[str, typing.Union[str, int, bool]]:
+    """Gets ouija data.
+
+    Args:
+        channel_id (typing.Union[str, int]): Channel id, as a string or an int.
+
+    Returns:
+        dict[str, typing.Union[str, int, bool]]: The found data.
+    """
+    ouija_data = load(f"data{SLASH}askouija.json")
+
+    return ouija_data.get(str(channel_id), {"active": False, "letters": "", "message_id": None, "author_id": None})
+
+def set_ouija_data(channel_id: typing.Union[str, int], active: bool = None, letters: str = None, message_id: int = None, author_id: int = None) -> dict[str, typing.Union[str, int, bool]]:
+    """Modifies a piece of ouija data.
+
+    Args:
+        channel_id (typing.Union[str, int]): The channel id, as a string or an int.
+        active (bool, optional): New active setting. Defaults to None.
+        letters (str, optional): New letters. Defaults to None.
+        message_id (int, optional): New message id. Defaults to None.
+        author_id (int, optional): New author id. Defaults to None.
+
+    Returns:
+        dict[str, typing.Union[str, int, bool]]: The updated dict for the channel.
+    """
+    ouija_data = load(f"data{SLASH}askouija.json")
+
+    if str(channel_id) not in ouija_data:
+        new = {
+            "active": active,
+            "letters": letters,
+            "message_id": message_id,
+            "author_id": author_id
+        }
+        ouija_data[str(channel_id)] = new
+        save(f"data{SLASH}askouija.json", ouija_data)
+        return new
+    
+    new = {}
+
+    if active is not None:
+        new["active"] = active
+    if letters is not None:
+        new["letters"] = letters
+    if message_id is not None:
+        new["message_id"] = message_id
+    if author_id is not None:
+        new["author_id"] = author_id
+    
+    ouija_data[str(channel_id)].update(new)
+    save(f"data{SLASH}askouija.json", ouija_data)
+    return ouija_data[str(channel_id)]
+
+def get_counting_data(channel_id: typing.Union[str, int]) -> dict[str, typing.Union[str, int, bool]]:
+    """Gets counting data.
+
+    Args:
+        channel_id (typing.Union[str, int]): Channel id, as a string or an int.
+
+    Returns:
+        dict[str, typing.Union[str, int, bool]]: The found data.
+    """
+    counting_data = load(f"data{SLASH}counting_data.json")
+
+    return counting_data.get(str(channel_id), {"count": 0, "sender": 0})
+
+def set_counting_data(channel_id: typing.Union[str, int], count: int = None, sender: int = None) -> dict[str, typing.Union[str, int, bool]]:
+    """Modifies a piece of counting data.
+
+    Args:
+        channel_id (typing.Union[str, int]): The channel id, as a string or an int.
+        count (int, optional): New count. Defaults to None.
+        sender (int, optional): New sender id. Defaults to None.
+
+    Returns:
+        dict[str, typing.Union[str, int, bool]]: The updated dict for the channel.
+    """
+    counting_data = load(f"data{SLASH}counting_data.json")
+
+    if str(channel_id) not in counting_data:
+        new = {
+            "count": count,
+            "sender": sender
+        }
+        counting_data[str(channel_id)] = new
+        save(f"data{SLASH}counting_data.json", counting_data)
+        return new
+    
+    new = {}
+
+    if count is not None:
+        new["count"] = count
+    if sender is not None:
+        new["sender"] = sender
+    
+    counting_data[str(channel_id)].update(new)
+    save(f"data{SLASH}counting_data.json", counting_data)
+    return counting_data[str(channel_id)]
