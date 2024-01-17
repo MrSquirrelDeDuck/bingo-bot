@@ -253,7 +253,7 @@ def is_gamble(message: discord.Message) -> bool:
     
     return True
 
-def resolve_conflict(message: discord.Message, stats_type: str, user_provided: list[typing.Any], stat_keys: list[u_values.Item | u_values.ChessItem | u_values.StonkItem | str]) -> typing.Union[tuple[list[typing.Any], typing.Union[discord.Message, None]], bool]:
+def resolve_conflict(message: discord.Message, stats_type: str, user_provided: list[typing.Any], stat_keys: list[u_values.Item | u_values.ChessItem | u_values.StonkItem | str]) -> typing.Union[list[typing.Any], bool]:
     """
     Resolves conflicts between user-provided input and the stats parser.
     The method behind this is very simple, if it's provided by the user, use it, otherwise use the output from the stats parser.

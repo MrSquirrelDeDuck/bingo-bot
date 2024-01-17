@@ -18,9 +18,9 @@ import utility.checks as u_checks
 import utility.bread as u_bread
 import utility.values as u_values
 import utility.custom as u_custom
+import utility.solvers as u_solvers
 
 class Bread_cog(u_custom.CustomCog, name="Bread", description="Utility commands for The Bread Game!"):
-    # bread_wiki_object = mediawiki.MediaWiki(user_agent='pyMediaWiki-Bingo-Bot', url="https://bread.miraheze.org/w/api.php")
     bread_wiki_searching = False
 
     # This is a list of unix timestamps, such that if you use <t:time_keys[0]> it'll be the right time.
@@ -1019,6 +1019,132 @@ class Bread_cog(u_custom.CustomCog, name="Bread", description="Utility commands 
             description = "{}% of {} is **{}**".format(u_text.smart_number(percent * 100), u_text.smart_number(value), u_text.smart_number(round(value * percent, 2)))
         )
         await ctx.reply(embed=embed)
+
+    
+
+        
+    ######################################################################################################################################################
+    ##### BREAD GOLD GEM #################################################################################################################################
+    ######################################################################################################################################################
+    
+    @bread.command(
+        name = "gold_gem",
+        aliases = ["gem_gold"],
+        brief = "Figures out how many gold gems you can make.",
+        description = "Figures out how many gold gems you can make.\nYou can reply to a stats message to get information from it. You can also provide the amount of each gem you have to override the stats parser.\nIf you do not reply to a stats message you msut provide the amount of each gem you have."
+    )
+    async def bread_gem_value(self, ctx,
+            red_gems: typing.Optional[u_converters.parse_int] = commands.parameter(description = "The amount of red gems you have."),
+            blue_gems: typing.Optional[u_converters.parse_int] = commands.parameter(description = "The amount of blue gems you have."),
+            purple_gems: typing.Optional[u_converters.parse_int] = commands.parameter(description = "The amount of purple gems you have."),
+            green_gems: typing.Optional[u_converters.parse_int] = commands.parameter(description = "The amount of green gems you have."),
+            gold_gems: typing.Optional[u_converters.parse_int] = commands.parameter(description = "Optional amount of gold gems you have.")
+        ):
+
+        ISSUE_TEXT = "If not replying to a stats message, provide the quantity of each gem you have aside from gold gems. Reply to a stats message to parse the stats. You can also specify the quantity of each gem you possess to override the stats parser."      
+
+        async def determine_gems():
+            nonlocal red_gems, blue_gems, purple_gems, green_gems, gold_gems
+            if None not in [red_gems, blue_gems, purple_gems, green_gems, gold_gems]:
+                return
+            
+            replied_to = u_interface.replying_mm_checks(ctx.message, require_reply=True, return_replied_to=True)
+
+            if not replied_to:
+                if gold_gems is None:
+                    gold_gems = 0
+                    return
+                
+                await ctx.reply(ISSUE_TEXT)
+                return
+            
+            parsed = u_bread.parse_stats(replied_to)
+
+            if parsed.get("stats_type") != "main":
+                if gold_gems is None:
+                    gold_gems = 0
+                    return
+                
+                await ctx.reply(ISSUE_TEXT)
+                return
+            
+            if red_gems is None:
+                red_gems = parsed["stats"].get(u_values.gem_red, 0)
+            if blue_gems is None:
+                blue_gems = parsed["stats"].get(u_values.gem_blue, 0)
+            if purple_gems is None:
+                purple_gems = parsed["stats"].get(u_values.gem_purple, 0)
+            if green_gems is None:
+                green_gems = parsed["stats"].get(u_values.gem_green, 0)
+            if gold_gems is None:
+                gold_gems = parsed["stats"].get(u_values.gem_gold, 0)
+        
+        await determine_gems()
+
+        if gold_gems is None:
+            gold_gems = 0
+
+        solver_result = u_solvers.gold_gem_solver(
+            gem_red = red_gems,
+            gem_blue = blue_gems,
+            gem_purple = purple_gems,
+            gem_green = green_gems
+        )
+
+        # Quick alchemy simulation to determine the command order.
+        command_list = []
+        gems = {
+            u_values.gem_red: red_gems,
+            u_values.gem_blue: blue_gems,
+            u_values.gem_purple: purple_gems,
+            u_values.gem_green: green_gems,
+            u_values.gem_gold: gold_gems
+        }
+        pre_alchemy = gems.copy()
+
+        recipes = [name for name, value in solver_result.items() if "recipe" in name and value >= 1]
+
+        for i in range(len(recipes)):
+            for recipe_name in recipes.copy():
+                recipe_item = recipe_name.split("_recipe_")[0]
+                recipe_id = int(recipe_name.split("_recipe_")[-1])
+                recipe_amount = solver_result[recipe_name]
+
+                alchemy_data = u_values.alchemy_recipes[recipe_item][recipe_id - 1]
+                for cost_item, cost_value in alchemy_data["cost"]:
+                    if not gems[cost_item] >= cost_value:
+                        break
+                else:
+                    command_list.append(f"$bread distill {solver_result[recipe_name]} {recipe_item} {recipe_id} y")
+                    for cost_item, cost_value in alchemy_data["cost"]:
+                        gems[cost_item] -= cost_value * recipe_amount
+
+                    print(gems[u_values.get_item(recipe_item)], alchemy_data.get("result", 1), recipe_amount)
+                    gems[u_values.get_item(recipe_item)] += alchemy_data.get("result", 1) * recipe_amount
+                    
+                    recipes.remove(recipe_name)
+                    break
+        
+        embed = u_interface.embed(
+            title = "Gold gem solver",
+            description = "{}\nYou should be able to make **{}**.\nDough gain: {} ({} with [Gold Ring](<https://bread.miraheze.org/wiki/Gold_Ring>).)".format(
+                "\n".join([f"{gem}: {u_text.smart_number(pre_alchemy[gem])} -> {u_text.smart_number(gems[gem])}" for gem in pre_alchemy]),
+                u_text.smart_text(solver_result["gem_gold_total"], "gold gem"),
+                u_text.smart_number(round(solver_result["gem_gold_total"] * 5000)),
+                u_text.smart_number(round(solver_result["gem_gold_total"] * 10000))
+            ),
+            fields = [
+                ("Commands:", "\n".join(command_list), False)
+            ],
+            footer_text = "On mobile you can tap and hold on the commands section to copy it."
+        )
+        
+        await ctx.reply(embed=embed)
+
+
+        
+
+
 
 
 async def setup(bot: commands.Bot):
