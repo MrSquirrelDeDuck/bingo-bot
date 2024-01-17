@@ -5,6 +5,7 @@ import datetime
 import asyncio
 import aiohttp
 import time
+import traceback
 import re
 import random
 
@@ -112,10 +113,21 @@ class Triggers_cog(u_custom.CustomCog, name="Triggers", description="Hey there! 
             )
             content = "New xkcd strip!!\n\nPinglist:\n{}\nUse `%xkcd ping` to add or remove yourself from the pinglist.".format("".join([f"<@{str(item)}>" for item in ping_list_data["xkcd_strips"]]))
 
-            await ping_list_channel.send(content=content, embed=embed)
+            xkcd_message = await ping_list_channel.send(content=content, embed=embed)
 
             ping_list_data["xkcd_previous"] = return_json["num"]
             u_files.save("data/ping_lists.json", ping_list_data)
+
+            try:
+                created_thread = await xkcd_message.create_thread(
+                    name=f"Comic #{return_json['num']}: {return_json['title']} discussion thread",
+                    auto_archive_duration=4320,
+                    reason="Auto thread creation for xkcd pinglist."
+                )
+                await created_thread.send(f"Discussion for this comic goes here!\n[Explain xkcd link.](<https://www.explainxkcd.com/wiki/index.php/{return_json['num']}>)")
+            except:
+                print("Issue with creating xkcd thread.")
+                print(traceback.format_exc())
 
 
     @hourly_loop.before_loop
