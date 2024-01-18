@@ -602,6 +602,27 @@ def get_item(item_identifier: str, attributes: typing.Union[str, list[str]] = No
     
     return None
 
+def convert_dict(item_dict: dict[str, int]) -> dict[type[Item] | str, int]:
+    """Converts the keys in a dict to Item objects (or subclasses) while ignoring the values that aren't items.
+
+    Args:
+        item_dict (dict[str, int]): The dict to convert.
+
+    Returns:
+        dict[type[Item] | str, int]: The converted dict with Item or string keys.
+    """
+
+    for key in item_dict:
+        item = get_item(key)
+
+        if not item:
+            continue
+
+        item_dict[item] = item_dict.pop(key)
+    
+    return item_dict
+
+
 class ItemConverter(commands.Converter):
     """Converter that can be used in a command to automatically convert an argument to an item."""
 
@@ -946,6 +967,22 @@ alchemy_recipes = {
         {
 			"cost": [(bread, 10)]
 		}
+    ]
+}
+
+###############################################################################################################################
+# ███    ███ ██ ███████  ██████      ██████  ██████  ███    ██ ██    ██ ███████ ██████  ███████ ██  ██████  ███    ██ ███████ #
+# ████  ████ ██ ██      ██          ██      ██    ██ ████   ██ ██    ██ ██      ██   ██ ██      ██ ██    ██ ████   ██ ██      #
+# ██ ████ ██ ██ ███████ ██          ██      ██    ██ ██ ██  ██ ██    ██ █████   ██████  ███████ ██ ██    ██ ██ ██  ██ ███████ #
+# ██  ██  ██ ██      ██ ██          ██      ██    ██ ██  ██ ██  ██  ██  ██      ██   ██      ██ ██ ██    ██ ██  ██ ██      ██ #
+# ██      ██ ██ ███████  ██████      ██████  ██████  ██   ████   ████   ███████ ██   ██ ███████ ██  ██████  ██   ████ ███████ #
+###############################################################################################################################
+
+misc_conversions = {
+    "chessatron": [
+        {
+            "cost": [(bpawn, 8), (bbishop, 2), (brook, 2), (bknight, 2), (bqueen, 1), (bking, 1), (wpawn, 8), (wbishop, 2), (wknight, 2), (wrook, 2), (wqueen, 1), (wking, 1)]
+        }
     ]
 }
 

@@ -7,6 +7,7 @@ import copy
 import math
 import aiohttp
 import traceback
+import re
 
 import sys
 
@@ -16,6 +17,7 @@ import utility.text as u_text
 import utility.interface as u_interface
 import utility.checks as u_checks
 import utility.bread as u_bread
+import utility.stonks as u_stonks
 import utility.values as u_values
 import utility.custom as u_custom
 import utility.solvers as u_solvers
@@ -618,8 +620,6 @@ class Bread_cog(u_custom.CustomCog, name="Bread", description="Utility commands 
         purchasable = equation(dough, current, self_converting_yeast)
         purchasable_no_scy = equation(dough, current, 0)
 
-        print(purchasable_no_scy)
-
         embed = u_interface.embed(
             title = "Loaf Converter dough calculation",
             description = f"With {u_text.smart_number(dough)} dough, it would be possible to purchase **{u_text.smart_text(purchasable, 'Loaf Converter')}**.\nYou would go from {u_text.smart_text(current, 'Loaf Converter')} to {u_text.smart_number(purchasable + current)}.\nWith {u_text.smart_text(self_converting_yeast, 'level')} of Self Converting Yeast, you are able to purchase **{u_text.smart_text(purchasable - purchasable_no_scy, 'more Loaf Converter')}**."
@@ -1033,7 +1033,7 @@ class Bread_cog(u_custom.CustomCog, name="Bread", description="Utility commands 
         brief = "Figures out how many gold gems you can make.",
         description = "Figures out how many gold gems you can make.\nYou can reply to a stats message to get information from it. You can also provide the amount of each gem you have to override the stats parser.\nIf you do not reply to a stats message you msut provide the amount of each gem you have."
     )
-    async def bread_gem_value(self, ctx,
+    async def bread_gold_gem(self, ctx,
             red_gems: typing.Optional[u_converters.parse_int] = commands.parameter(description = "The amount of red gems you have."),
             blue_gems: typing.Optional[u_converters.parse_int] = commands.parameter(description = "The amount of blue gems you have."),
             purple_gems: typing.Optional[u_converters.parse_int] = commands.parameter(description = "The amount of purple gems you have."),
@@ -1043,7 +1043,7 @@ class Bread_cog(u_custom.CustomCog, name="Bread", description="Utility commands 
 
         ISSUE_TEXT = "If not replying to a stats message, provide the quantity of each gem you have aside from gold gems. Reply to a stats message to parse the stats. You can also specify the quantity of each gem you possess to override the stats parser."      
 
-        async def determine_gems():
+        async def determine_gems() -> bool | None:
             nonlocal red_gems, blue_gems, purple_gems, green_gems, gold_gems
             if None not in [red_gems, blue_gems, purple_gems, green_gems, gold_gems]:
                 return
@@ -1051,12 +1051,12 @@ class Bread_cog(u_custom.CustomCog, name="Bread", description="Utility commands 
             replied_to = u_interface.replying_mm_checks(ctx.message, require_reply=True, return_replied_to=True)
 
             if not replied_to:
-                if gold_gems is None:
+                if gold_gems is None and all([red_gems, blue_gems, purple_gems, green_gems]):
                     gold_gems = 0
                     return
                 
                 await ctx.reply(ISSUE_TEXT)
-                return
+                return True
             
             parsed = u_bread.parse_stats(replied_to)
 
@@ -1066,7 +1066,7 @@ class Bread_cog(u_custom.CustomCog, name="Bread", description="Utility commands 
                     return
                 
                 await ctx.reply(ISSUE_TEXT)
-                return
+                return True
             
             if red_gems is None:
                 red_gems = parsed["stats"].get(u_values.gem_red, 0)
@@ -1079,20 +1079,14 @@ class Bread_cog(u_custom.CustomCog, name="Bread", description="Utility commands 
             if gold_gems is None:
                 gold_gems = parsed["stats"].get(u_values.gem_gold, 0)
         
-        await determine_gems()
+        determined = await determine_gems()
+
+        if determined: # True is only returned if a message is sent.
+            return
 
         if gold_gems is None:
             gold_gems = 0
 
-        solver_result = u_solvers.gold_gem_solver(
-            gem_red = red_gems,
-            gem_blue = blue_gems,
-            gem_purple = purple_gems,
-            gem_green = green_gems
-        )
-
-        # Quick alchemy simulation to determine the command order.
-        command_list = []
         gems = {
             u_values.gem_red: red_gems,
             u_values.gem_blue: blue_gems,
@@ -1100,35 +1094,17 @@ class Bread_cog(u_custom.CustomCog, name="Bread", description="Utility commands 
             u_values.gem_green: green_gems,
             u_values.gem_gold: gold_gems
         }
-        pre_alchemy = gems.copy()
+        
+        if any([value > 1_000_000_000_000 for value in gems.values() if value is not None]):
+            await ctx.reply("For optimization purposes, you can only provide up to 1 trillion of each gem.")
+            return
 
-        recipes = [name for name, value in solver_result.items() if "recipe" in name and value >= 1]
-
-        for i in range(len(recipes)):
-            for recipe_name in recipes.copy():
-                recipe_item = recipe_name.split("_recipe_")[0]
-                recipe_id = int(recipe_name.split("_recipe_")[-1])
-                recipe_amount = solver_result[recipe_name]
-
-                alchemy_data = u_values.alchemy_recipes[recipe_item][recipe_id - 1]
-                for cost_item, cost_value in alchemy_data["cost"]:
-                    if not gems[cost_item] >= cost_value:
-                        break
-                else:
-                    command_list.append(f"$bread distill {solver_result[recipe_name]} {recipe_item} {recipe_id} y")
-                    for cost_item, cost_value in alchemy_data["cost"]:
-                        gems[cost_item] -= cost_value * recipe_amount
-
-                    print(gems[u_values.get_item(recipe_item)], alchemy_data.get("result", 1), recipe_amount)
-                    gems[u_values.get_item(recipe_item)] += alchemy_data.get("result", 1) * recipe_amount
-                    
-                    recipes.remove(recipe_name)
-                    break
+        command_list, post_alchemy, solver_result = u_solvers.solver_wrapper(items = gems, maximize = u_values.gem_gold)
         
         embed = u_interface.embed(
             title = "Gold gem solver",
             description = "{}\nYou should be able to make **{}**.\nDough gain: {} ({} with [Gold Ring](<https://bread.miraheze.org/wiki/Gold_Ring>).)".format(
-                "\n".join([f"{gem}: {u_text.smart_number(pre_alchemy[gem])} -> {u_text.smart_number(gems[gem])}" for gem in pre_alchemy]),
+                "\n".join([f"{gem}: {u_text.smart_number(gems[gem])} -> {u_text.smart_number(post_alchemy[gem])}" for gem in gems]),
                 u_text.smart_text(solver_result["gem_gold_total"], "gold gem"),
                 u_text.smart_number(round(solver_result["gem_gold_total"] * 5000)),
                 u_text.smart_number(round(solver_result["gem_gold_total"] * 10000))
@@ -1141,7 +1117,364 @@ class Bread_cog(u_custom.CustomCog, name="Bread", description="Utility commands 
         
         await ctx.reply(embed=embed)
 
+    
 
+        
+    ######################################################################################################################################################
+    ##### BREAD DATA #####################################################################################################################################
+    ######################################################################################################################################################
+    
+    bread_data_usage = [
+        "%bread tron solve",
+        "%bread tron quick"
+    ]
+    
+    @bread.group(
+        name = "data",
+        brief = "Store data for use in other commands.",
+        description = "Store data for use in other commands.\n\nThe following commands use this feature:\n{}".format("\n".join([f"- {item}" for item in bread_data_usage])),
+        invoke_without_command = True,
+        pass_context = True
+    )
+    async def bread_data(self, ctx):
+        if ctx.invoked_subcommand is not None:
+            return
+        
+        stored = u_bread.get_stored_data(ctx.author.id)
+
+        stored_message = "You do not have any stored data." if stored is None else "You have stored data!"
+
+        embed = u_interface.embed(
+            title = "Stored data",
+            description = f"{stored_message}\n\nUse `%bread data store` when replying to stats to store the data.\nUse `%bread data inventory` to view the current stored data.\nUse `%bread data clear` to clear the stored data.\n\nTo get a list of all the commands that use this feature, use `%help bread data`."
+        )
+        await ctx.reply(embed=embed)
+        return
+            
+    
+
+        
+    ######################################################################################################################################################
+    ##### BREAD DATA STORE ###############################################################################################################################
+    ######################################################################################################################################################
+    
+    @bread_data.command(
+        name = "store",
+        brief = "Store data by replying to stats messages.",
+        description = "Store data by replying to stats messages.\n\nTo get a list of all the command that use the stored data feature, use '%help bread data'"
+    )
+    async def bread_data_store(self, ctx):
+        replied_to = u_interface.replying_mm_checks(ctx.message, require_reply=False, return_replied_to=True)
+
+        if not replied_to:
+            await ctx.reply("You must reply to stats message.")
+            return
+        
+        parsed = u_bread.parse_stats(replied_to)
+
+        if not parsed["parse_successful"]:
+            await ctx.reply("You must reply to stats message.")
+            return
+        
+        u_bread.update_stored_data(ctx.author.id, parsed["stats"])
+
+        embed = u_interface.embed(
+            title = "Stored data",
+            description = "Data stored!\n\nUse `%bread data inventory` to view the current stored data.\nUse `%bread data clear` to clear the stored data.\n\nTo get a list of all the commands that use the stored data feature, use `%help bread data`."
+        )
+
+        await ctx.reply(embed=embed)
+            
+    
+
+        
+    ######################################################################################################################################################
+    ##### BREAD DATA INVENTORY ###########################################################################################################################
+    ######################################################################################################################################################
+    
+    @bread_data.command(
+        name = "inventory",
+        brief = "View your current stored data.",
+        description = "View your current stored data.\n\nTo get a list of all the command that use the stored data feature, use '%help bread data'"
+    )
+    async def bread_data_inventory(self, ctx,
+            page: typing.Optional[u_converters.parse_int] = commands.parameter(description = "The page of the inventory to view.")
+        ):
+        if page is None:
+            page = 1
+
+        page = max(page - 1, 0)
+
+        stored = u_bread.get_stored_data(ctx.author.id)
+
+        if stored is None:
+            await ctx.reply("You do not have any stored data.\nUse `%bread data` to get more information on how to store data.")
+            return
+        
+        PAGE_SIZE = 20 # How many items to show on each page.
+
+        data_keys = list(stored.keys())
+        max_page = math.ceil(len(data_keys) / PAGE_SIZE)
+
+        page = min(page, max_page - 1)
+
+        start = page * PAGE_SIZE
+        end = min((page + 1) * PAGE_SIZE, len(data_keys))
+
+        keys_show = data_keys[start:end]
+
+        lines = []
+
+        for key in keys_show:
+            value = stored[key]
+            if isinstance(value, dict):
+                lines.append("{}: {}".format(
+                    key,
+                    ", ".join([u_values.get_item(item).internal_emoji for item in value.keys()])
+                ))
+                continue
+
+            lines.append(f"{key}: {u_text.smart_number(stored[key])}")
+        
+        embed = u_interface.embed(
+            title = "Stored data inventory",
+            description = "Page {} of {}, showing items {} to {}.\nUse `%bread data inventory <page>` to specify a different page.".format(page + 1, max_page, start, end),
+            fields = [
+                ("", "\n".join(lines), False),
+                ("", "Use `%bread data store` when replying to stats to store the data.\nUse `%bread data clear` to clear the stored data.\n\nTo get a list of all the commands that use the stored data feature, use `%help bread data`.", False)
+            ]
+        )
+        await ctx.reply(embed=embed)
+            
+    
+
+        
+    ######################################################################################################################################################
+    ##### BREAD DATA CLEAR ###############################################################################################################################
+    ######################################################################################################################################################
+    
+    @bread_data.command(
+        name = "clear",
+        brief = "Clears your current stored data.",
+        description = "Clears your current stored data.\n\nTo get a list of all the command that use the stored data feature, use '%help bread data'"
+    )
+    async def bread_data_clear(self, ctx):
+        u_bread.clear_stored_data(ctx.author.id)
+        
+        embed = u_interface.embed(
+            title = "Stored data cleared",
+            description = "Your stored data has been cleared.\n\nUse `%bread data store` when replying to stats to store the data.\nUse `%bread data inventory` to view the current stored data.\n\nTo get a list of all the commands that use this feature, use `%help bread data`."
+        )
+
+        await ctx.reply(embed = embed)
+        
+            
+    
+
+        
+    ######################################################################################################################################################
+    ##### BREAD CHESSATRON ###############################################################################################################################
+    ######################################################################################################################################################
+    
+    @bread.group(
+        name = "chessatron",
+        aliases = ["tron"],
+        brief = "Chessatron related utility commands, including a solver.",
+        description = "Chessatron related utility commands, including a solver.\nMost of these require having data stored with the `%bread data` feature.",
+        invoke_without_command = True,
+        pass_context = True
+    )
+    async def bread_chessatron(self, ctx):
+        if ctx.invoked_subcommand is not None:
+            return
+        
+        await ctx.send_help(self.bread_chessatron)
+
+    
+
+        
+    ######################################################################################################################################################
+    ##### BREAD CHESSATRON SOLVE #########################################################################################################################
+    ######################################################################################################################################################
+    
+    @bread_chessatron.command(
+        name = "solve",
+        aliases = ["solver"],
+        brief = "The chessatron solver.",
+        description = "The chessatron solver.\nThis does require storing data with the `%bread data` feature."
+    )
+    async def bread_chessatron_solve(self, ctx):
+        stored_data = u_bread.get_stored_data(ctx.author.id)
+
+        if stored_data is None:
+            await ctx.reply("You do not have any stored data.\nUse `%bread data` to get more information on how to store data.")
+            return
+        
+        items = {}
+
+        attributes = [u_values.all_chess_pieces, u_values.all_rares, u_values.all_specials]
+        for attribute in attributes:
+            for item in attribute:
+                items[item] = stored_data.get(item, 0)
+
+        items[u_values.bread] = stored_data.get(u_values.bread, 0) # Bread has no attributes we can search for :(
+        items[u_values.chessatron] = stored_data.get(u_values.chessatron, 0)
+
+        # Run the solver.
+        
+        command_list, post_alchemy, solver_result = u_solvers.solver_wrapper(
+            items = items,
+            maximize = u_values.chessatron
+        )
+
+        ################
+        
+        embed = u_interface.embed(
+            title = "Chessatron solver",
+            description = "{}\nYou should be able to make **{}** {} with an estimated gain of **{} dough**.".format(
+                "\n".join([f"{item}: {u_text.smart_number(items[item])} -> {u_text.smart_number(post_alchemy[item])}" for item in items]),
+                u_text.smart_number(solver_result["chessatron_total"]),
+                u_values.chessatron,
+                u_text.smart_number(round(solver_result["chessatron_total"] * u_bread.calculate_tron_value(
+                    ascension = stored_data.get("prestige_level"),
+                    omega_count = stored_data.get(u_values.omega_chessatron),
+                    shadowmegas = stored_data.get(u_values.shadowmega_chessatron),
+                    chessatron_contraption = stored_data.get("chessatron_shadow_boost")
+                )))
+            ),
+            fields = [
+                ("Commands:", "\n".join(command_list), False)
+            ],
+            footer_text = "On mobile you can tap and hold on the commands section to copy it."
+        )
+        
+        await ctx.reply(embed=embed)
+
+    
+
+        
+    ######################################################################################################################################################
+    ##### BREAD CHESSATRON QUICK #########################################################################################################################
+    ######################################################################################################################################################
+    
+    @bread_chessatron.command(
+        name = "quick",
+        brief = "Tells how many chessatrons can be made from just pawns.",
+        description = "Tells how many chessatrons can be made from just pawns.\nNote that this uses the data stored with the `%bread data` feature.\nThis is assuming pawns are the limiting factor.\nIt uses this formula:\n((bpawn - wpawn) / 3 + wpawn) / 8\n\nThis does require storing data with the `%bread data` feature."
+    )
+    async def bread_chessatron_solve(self, ctx):
+        stored_data = u_bread.get_stored_data(ctx.author.id)
+
+        if stored_data is None:
+            await ctx.reply("You do not have any stored data.\nUse `%bread data` to get more information on how to store data.")
+            return
+        
+        bpawn = stored_data.get(u_values.bpawn, 0)
+        wpawn = stored_data.get(u_values.wpawn, 0)
+
+        initial_subtaction = bpawn - wpawn
+        first_division = initial_subtaction / 3
+        addition = first_division + wpawn
+        final_division = addition / 8
+
+        tron_value = u_bread.calculate_tron_value(
+            ascension = stored_data.get("prestige_level"),
+            omega_count = stored_data.get(u_values.omega_chessatron),
+            shadowmegas = stored_data.get(u_values.shadowmega_chessatron),
+            chessatron_contraption = stored_data.get("chessatron_shadow_boost")
+        )
+
+        embed = u_interface.embed(
+            title = "Quick chessatrons",
+            description = f"{u_values.bpawn}: {u_text.smart_number(bpawn)}\n{u_values.wpawn}: {u_text.smart_number(wpawn)}\nResult: **{u_text.smart_text(int(final_division), 'chessatron')}**.\nAt a rate of {u_text.smart_number(tron_value)} per tron: **{u_text.smart_number(round(int(final_division) * tron_value))} dough**",
+            fields = [
+                ("Equation:", f"- {u_text.smart_number(round(bpawn))} - {u_text.smart_number(round(wpawn))} = {u_text.smart_number(round(initial_subtaction))}\n- {u_text.smart_number(round(initial_subtaction))} / 3 = {u_text.smart_number(round(first_division, 2))}\n- {u_text.smart_number(round(first_division, 2))} + {u_text.smart_number(round(wpawn))} = {u_text.smart_number(round(addition, 2))}\n- {u_text.smart_number(round(addition, 2))} / 8 = {u_text.smart_number(round(final_division, 2))}", False)
+            ]
+        )
+        await ctx.reply(embed=embed)
+
+    
+
+        
+    ######################################################################################################################################################
+    ##### BREAD CHESSATRON VALUE #########################################################################################################################
+    ######################################################################################################################################################
+    
+    @bread_chessatron.command(
+        name = "value",
+        brief = "Estimation of tron value and gives gifting commands.",
+        description = "Estimates the value of the chess pieces and gems in your stored data and gives you commands for gifting them to someone else via stonks.\nYou can provide a percentage to multiply the total value by.\n\nThis is using the data stored with the `%bread data` feature."
+    )
+    async def bread_chessatron_solve(self, ctx,
+            user: typing.Optional[discord.Member] = commands.parameter(description = "The person to gift the dough to."),
+            tron_value: typing.Optional[u_converters.parse_int] = commands.parameter(description = "The amount of dough you get per tron."),
+            percentage: typing.Optional[u_converters.parse_percent] = commands.parameter(description = "What percentage of the tron dough to gift."),
+            stonk: typing.Optional[u_values.StonkConverter] = commands.parameter(description = "The stonk to use, will use whatever is closest if nothing is given.")
+        ):
+        stored = u_bread.get_stored_data(ctx.author.id)
+
+        if stored is None:
+            await ctx.reply("You do not have any stored data.\nUse `%bread data` to get more information on how to store data.")
+            return
+        
+        if user is None:
+            await ctx.reply("You must provide a person to gift the stonks to.")
+            return
+        
+        if tron_value is None:
+            tron_value = u_bread.calculate_tron_value(
+                ascension = stored.get("prestige_level"),
+                omega_count = stored.get(u_values.omega_chessatron),
+                shadowmegas = stored.get(u_values.shadowmega_chessatron),
+                chessatron_contraption = stored.get("chessatron_shadow_boost")
+            )
+        
+        if percentage is None:
+            percentage = 1
+        
+        bpawns = stored.get(u_values.bpawn, 0)
+        wpawns = stored.get(u_values.wpawn, 0)
+
+        gems = {
+            gem: stored.get(gem, 0)
+            for gem in u_values.all_shiny
+        }
+
+        pawn_contribution_initial = bpawns + wpawns
+        pawn_contribution_final = pawn_contribution_initial / 16
+
+        gem_contribution_initial = sum(gems.values()) + (gems.get(u_values.gem_gold) * 3)
+        gem_contribution_final = gem_contribution_initial / 32
+
+        total_trons = int(pawn_contribution_final + gem_contribution_final)
+        total_dough = round(total_trons * tron_value)
+        after_percentage = round(total_dough * percentage)
+
+        if stonk is None:
+            stonk = u_stonks.closest_to_dough(after_percentage)
+        
+        gift_amount, remaining = divmod(after_percentage, stonk.value())
+
+        sm = u_text.smart_number
+        
+        embed = u_interface.embed(
+            title = "Chessatron value estimation",
+            description = f"{u_values.bpawn}: {sm(bpawns)}, {u_values.wpawn}: {sm(wpawns)}\n{', '.join([f'{gem}: {sm(gems[gem])}' for gem in u_values.all_shiny])}",
+            fields = [
+                ("", f"Trons from pieces: {sm(round(pawn_contribution_final, 2))}\nTrons from gem chessatron: {sm(round(gem_contribution_final, 2))}\nTotal chessatrons: **{u_text.smart_text(total_trons, 'chessatron')}**, which, at a rate of {sm(tron_value)} per chessatron, is worth **{sm(total_dough)} dough**.\n\nWith a percentage of {percentage * 100}%, it results in **{sm(after_percentage)} dough**.\n\nGifting {sm(gift_amount)} {stonk} results in {sm(remaining)} remaining dough.", False),
+                ("Equation:", f"- {sm(bpawns)} + {sm(wpawns)} = {sm(pawn_contribution_initial)}\n- {sm(pawn_contribution_initial)} / 16 = {sm(pawn_contribution_final)}\n\n- {sm(gem_contribution_initial)} (Sum of gems in red gems.)\n- {sm(gem_contribution_initial)} / 32 = {sm(gem_contribution_final)}\n\n- {sm(pawn_contribution_final)} + {sm(gem_contribution_final)} = {sm(total_trons)}\n- {sm(tron_value)} * {sm(total_trons)} = {sm(total_dough)}\n\n- {percentage * 100}% * {sm(total_dough)} = {sm(after_percentage)}", True),
+                ("Commands:", f"$bread gift {user.id} {gift_amount} {stonk}", True)
+            ],
+            footer_text = "On mobile you can tap and hold on the commands section to copy it."
+        )
+
+        await ctx.reply(embed=embed)
+
+        
+        
+        
+
+    
         
 
 

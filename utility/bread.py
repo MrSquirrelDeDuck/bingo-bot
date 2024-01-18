@@ -8,6 +8,7 @@ import datetime, pytz
 import utility.text as u_text
 import utility.values as u_values
 import utility.interface as u_interface
+import utility.files as u_files
 
 import importlib
 
@@ -487,7 +488,7 @@ def parse_stats(message: discord.Message) -> dict[str, typing.Union[int, u_value
     ### $bread stats chess ###
     ##########################
     
-    if content.startswith("Chess pieces of"):
+    if content.startswith("Chess pieces of") and not content[-1] in ".?!":
         stats = {}
 
         for chess_piece in u_values.all_chess_pieces:
@@ -522,7 +523,7 @@ def parse_stats(message: discord.Message) -> dict[str, typing.Union[int, u_value
     ### $bread stats gambit ###
     ###########################
 
-    if content.startswith("Gambit shop bonuses for"):
+    if content.startswith("Gambit shop bonuses for") and not content[-1] in ".?!":
         stats = {}
 
         for item_name in u_values.all_gambit:
@@ -539,10 +540,8 @@ def parse_stats(message: discord.Message) -> dict[str, typing.Union[int, u_value
             bling = bling.group(1)
 
             bling = u_values.bling_items.index(u_values.get_item(bling)) + 1
-            
-            stats["bling"] = bling
         else:
-            stats["bling"] = 0
+            bling = 0
 
         if len(stats) == 0:
             return {"parse_successful": False}
@@ -550,7 +549,7 @@ def parse_stats(message: discord.Message) -> dict[str, typing.Union[int, u_value
         return {
                 "parse_successful": True,
                 "stats_type": "gambit",
-                "stats": {"dough_boosts": stats}
+                "stats": {"bling": bling, "dough_boosts": stats}
             }
 
     #####################
@@ -734,3 +733,95 @@ def parse_stats(message: discord.Message) -> dict[str, typing.Union[int, u_value
     
     # If nothing is found, say the parsing was unsuccessful.
     return {"parse_successful": False}
+
+def get_stored_data(user_id: int) -> dict[str | u_values.Item, int] | None:
+    """Gets a piece of stored data.
+
+    Args:
+        user_id (int): The user id to look up.
+
+    Returns:
+        dict[str | u_values.Item, int] | None: The returned data, with items replaced with u_values.Item objects. None will be returned if the user id is not in the data.
+    """
+    stored_data = u_files.load("data/bread/data_storage.json")
+    
+    user_id = str(user_id)
+
+    if user_id not in stored_data:
+        return None
+    
+    data = stored_data[user_id]
+    
+    for key in data.copy():
+        item = u_values.get_item(key)
+
+        if not item:
+            continue
+
+        data[item] = data.pop(key)
+    
+    return data
+
+def update_stored_data(user_id: int | str, data: dict[str | u_values.Item, int]) -> dict[str | u_values.Item, int]:
+    """Updates a piece of stored data.
+
+    Args:
+        user_id (int): The user id to update.
+        data (dict[str | u_values.Item, int]): The data to update, preferably the raw data from the parser.
+
+    Returns:
+        dict[str | u_values.Item, int]: The updated data.
+    """
+    stored_data = u_files.load("data/bread/data_storage.json")
+
+    user_id = str(user_id)
+
+    if user_id not in stored_data:
+        stored_data[user_id] = {}
+    
+    def sanitize_list(list_data: list) -> list:
+        for index, value in enumerate(list_data.copy()):
+            try:
+                list_data[index] = value.internal_name
+            except AttributeError:
+                print(value)
+                pass # If the value is not an item, do nothing.
+        return list_data
+    
+    def sanitize_dict(dict_data: dict) -> dict:
+        for key in dict_data.copy():
+            if isinstance(dict_data[key], list):
+                dict_data[key] = sanitize_list(dict_data[key])
+                continue
+            if isinstance(dict_data[key], dict):
+                dict_data[key] = sanitize_dict(dict_data[key]) # recursion go brrrrrrrrr
+                continue
+
+            try:
+                dict_data[key.internal_name] = dict_data[key]
+                del dict_data[key]
+            except AttributeError:
+                print(key)
+                pass # If the key is not an item, do nothing.
+
+        return dict_data
+
+    data = sanitize_dict(data)
+    
+    stored_data[user_id].update(data)
+
+    u_files.save("data/bread/data_storage.json", stored_data)
+
+    return stored_data[user_id]
+
+def clear_stored_data(user_id: int | str) -> None:
+    stored_data = u_files.load("data/bread/data_storage.json")
+    
+    user_id = str(user_id)
+
+    if user_id not in stored_data:
+        return
+    
+    stored_data.pop(user_id)
+
+    u_files.save("data/bread/data_storage.json", stored_data)

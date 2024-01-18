@@ -81,3 +81,14 @@ def parse_stonk_tick(message: discord.Message) -> dict[u_values.StonkItem, list[
         ]
     
     return out
+
+def closest_to_dough(dough_amount: int) -> u_values.StonkItem:
+    """Returns the stonk that, if all the dough is invested in that stonk, would result in the lowest remaining dough.
+
+    Args:
+        dough_amount (int): The amount of dough to use.
+
+    Returns:
+        u_values.StonkItem: The stonk.
+    """
+    return min(u_values.stonks, key=lambda stonk: dough_amount % stonk.value())
