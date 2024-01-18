@@ -7,7 +7,7 @@ import copy
 import math
 import aiohttp
 import traceback
-import re
+from scipy.stats import binom
 
 import sys
 
@@ -1469,6 +1469,69 @@ class Bread_cog(u_custom.CustomCog, name="Bread", description="Utility commands 
         )
 
         await ctx.reply(embed=embed)
+
+    
+
+        
+    ######################################################################################################################################################
+    ##### BREAD PROBABILITY ##############################################################################################################################
+    ######################################################################################################################################################
+    
+    @bread.command(
+        name = "probability",
+        brief = "Calculates probability via Binomial Distribution.",
+        description = "Calculates probability via Binomial Distribution."
+    )
+    async def bread_probability(self, ctx,
+            chance: typing.Optional[u_converters.parse_percent] = commands.parameter(description = "The chance of success."),
+            trials: typing.Optional[u_converters.parse_int] = commands.parameter(description = "The number of trials."),
+            successes: typing.Optional[u_converters.parse_int] = commands.parameter(description = "The number of successes.")
+        ):
+        if None in [chance, trials, successes]:
+            await ctx.reply("You must provide the chance of success, the number of trials, and the number of successes.")
+            return
+        
+        chance = max(min(chance, 1), 0)
+        
+        if trials < 1:
+            await ctx.reply("The number of trials must be greater than 0.")
+            return
+        
+        if successes < 1:
+            await ctx.reply("The number of successes must be greater than 0.")
+            return
+        
+        if trials > 1_000_000_000_000:
+            await ctx.reply("That is too many trials.")
+            return
+        
+        if trials < successes:
+            await ctx.reply("The number of trials must be greater than the number of successes.")
+            return
+        
+        equal = binom.pmf(successes, trials, chance)
+        less = binom.cdf(successes, trials, chance, loc=True)
+        less_or_equal = binom.cdf(successes, trials, chance)
+        greater = 1 - less_or_equal
+        greater_or_equal = 1 - less
+
+        embed = u_interface.embed(
+            title = "Probability",
+            description = "With {} trials and {} successes with a {}% chance of success:".format(u_text.smart_number(trials), u_text.smart_number(successes), round(chance * 100, 2)),
+            fields = [
+                ("", "Exactly that many successes: **{}%**\nThat many successes *or* more: **{}%**\nMore than that many successes: **{}%**\nThat many successes *or* fewer: **{}%**\nFewer than that many successes: **{}%**".format(
+                    u_text.smart_number(round(equal * 100, 2)),
+                    u_text.smart_number(round(greater_or_equal * 100, 2)),
+                    u_text.smart_number(round(greater * 100, 2)),
+                    u_text.smart_number(round(less_or_equal * 100, 2)),
+                    u_text.smart_number(round(less * 100, 2))
+                ), False)
+            ]
+        )
+        await ctx.reply(embed=embed)
+
+
+        
 
         
         
