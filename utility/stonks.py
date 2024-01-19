@@ -31,13 +31,13 @@ def filter_splits(previous: dict[u_values.StonkItem, int], current: dict[u_value
     amounts = {stonk: 0 for stonk in current}
 
     for stonk in previous:
-        if not (current[stonk] / previous[stonk] <= 0.85):
+        if not (current.get(stonk, previous[stonk]) / previous[stonk] <= 0.85):
             continue
 
         for i in range(50):
             previous[stonk] /= 2
             amounts[stonk] += 1
-            if not (current[stonk] / previous[stonk] <= 0.85):
+            if not (current.get(stonk, previous[stonk]) / previous[stonk] <= 0.85):
                 break    
     
     return {"new": previous, "split_amounts": amounts}

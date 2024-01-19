@@ -5,14 +5,19 @@ from os.path import sep as SLASH
 from PIL import Image as PIL_Image
 from PIL import ImageDraw as PIL_ImageDraw
 from PIL import ImageFont as PIL_ImageFont
+
 import textwrap
 import matplotlib.pyplot as plt
-import matplotlib
+import matplotlib.colors as mcolors
 import typing
+import importlib
 
 import utility.bingo as u_bingo
 import utility.text as u_text
 import utility.files as u_files
+import utility.stonks as u_stonks
+import utility.values as u_values
+import utility.algorithms as u_algorithms
 
 ######################################################################################################################################
 ##### BINGO BOARDS ###################################################################################################################
@@ -229,5 +234,186 @@ def generate_graph(
     plt.savefig(file_name, bbox_inches='tight')
 
     return file_name
+
+######################################################################################################################################
+##### STONK REPORT ###################################################################################################################
+######################################################################################################################################
+
+def stonk_report():
+    START_TICK = 2000 # The starting tick for the average value calculation.
+
+    stonk_history = u_stonks.stonk_history()
+
+    current_tick = u_stonks.convert_tick(stonk_history[-1])
+    previous_tick = u_stonks.convert_tick(stonk_history[-2])
+    one_day_ago_tick = u_stonks.convert_tick(stonk_history[-4])
+    three_days_ago_tick = u_stonks.convert_tick(stonk_history[-12])
+
+    previous_tick = u_stonks.filter_splits(previous_tick, current_tick)["new"]
+    one_day_ago_tick = u_stonks.filter_splits(one_day_ago_tick, current_tick)["new"]
+    three_days_ago_tick = u_stonks.filter_splits(three_days_ago_tick, current_tick)["new"]
+
+    # Stonk algorithms.
+    importlib.reload(u_algorithms)
+    check = lambda data: (data["data"]["current_total"] / 5000) ** (1 / (data["data"]["current_portfolio"]["tick"] - 2000))
+
+    leaderboard = u_algorithms.get_leaderboard(check, filter_list=["hide_report"])
+
+    algorithm_data = u_algorithms.get_info(leaderboard[0][0])
+    algorithm_portfolio = algorithm_data["func"](1_000_000)["portfolio"]
+
+    algorithm_choices = [ # This can be called via list[bool] to get whether it was chosen by the algorithm or not.
+        ((0.75, 0.4, 0.4, 1), PIL_Image.open("images/bases/x.png").resize((90, 90)).convert("RGBA")),
+        ((0.4, 0.75, 0.4, 1), PIL_Image.open("images/bases/check.png").resize((90, 90)).convert("RGBA"))
+    ]
+    ###################
+
+    backgrounds = [
+        (0.85, 0.85, 0.85, 1.0),
+        (0.94, 0.94, 0.94, 1.0)
+    ]
+
+    gradients = [
+        mcolors.LinearSegmentedColormap.from_list('gradient', [(1, 0, 0, 1.0), backgrounds[0], (0, 1, 0, 1.0)], N=100), # Dark background.
+        mcolors.LinearSegmentedColormap.from_list('gradient', [(1, 0, 0, 1.0), backgrounds[1], (0, 1, 0, 1.0)], N=100) # Light background.
+    ]
+
+    stonk_data = {stonk: {} for stonk in u_values.stonks}
+
+    img = PIL_Image.open("images/bases/stonk_report_base.png").copy().convert("RGBA")
+    font = PIL_ImageFont.truetype("verdana.ttf", size=57)
+    algorithm_font = PIL_ImageFont.truetype("images/bases/centaur.ttf", size=50)
+    imgDraw = PIL_ImageDraw.Draw(img)
+
+    # Write the best algorithm's name.
+    imgDraw.text((100, 660), algorithm_data["name"].replace("_"," ").title(), (0, 0, 0), font=algorithm_font, align="center", stroke_width=1)
+
+    def get_data_list(key: typing.Callable[[int, int], float], stonk: u_values.StonkItem, offset: int = 0, default: int = 1) -> list[int | float]:
+        """Generates a list of values using the key function.
+
+        Args:
+            key (typing.Callable[[int, int], float]): A function that takes in two integers and returns a float. The two integers will be the start tick and the end tick.
+            stonk (u_values.StonkItem): The stonk that will be used.
+            offset (int, optional): Offset from the starting tick. Defaults to 0.
+            default (int, optional): The value that will be put in the list if there aren't enough ticks. Defaults to 1.
+
+        Returns:
+            list[int | float]: The created list.
+        """
+        if START_TICK + offset >= len(stonk_history):
+            return [default]
+        
+        out = []
+        for tick_id in range(START_TICK + offset, len(stonk_history)):
+            start = u_stonks.convert_tick(stonk_history[tick_id - offset])
+            end = u_stonks.convert_tick(stonk_history[tick_id])
+
+            start = u_stonks.filter_splits(start, end)["new"].get(stonk, stonk.base_value)
+            end = end.get(stonk, stonk.base_value)
+            
+            out.append(key(start, end))
+
+        return out
+    
+    def convert_color(data: tuple):
+        return tuple([int(item * 255) for item in data])
+    
+    def render_gradient(gradient: mcolors.LinearSegmentedColormap, vertical_position: int, stonk_id: int, pixel_count: int = 47) -> tuple:
+        for pixel in range(pixel_count):
+            color = convert_color(gradient(pixel / pixel_count))
+            imgDraw.rectangle([(520 + (stonk_id * 435), 315 + (vertical_position * 100) + pixel), (949 + (stonk_id * 435), 315 + (vertical_position * 100) + pixel)], fill=color)
+            imgDraw.rectangle([(520 + (stonk_id * 435), 409 + (vertical_position * 100) - pixel), (949 + (stonk_id * 435), 409 + (vertical_position * 100) - pixel)], fill=color)
+
+    def render_data(data: float, data_list: list[float], text: str, vertical_position: int, stonk_id: int) -> None:
+        """Renders the gradient on the image and then puts the text on top."""
+
+        base_gradient = gradients[stonk_id % 2]
+        average = sum(data_list) / len(data_list)
+        if data > average:
+            color_id = 50 + ((data - average) / (max(data_list) - average)) * 50
+        elif data == average:
+            color_id = 50
+        else:
+            color_id = ((data - min(data_list)) / (average - min(data_list))) * 50
+
+        color = convert_color(base_gradient(color_id / 100)) # tuple([int(item * 255) for item in base_gradient(color_id / 100)])
+        gradient = mcolors.LinearSegmentedColormap.from_list('gradient', [tuple([i / 255 for i in color]), backgrounds[stonk_id % 2]], N=47)
+
+        render_gradient(
+            gradient = gradient,
+            vertical_position = vertical_position,
+            stonk_id = stonk_id
+        )
+        
+        imgDraw.text((734 + (435 * stonk_id) - (33 * len(str(text)) / 2), 320 + (101 * vertical_position)), str(text), font=font, fill=(0, 0, 0))    
+
+    for stonk_id, stonk in enumerate(stonk_data):
+        change_percent_list = get_data_list(
+            key = lambda x, y: y / x,
+            stonk = stonk,
+            offset = 1
+        )
+
+        day_percent_list = get_data_list(
+            key = lambda x, y: (y / x) ** (1 / 4),
+            stonk = stonk,
+            offset = 3
+        )
+
+        three_days_percent_list = get_data_list(
+            key = lambda x, y: (y / x) ** (1 / 12),
+            stonk = stonk,
+            offset = 11
+        )
+
+        change = current_tick.get(stonk, stonk.base_value) - previous_tick.get(stonk, stonk.base_value)
+        change_percent = change_percent_list[-1]
+        day_percent = day_percent_list[-1]
+        three_days_percent = three_days_percent_list[-1]
+
+        # First row, raw change and percent changed.
+        render_data(
+            data = change_percent,
+            data_list = change_percent_list,
+            text = "{} ({:.2%})".format(change, change_percent - 1),
+            vertical_position = 0,
+            stonk_id = stonk_id
+        )
+
+        # Second row, average change in the past 4 ticks.
+        render_data(
+            data = day_percent,
+            data_list = day_percent_list,
+            text = "{:.2%}".format(day_percent - 1),
+            vertical_position = 1,
+            stonk_id = stonk_id
+        )
+
+        # Third row, average change in the past 12 ticks.
+        render_data(
+            data = three_days_percent,
+            data_list = three_days_percent_list,
+            text = "{:.2%}".format(three_days_percent - 1),
+            vertical_position = 2,
+            stonk_id = stonk_id
+        )
+
+        # Fourth row, whether the best algorithm is investing in this stonk.
+        gradient_color, image_paste = algorithm_choices[algorithm_portfolio[stonk.internal_name] >= 1]
+        gradient = mcolors.LinearSegmentedColormap.from_list('gradient', [gradient_color, backgrounds[stonk_id % 2]], N=47)
+
+        render_gradient(
+            gradient = gradient,
+            vertical_position = 3,
+            stonk_id = stonk_id
+        )
+
+        img.paste(image_paste, (692 + (stonk_id * 435), 617), image_paste)
+
+    # Save the final image.
+    img.save(f"images{SLASH}generated{SLASH}stonk_report.png", quality=90)
+
+
+
         
 

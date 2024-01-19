@@ -13,6 +13,7 @@ import utility.text as u_text
 import utility.custom as u_custom
 import utility.checks as u_checks
 import utility.algorithms as u_algorithms
+import utility.images as u_images
 
 class Admin_cog(u_custom.CustomCog, name="Admin", description="Administration commands for the Bingo-Bot."):
     bot = None
@@ -376,6 +377,24 @@ class Admin_cog(u_custom.CustomCog, name="Admin", description="Administration co
         u_algorithms.resimulate_all()
 
         await ctx.reply("Done.")
+
+    
+    
+    
+    
+    
+    
+    
+    @admin.command(
+        name="generate_report",
+        brief = "Re-generates the stonk report.",
+        description = "Re-generates the stonk report."
+    )
+    @commands.is_owner()
+    async def admin_generate_report(self, ctx):
+        u_images.stonk_report()
+        
+        await ctx.reply(file=discord.File(f"images/generated/stonk_report.png"))
 
         
 async def setup(bot: commands.Bot):

@@ -20,6 +20,7 @@ import utility.text as u_text
 import utility.converters as u_converters
 import utility.stonks as u_stonks
 import utility.algorithms as u_algorithms
+import utility.images as u_images
 
 bingo_time = datetime.time(
     hour = 23,
@@ -199,15 +200,27 @@ class Triggers_cog(u_custom.CustomCog, name="Triggers", description="Hey there! 
 
         u_algorithms.run_all_algorithms()
 
+        ### Attempt to generate the stonk report. ###
+
+        send_file = None
+        try:
+            u_images.stonk_report()
+            send_file = discord.File("images/generated/stonk_report.png")
+        except:
+            # Something went wrong :(
+            print(traceback.format_exc())
+
         ### Send message. ###
 
         stonk_pinglist = u_files.get_ping_list("stonk_tick_pings")
 
         await message.reply("{}\n\nCopy of tick {}:\n\n{}".format(
             "".join(["<@{}>".format(user_id) for user_id in stonk_pinglist]),
-            new["tick_number"],
-            message.content
-        ))
+                new["tick_number"],
+                message.content
+            ),
+            file = send_file
+        )
 
         
 
