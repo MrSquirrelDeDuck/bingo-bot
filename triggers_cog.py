@@ -64,6 +64,11 @@ class Triggers_cog(u_custom.CustomCog, name="Triggers", description="Hey there! 
         self.hourly_loop.cancel()
         self.daily_loop.cancel()
 
+
+
+
+    
+    
     ######################################################################################################################################################
     ##### UTILITY FUNCTIONS ##############################################################################################################################
     ######################################################################################################################################################
@@ -96,7 +101,12 @@ class Triggers_cog(u_custom.CustomCog, name="Triggers", description="Hey there! 
             text = f"{text}\n\n*This was triggered automatically by something you said. If I misinterpreted the context and this relates to the bot Latent-Dreamer, run `%ld` for an explanation. If I misinterpreted the context, it was not relating to Latent-Dreamer and this makes no sense, feel free to ignore this, or ping my creator to let them know.*"
         
         return text
-        
+
+
+
+
+    
+            
     ######################################################################################################################################################
     ##### VERY FEW COMMANDS ##############################################################################################################################
     ######################################################################################################################################################
@@ -122,8 +132,11 @@ class Triggers_cog(u_custom.CustomCog, name="Triggers", description="Hey there! 
     async def latent_explanation_command(self, ctx):
         await ctx.reply("Latent-Dreamer is a bot that creates new responses via ChatGPT when triggered by specific phrases.\nWhen triggered she will send a message based on what the trigger was.\nThings like 'google en passant' and 'chess 2' always use the same prompt. Triggers such as 'what is ...' and 'google ...' will have ChatGPT provide an answer to the question or generate a list of search terms, depending on which was triggered.\n\nLatent-Dreamer also has a credits system to limit the amount of times people can trigger her per day.\nMore information about the credits system can be found [here](<https://discord.com/channels/958392331671830579/958392332590387262/1110078862286671962>) or by pinging Latent-Dreamer with the word 'credits'.")
 
-    
 
+
+
+    
+    
     ######################################################################################################################################################
     ##### HOURLY LOOP ####################################################################################################################################
     ######################################################################################################################################################
@@ -636,7 +649,7 @@ class Triggers_cog(u_custom.CustomCog, name="Triggers", description="Hey there! 
     
     
     ######################################################################################################################################################
-    ##### REACTION ADD ###################################################################################################################################
+    ##### ON REACTION ADD ################################################################################################################################
     ######################################################################################################################################################
             
     async def pk_explanation_deletion(self, payload: discord.RawReactionActionEvent):
