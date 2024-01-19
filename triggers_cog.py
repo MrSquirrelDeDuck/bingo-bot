@@ -130,6 +130,16 @@ class Triggers_cog(u_custom.CustomCog, name="Triggers", description="Hey there! 
                 print("Issue with creating xkcd thread.")
                 print(traceback.format_exc())
 
+        # Running _hourly_task in other cogs.
+        for cog in self.bot.cogs.values():
+            if cog.__cog_name__ == self.__cog_name__:
+                continue
+
+            try:
+                await cog._hourly_task()
+            except AttributeError:
+                pass
+
 
     @hourly_loop.before_loop
     async def hourly_setup(self):
@@ -160,6 +170,16 @@ class Triggers_cog(u_custom.CustomCog, name="Triggers", description="Hey there! 
     )
     async def daily_loop(self):
         print("Daily loop triggered at {}".format(datetime.datetime.now()))
+
+        # Running _daily_task in other cogs.
+        for cog in self.bot.cogs.values():
+            if cog.__cog_name__ == self.__cog_name__:
+                continue
+
+            try:
+                await cog._daily_task()
+            except AttributeError:
+                pass
     
     ###########################
     ###########################
@@ -221,6 +241,16 @@ class Triggers_cog(u_custom.CustomCog, name="Triggers", description="Hey there! 
             ),
             file = send_file
         )
+
+        # Running _on_stonk_tick in other cogs.
+        for cog in self.bot.cogs.values():
+            if cog.__cog_name__ == self.__cog_name__:
+                continue
+
+            try:
+                await cog._on_stonk_tick(message)
+            except AttributeError:
+                pass
 
         
 
@@ -475,6 +505,9 @@ class Triggers_cog(u_custom.CustomCog, name="Triggers", description="Hey there! 
         # 727 pings.
         if "727" in message.content:
             await self.seven_twenty_seven(message)
+        
+        if message.content == "test" and message.author.id == 658290426435862619:
+            await self.hourly_loop()
     
 
 async def setup(bot: commands.Bot):

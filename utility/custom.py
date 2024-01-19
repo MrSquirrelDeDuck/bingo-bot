@@ -2,12 +2,11 @@
 
 Note that in order to reload this code utility.custom needs to be reloaded, and then every cog that uses it."""
 
-from typing import Any
+import typing
 import discord
 from discord.ext import commands
 
 import importlib
-import inspect
 
 import utility.text as u_text
 import utility.interface as u_interface
@@ -48,6 +47,18 @@ class CustomCog(commands.Cog):
 
         # Return True, since it has been reloaded in theory.
         return True
+    
+    async def _on_stonk_tick(self: typing.Self, message: discord.Message) -> None:
+        """Code that runs for every stonk tick."""
+        pass
+    
+    async def _hourly_task(self: typing.Self) -> None:
+        """Code that runs for every hour."""
+        pass
+    
+    async def _daily_task(self: typing.Self) -> None:
+        """Code that runs for every day."""
+        pass
 
 class CustomContext(commands.Context):    
     async def safe_reply(ctx, content: str = "", **kwargs) -> discord.Message:        
