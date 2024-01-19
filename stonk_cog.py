@@ -1,3 +1,5 @@
+"""This cog is for utility commands when working with stonks in The Bread Game."""
+
 from os.path import sep as SLASH
 
 from discord.ext import commands
@@ -996,10 +998,10 @@ class Stonk_cog(u_custom.CustomCog, name="Stonk", description="Commands for work
 
         await ctx.reply(file=discord.File(file_name))
 
-        
-            
 
-        
+
+
+
     ######################################################################################################################################################
     ##### STONK GIFT #####################################################################################################################################
     ######################################################################################################################################################

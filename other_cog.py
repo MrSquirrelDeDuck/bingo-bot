@@ -1,3 +1,5 @@
+"""This cog is for commands that don't fit in the other cogs."""
+
 from discord.ext import commands
 from scipy.stats import binom
 from fuzzywuzzy import fuzz

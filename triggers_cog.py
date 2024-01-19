@@ -1,3 +1,6 @@
+"""This cog is for events like on_message along with the hourly and daily loops.
+The PluralKit and Latent-Dreamer explanation commands are also here."""
+
 from discord.ext import commands
 from discord.ext import tasks
 import discord
@@ -9,6 +12,7 @@ import traceback
 import re
 import random
 import time
+import typing
 
 import sys
 
@@ -59,14 +63,70 @@ class Triggers_cog(u_custom.CustomCog, name="Triggers", description="Hey there! 
     def cog_unload(self):
         self.hourly_loop.cancel()
         self.daily_loop.cancel()
-    
-    ###########################
-    ###########################
-    ###########################
 
-    #######################
-    ##### HOURLY LOOP #####
-    #######################
+    ######################################################################################################################################################
+    ##### UTILITY FUNCTIONS ##############################################################################################################################
+    ######################################################################################################################################################
+    
+    def get_pk_explanation(self: typing.Self,
+            replace_pings: bool = False,
+            auto_trigger: bool = True
+        ) -> str:
+        """Returns the PluralKit explanation with replacements made as told.
+        
+        Arguments:
+            replace_pings (bool, optional): Whether or not to replace the role pings with user pings. Defaults to False.
+        
+        Returns:
+            str: The PluralKit explanation with replacements made as told."""
+        text = "On the server, you might see some users that appear to be talking with a bot tag. However, unless they have a color role (e.g. <@&960885443153522691>, <@&1032864473700122687>, <@&966569150468210723>, <@&973840335841140769>), they are not bots. They are using <@466378653216014359>, an integration that allows them to talk under different profiles, each with a custom name and profile picture, while using the same account. This is useful for multiple people sharing one body, aka systems, who want to be differentiated from one another when using their discord account. Even though they show up with a bot tag, again, **they are not bots**. Please refrain from referring to them as bots, or joking about it.\n\nMore information on plurality can be found here:\n<https://morethanone.info/>"
+        
+        if replace_pings:
+            text = text.replace(
+                "<@&960885443153522691>", "<@960869046323134514>"
+            ).replace(
+                "<@&1032864473700122687>", "<@1029793702136254584>"
+            ).replace(
+                "<@&966569150468210723>", "<@966474721619238972>"
+            ).replace(
+                "<@&973840335841140769>", "<@973811353036927047>"
+            )
+        
+        if auto_trigger:
+            text = f"{text}\n\n*This was triggered automatically by something you said. If I misinterpreted the context and this relates to the bot Latent-Dreamer, run `%ld` for an explanation. If I misinterpreted the context, it was not relating to Latent-Dreamer and this makes no sense, feel free to ignore this, or ping my creator to let them know.*"
+        
+        return text
+        
+    ######################################################################################################################################################
+    ##### VERY FEW COMMANDS ##############################################################################################################################
+    ######################################################################################################################################################
+        
+    @commands.command(
+        name = "pk",
+        description = "Provides a more tailored PluralKit description.",
+        brief = "Provides a more tailored PluralKit description."
+    )
+    async def pk_explanation_command(self, ctx):
+        if ctx.guild.id != 958392331671830579:
+            await ctx.reply(self.get_pk_explanation(replace_pings=True, auto_trigger=False))
+            return
+        
+        await ctx.reply(self.get_pk_explanation(auto_trigger=False))
+    
+    @commands.command(
+        name = "ld",
+        brief="Provides a description of Latent-Dreamer.",
+        description="Provides a description of Latent-Dreamer.",
+        aliases=["latent", "latent-dreamer"]
+    )
+    async def latent_explanation_command(self, ctx):
+        await ctx.reply("Latent-Dreamer is a bot that creates new responses via ChatGPT when triggered by specific phrases.\nWhen triggered she will send a message based on what the trigger was.\nThings like 'google en passant' and 'chess 2' always use the same prompt. Triggers such as 'what is ...' and 'google ...' will have ChatGPT provide an answer to the question or generate a list of search terms, depending on which was triggered.\n\nLatent-Dreamer also has a credits system to limit the amount of times people can trigger her per day.\nMore information about the credits system can be found [here](<https://discord.com/channels/958392331671830579/958392332590387262/1110078862286671962>) or by pinging Latent-Dreamer with the word 'credits'.")
+
+    
+
+    ######################################################################################################################################################
+    ##### HOURLY LOOP ####################################################################################################################################
+    ######################################################################################################################################################
 
     @tasks.loop(
         minutes = 60
@@ -162,10 +222,15 @@ class Triggers_cog(u_custom.CustomCog, name="Triggers", description="Hey there! 
         print("Waiting to start hourly loop for {} minutes.".format(wait_time))
         await asyncio.sleep(60*wait_time)
         print("Finished waiting at {}.".format(datetime.datetime.now()))
+
+
+
+
     
-    ######################
-    ##### DAILY LOOP #####
-    ######################
+    
+    ######################################################################################################################################################
+    ##### DAILY LOOP #####################################################################################################################################
+    ######################################################################################################################################################
 
     @tasks.loop(
         time = bingo_time
@@ -245,14 +310,15 @@ class Triggers_cog(u_custom.CustomCog, name="Triggers", description="Hey there! 
                 await cog._daily_task()
             except AttributeError:
                 pass
+
+
+
+
     
-    ###########################
-    ###########################
-    ###########################
     
-    #####################
-    ##### ON EVENTS #####
-    #####################
+    ######################################################################################################################################################
+    ##### ON EVENTS ######################################################################################################################################
+    ######################################################################################################################################################
         
     async def on_stonk_tick(self, message: discord.Message):
         if message.content[-1] in "!.?":
@@ -461,28 +527,19 @@ class Triggers_cog(u_custom.CustomCog, name="Triggers", description="Hey there! 
         if message.author.id in self.pk_trigger_blacklist or message.author.bot:
             return
 
-        input_modify = " {} ".format(str(message.content).lower().replace('"', "").replace("'", ""))
+        input_modify = " {} ".format(str(message.content).replace("\n", " ").lower().replace('"', "").replace("'", ""))
 
         if not(any([trigger in input_modify for trigger in self.pk_triggers])):
             return
         
-        text = "On the server, you might see some users that appear to be talking with a bot tag. However, unless they have a color role (e.g. <@&960885443153522691>, <@&1032864473700122687>, <@&966569150468210723>, <@&973840335841140769>), they are not bots. They are using <@466378653216014359>, an integration that allows them to talk under different profiles, each with a custom name and profile picture, while using the same account. This is useful for multiple people sharing one body, aka systems, who want to be differentiated from one another when using their discord account. Even though they show up with a bot tag, again, **they are not bots**. Please refrain from referring to them as bots, or joking about it.\n\nMore information on plurality can be found here:\n<https://morethanone.info/>\n\n*This was triggered automatically by something you said. If I misinterpreted the context and this relates to the bot Latent-Dreamer, run `%ld` for an explanation. If I misinterpreted the context, it was not relating to Latent-Dreamer and this makes no sense, feel free to ignore this, or ping my creator to let them know.*"
-        
         if time.time() - self.last_pk_trigger < 60:
-            text = text.replace(
-                "<@&960885443153522691>", "<@960869046323134514>"
-            ).replace(
-                "<@&1032864473700122687>", "<@1029793702136254584>"
-            ).replace(
-                "<@&966569150468210723>", "<@966474721619238972>"
-            ).replace(
-                "<@&973840335841140769>", "<@973811353036927047>"
-            )
-            await message.author.send(text)
+            await message.author.send(self.get_pk_explanation(replace_pings=True, auto_trigger=True))
             return
         
         self.last_pk_trigger = time.time()
-        await message.reply(text)
+        await message.reply(self.get_pk_explanation(
+            replace_pings=message.guild.id != 958392331671830579, 
+            auto_trigger=True))
     
     async def brick_stats_correcting(self, message: discord.Message):
         if u_checks.sensitive_check(message.channel):
@@ -572,7 +629,52 @@ class Triggers_cog(u_custom.CustomCog, name="Triggers", description="Hey there! 
         # 727 pings.
         if "727" in message.content:
             await self.seven_twenty_seven(message)
+
+
+
+
     
+    
+    ######################################################################################################################################################
+    ##### REACTION ADD ###################################################################################################################################
+    ######################################################################################################################################################
+            
+    async def pk_explanation_deletion(self, payload: discord.RawReactionActionEvent):
+        """If someone reacts to a PluralKit explanation message with ❌, then we need to edit the message to something saying it was removed."""
+
+        try:
+            channel = self.bot.get_channel(payload.channel_id)
+            message = await channel.fetch_message(payload.message_id)
+
+            if message.author.id != self.bot.user.id:
+                return
+            
+            if not u_interface.is_reply(message):
+                return
+            
+            if not("https://morethanone.info/" in message.content and "This was triggered automatically by something you said." in message.content):
+                return
+            
+            # If it's here, it's probably the pk explanation message.
+
+            await message.edit(content="*[PluralKit explanation text removed due to a removal reaction. It can be resummoned with `%pk`]*")
+            await message.clear_reaction(payload.emoji)
+        
+        except (discord.NotFound, discord.Forbidden, discord.HTTPException):
+            print(traceback.format_exc())
+            pass    
+    
+    @commands.Cog.listener()
+    async def on_raw_reaction_add(self, payload: discord.RawReactionActionEvent):
+        if payload.event_type != "REACTION_ADD":
+            return
+        
+        # PluralKit explanation deleting.
+        if payload.emoji.name == "❌":
+            await self.pk_explanation_deletion(payload)
+
+        
+
 
 async def setup(bot: commands.Bot):
     cog = Triggers_cog()

@@ -1,3 +1,5 @@
+"""This cog is for commands that relate to the bingo game."""
+
 from discord.ext import commands
 import discord
 import typing

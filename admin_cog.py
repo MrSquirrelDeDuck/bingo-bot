@@ -1,3 +1,5 @@
+"""This cog is for all the administration commands."""
+
 from discord.ext import commands
 import discord
 import typing

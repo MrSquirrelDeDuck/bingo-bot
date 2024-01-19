@@ -1,3 +1,5 @@
+"""This cog is for utility commands for The Bread Game."""
+
 from discord.ext import commands
 import discord
 import typing
