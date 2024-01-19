@@ -48,16 +48,24 @@ class CustomCog(commands.Cog):
         # Return True, since it has been reloaded in theory.
         return True
     
-    async def _on_stonk_tick(self: typing.Self, message: discord.Message) -> None:
+    async def on_stonk_tick(self: typing.Self, message: discord.Message) -> None:
         """Code that runs for every stonk tick."""
         pass
     
-    async def _hourly_task(self: typing.Self) -> None:
+    async def hourly_task(self: typing.Self) -> None:
         """Code that runs for every hour."""
         pass
     
-    async def _daily_task(self: typing.Self) -> None:
+    async def daily_task(self: typing.Self) -> None:
         """Code that runs for every day."""
+        pass
+
+    def bingo_cache_updated(self: typing.Self) -> None:
+        """Code that runs when the bingo cache is updated."""
+        pass
+
+    def save_all_data(self: typing.Self) -> None:
+        """Saves all stored data to files."""
         pass
 
 class CustomContext(commands.Context):    
@@ -84,5 +92,20 @@ class CustomContext(commands.Context):
 class CustomBot(commands.Bot):
     async def get_context(self, message: discord.Message, *, cls=CustomContext):
         return await super().get_context(message, cls=cls)
+    
+    def update_bingo_cache(self, live_data: dict) -> None:
+        """Updates the bingo cache in all the cogs that have the bingo_cache attribute."""
+        for cog in self.cogs.values():
+            if hasattr(cog, "bingo_cache"):
+                cog.bingo_cache = live_data
+                cog.bingo_cache_updated()
+    
+    def save_all_data(self) -> None:
+        """Runs save_all_data() in all the cogs.."""
+        for cog in self.cogs.values():
+            try:
+                cog.save_all_data()
+            except AttributeError:
+                pass
 
 

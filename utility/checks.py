@@ -42,7 +42,24 @@ def is_prime(number: int) -> bool:
     return True
     
 def sensitive_check(channel: typing.Union[discord.TextChannel, discord.Thread]) -> bool:
-    """Returns a boolean for whether a channel is a sensitive channel."""
+    """Returns a boolean for whether a channel is a sensitive channel.
+    
+    Currently this includes:
+    - #mental-health."""
+    if isinstance(channel, discord.Thread):
+        channel = channel.parent
+        
+    return channel.id in [969881291740811264]
+    
+def serious_channel_check(channel: typing.Union[discord.TextChannel, discord.Thread]) -> bool:
+    """Returns a boolean for whether a channel is a serious channel.
+    
+    Currently this includes:
+    - #mental-health.
+    - #all-queer.
+    - #100.
+    - #conways-game-of-life-fan-club.
+    - #wii-play-tanks."""
     if isinstance(channel, discord.Thread):
         channel = channel.parent
         

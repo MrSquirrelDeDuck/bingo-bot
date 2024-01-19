@@ -337,7 +337,10 @@ class Bingo_cog(u_custom.CustomCog, name="Bingo", description="Commands for runn
             return
         
         # Tick the tile, and then convert the result into three variables.
-        pre_tick_bingos, post_tick_bingos, objective_id = u_bingo.tick_5x5(tile_id)
+        pre_tick_bingos, post_tick_bingos, objective_id, new_live = u_bingo.tick_5x5(tile_id)
+
+        # Update the bingo cache.
+        self.bot.update_bingo_cache(new_live)
 
         pre_tick_bingos = u_bingo.count_bingos(pre_tick_bingos, 5)
         post_tick_bingos = u_bingo.count_bingos(post_tick_bingos, 5)
@@ -392,7 +395,10 @@ class Bingo_cog(u_custom.CustomCog, name="Bingo", description="Commands for runn
             return
         
         # Tick the tile, and then convert the result into two variables.
-        pre_tick_bingos, post_tick_bingos = u_bingo.untick_5x5(tile_id)
+        pre_tick_bingos, post_tick_bingos, new_live = u_bingo.untick_5x5(tile_id)
+
+        # Update the bingo cache.
+        self.bot.update_bingo_cache(new_live)
 
         # Determine how many bingos were removed.
         bingos_unmade = pre_tick_bingos - post_tick_bingos
@@ -610,7 +616,10 @@ class Bingo_cog(u_custom.CustomCog, name="Bingo", description="Commands for runn
             return
         
         # Tick the tile, and then convert the result into three variables.
-        pre_tick_bingos, post_tick_bingos, objective_id = u_bingo.tick_9x9(tile_id)
+        pre_tick_bingos, post_tick_bingos, objective_id, new_live = u_bingo.tick_9x9(tile_id)
+
+        # Update the bingo cache.
+        self.bot.update_bingo_cache(new_live)
 
         pre_tick_bingos = u_bingo.count_bingos(pre_tick_bingos, 9)
         post_tick_bingos = u_bingo.count_bingos(post_tick_bingos, 9)
@@ -665,7 +674,10 @@ class Bingo_cog(u_custom.CustomCog, name="Bingo", description="Commands for runn
             return
         
         # Tick the tile, and then convert the result into two variables.
-        pre_tick_bingos, post_tick_bingos = u_bingo.untick_9x9(tile_id)
+        pre_tick_bingos, post_tick_bingos, new_live = u_bingo.untick_9x9(tile_id)
+
+        # Update the bingo cache.
+        self.bot.update_bingo_cache(new_live)
 
         # Determine how many bingos were removed.
         bingos_unmade = pre_tick_bingos - post_tick_bingos

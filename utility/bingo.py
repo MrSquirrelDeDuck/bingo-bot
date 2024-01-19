@@ -152,8 +152,8 @@ def update_live(new_data: dict) -> None:
     """Updates the live data with the provided dict."""
     u_files.save("data/bingo/live_data.json", new_data)
 
-def set_live(key: str, value: any) -> None:
-    """Sets a single value in the live data, takes the key and new value."""
+def set_live(key: str, value: typing.Any) -> dict:
+    """Sets a single value in the live data, takes the key and new value. Returns the new version of the live data."""
     
     # Get the current data.
     live_data = live()
@@ -163,6 +163,9 @@ def set_live(key: str, value: any) -> None:
 
     # Save the data.
     update_live(live_data)
+
+    # Return the new version of the live data.
+    return live_data
 
 def get_tile_state_5x5(tile_id: int) -> bool:
     """Gets a bool for whether a specific tile on the 5x5 board is ticked or not."""
@@ -182,7 +185,7 @@ def get_tile_state_9x9(tile_id: int) -> bool:
     # Decompile the enabled integer into a list of bools, and return the one chosen by the tile_id parameter.
     return decompile_enabled(live_data["weekly_enabled"], 9)[tile_id]
 
-def update_tile(tile_id: int, board_size: int, live_data_key: str, new_value: bool, live_data: dict = None) -> tuple[int, int]:
+def update_tile(tile_id: int, board_size: int, live_data_key: str, new_value: bool, live_data: dict = None) -> tuple[int, int, dict]:
     """Updates a tile on a bingo board.
     
     Parameters:
@@ -194,7 +197,8 @@ def update_tile(tile_id: int, board_size: int, live_data_key: str, new_value: bo
     
     Returns a tuple of:
     - Pre-tick enabled integer.
-    - Post-tick enabled integer."""
+    - Post-tick enabled integer.
+    - The new live data."""
 
     # If live_data was not provided, get the current data.
     if live_data is None:
@@ -213,23 +217,24 @@ def update_tile(tile_id: int, board_size: int, live_data_key: str, new_value: bo
     post_tick = compile_enabled(decompiled)
 
     # Save the data, while compiling the `decompiled` list into a number.
-    set_live(live_data_key, post_tick)
+    new_live = set_live(live_data_key, post_tick)
 
     # Return the before and after version of the enabled integer.
-    return (pre_tick, post_tick)
+    return (pre_tick, post_tick, new_live)
 
-def tick_5x5(tile_id: int) -> tuple[int, int, int]:
+def tick_5x5(tile_id: int) -> tuple[int, int, int, dict]:
     """Ticks a tile on the 5x5 board, takes a tile id.
     
     Returns a tuple of:
     - Pre-tick enabled integer.
     - Post-tick enabled integer.
-    - Objective id of the affected tile."""
+    - Objective id of the affected tile.
+    - The new live data."""
 
     # Get the current data.
     live_data = live()
 
-    pre_tick, post_tick = update_tile(
+    pre_tick, post_tick, new_live = update_tile(
         tile_id = tile_id,
         board_size = 5,
         live_data_key = "daily_enabled",
@@ -242,16 +247,17 @@ def tick_5x5(tile_id: int) -> tuple[int, int, int]:
     split_tile_string = u_text.split_chunks(tile_string, 3)
 
     # Return an integer version of the objective id of the ticked tile.
-    return (pre_tick, post_tick, int(split_tile_string[tile_id]))
+    return (pre_tick, post_tick, int(split_tile_string[tile_id]), new_live)
 
-def untick_5x5(tile_id: int) -> tuple[int, int, int]:
+def untick_5x5(tile_id: int) -> tuple[int, int, dict]:
     """Unticks a tile on the 5x5 board, takes a tile id.
     
     Returns a tuple of:
     - Pre-tick enabled integer.
-    - Post-tick enabled integer."""
+    - Post-tick enabled integer.
+    - The new live data."""
 
-    pre_tick, post_tick = update_tile(
+    pre_tick, post_tick, new_live = update_tile(
         tile_id = tile_id,
         board_size = 5,
         live_data_key = "daily_enabled",
@@ -259,20 +265,21 @@ def untick_5x5(tile_id: int) -> tuple[int, int, int]:
     )
 
     # Return an integer version of the objective id of the ticked tile.
-    return (pre_tick, post_tick)
+    return (pre_tick, post_tick, new_live)
 
-def tick_9x9(tile_id: int) -> tuple[int, int, int]:
+def tick_9x9(tile_id: int) -> tuple[int, int, int, dict]:
     """Ticks a tile on the 9x9 board, takes a tile id.
     
     Returns a tuple of:
     - Pre-tick enabled integer.
     - Post-tick enabled integer.
-    - Objective id of the affected tile."""
+    - Objective id of the affected tile.
+    - The new live data."""
 
     # Get the current data.
     live_data = live()
 
-    pre_tick, post_tick = update_tile(
+    pre_tick, post_tick, new_live = update_tile(
         tile_id = tile_id,
         board_size = 9,
         live_data_key = "weekly_enabled",
@@ -285,16 +292,17 @@ def tick_9x9(tile_id: int) -> tuple[int, int, int]:
     split_tile_string = u_text.split_chunks(tile_string, 3)
 
     # Return an integer version of the objective id of the ticked tile.
-    return (pre_tick, post_tick, int(split_tile_string[tile_id]))
+    return (pre_tick, post_tick, int(split_tile_string[tile_id]), new_live)
 
-def untick_9x9(tile_id: int) -> tuple[int, int, int]:
+def untick_9x9(tile_id: int) -> tuple[int, int, dict]:
     """Unticks a tile on the 9x9 board, takes a tile id.
     
     Returns a tuple of:
     - Pre-tick enabled integer.
-    - Post-tick enabled integer."""
+    - Post-tick enabled integer.
+    - The new live data."""
 
-    pre_tick, post_tick = update_tile(
+    pre_tick, post_tick, new_live = update_tile(
         tile_id = tile_id,
         board_size = 9,
         live_data_key = "weekly_enabled",
@@ -302,4 +310,4 @@ def untick_9x9(tile_id: int) -> tuple[int, int, int]:
     )
 
     # Return an integer version of the objective id of the ticked tile.
-    return (pre_tick, post_tick)
+    return (pre_tick, post_tick, new_live)

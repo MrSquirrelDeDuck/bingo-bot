@@ -43,6 +43,11 @@ WEEKLY_BOARD_CHANNEL = 1196865991632748614
 class Triggers_cog(u_custom.CustomCog, name="Triggers", description="Hey there! owo\n\nyou just lost the game >:3"):
     bot = None
 
+    bingo_cache = u_bingo.live()
+    parsed_bingo_cache = {}
+
+    chains_data = u_files.load("data/chains_data.json")
+
     last_pk_trigger = 0
     pk_triggers = ["why is the bot talking", "why is this bot talking", "why bot talk", "why are you a bot", "are you actually a bot", "are you a bot", "what is this bot", "what is pk",
         "is this bot sentient", "are you an actual bot", "whats this bot", "whats this bot", "thru a bot", "through a bot", "what kind of bot is that", "you are a bot", "its a bot",
@@ -59,11 +64,45 @@ class Triggers_cog(u_custom.CustomCog, name="Triggers", description="Hey there! 
         super().__init__()
         self.hourly_loop.start()
         self.daily_loop.start()
+
+        self.bingo_cache_updated()
     
     def cog_unload(self):
         self.hourly_loop.cancel()
         self.daily_loop.cancel()
 
+        self._save_chains_data()
+    
+    def bingo_cache_updated(self: typing.Self) -> None:
+        """Runs whenever the bingo cache is updated."""
+        self.parsed_bingo_cache = {
+            "daily_tile_string": u_text.split_chunks(self.bingo_cache["daily_tile_string"], 3),
+            "daily_enabled": u_bingo.decompile_enabled(self.bingo_cache["daily_enabled"], 5),
+            "daily_board_id": self.bingo_cache["daily_board_id"],
+            "weekly_tile_string": u_text.split_chunks(self.bingo_cache["weekly_tile_string"], 3),
+            "weekly_enabled": u_bingo.decompile_enabled(self.bingo_cache["weekly_enabled"], 9),
+            "weekly_board_id": self.bingo_cache["weekly_board_id"]
+        }
+
+    def _save_chains_data(self) -> None:
+        """Saves self.chains_data to the data file."""
+        u_files.save("data/chains_data.json", self.chains_data)
+
+    def _refresh_chains_data(self) -> None:
+        """Refreshes self.chains_data from the data file."""
+        self.chains_data = u_files.load("data/chains_data.json")
+    
+    def _get_channel_chain(self, channel_id: int) -> dict:
+        """Returns the chains data for a specific channel."""
+        return self.chains_data[str(channel_id)]
+
+    def _update_channel_chain(self, channel_id: int, data: dict) -> None:
+        """Updates the chains data for a specific channel."""
+        self.chains_data[str(channel_id)] = data
+    
+    def save_all_data(self) -> None:
+        """Saves all stored data to files."""
+        self._save_chains_data()
 
 
 
@@ -132,6 +171,11 @@ class Triggers_cog(u_custom.CustomCog, name="Triggers", description="Hey there! 
     async def latent_explanation_command(self, ctx):
         await ctx.reply("Latent-Dreamer is a bot that creates new responses via ChatGPT when triggered by specific phrases.\nWhen triggered she will send a message based on what the trigger was.\nThings like 'google en passant' and 'chess 2' always use the same prompt. Triggers such as 'what is ...' and 'google ...' will have ChatGPT provide an answer to the question or generate a list of search terms, depending on which was triggered.\n\nLatent-Dreamer also has a credits system to limit the amount of times people can trigger her per day.\nMore information about the credits system can be found [here](<https://discord.com/channels/958392331671830579/958392332590387262/1110078862286671962>) or by pinging Latent-Dreamer with the word 'credits'.")
 
+    @commands.command(
+        name = "test"
+    )
+    async def test_command(self, ctx):
+        print(self.parsed_bingo_cache)
 
 
 
@@ -204,6 +248,12 @@ class Triggers_cog(u_custom.CustomCog, name="Triggers", description="Hey there! 
             except:
                 print("Issue with creating xkcd thread.")
                 print(traceback.format_exc())
+        
+        # Update chains data and reload the bingo cache.
+        print("Updaing data.")
+        self.bot.save_all_data()
+        self.bot.update_bingo_cache(u_bingo.live())
+        print("Done.")
 
         # Running _hourly_task in other cogs.
         for cog in self.bot.cogs.values():
@@ -294,6 +344,7 @@ class Triggers_cog(u_custom.CustomCog, name="Triggers", description="Hey there! 
             live_data["weekly_board_id"] += 1
         
         u_bingo.update_live(live_data)
+        self.bot.update_bingo_cache(live_data)
 
         # Send the daily board to the daily board channel.
         daily_channel = await self.bot.fetch_channel(DAILY_BOARD_CHANNEL)
@@ -397,6 +448,40 @@ class Triggers_cog(u_custom.CustomCog, name="Triggers", description="Hey there! 
                 pass
 
         
+    
+    async def chains(self, message: discord.Message):
+        if u_checks.sensitive_check(message.channel):
+            return
+        
+        channel_data = self._get_channel_chain(message.channel.id).copy()
+
+        if channel_data["message"] != message.content:
+            self._update_channel_chain(
+                channel_id = message.channel.id,
+                data = {
+                    "message": message.content,
+                    "sender": message.author.id,
+                    "count": 1
+                }
+            )
+            if channel_data["count"] >= 3:
+                await message.add_reaction("<a:you_broke_the_chain:1064256620617535538>")
+            return
+        
+        if channel_data["sender"] == message.author.id:
+            # So someone can't go twice in a row.
+            return
+
+        self._update_channel_chain(
+            channel_id = message.channel.id,
+            data = {
+                "message": message.content,
+                "sender": message.author.id,
+                "count": channel_data["count"] + 1
+            }
+        )
+        
+
 
 
         
@@ -555,7 +640,7 @@ class Triggers_cog(u_custom.CustomCog, name="Triggers", description="Hey there! 
             auto_trigger=True))
     
     async def brick_stats_correcting(self, message: discord.Message):
-        if u_checks.sensitive_check(message.channel):
+        if u_checks.serious_channel_check(message.channel):
             return
         
         split = message.content.split(" ")
@@ -568,7 +653,7 @@ class Triggers_cog(u_custom.CustomCog, name="Triggers", description="Hey there! 
             await message.reply(f"Do you mean `$brick {user.id} stats`?")
 
     async def seven_twenty_seven(self, message: discord.Message):
-        if u_checks.sensitive_check(message.channel):
+        if u_checks.serious_channel_check(message.channel):
             return
         
         content = message.content
@@ -601,6 +686,9 @@ class Triggers_cog(u_custom.CustomCog, name="Triggers", description="Hey there! 
             return
         
         # Just a note, while there's u_custom.CustomContext for context objects, there is no CustomMessage, so u_interface.smart_reply still needs to be used.
+
+        # Chains.
+        await self.chains(message)
 
         # Autodetection.
 
