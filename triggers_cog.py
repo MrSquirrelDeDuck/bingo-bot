@@ -8,6 +8,7 @@ import time
 import traceback
 import re
 import random
+import time
 
 import sys
 
@@ -21,6 +22,7 @@ import utility.converters as u_converters
 import utility.stonks as u_stonks
 import utility.algorithms as u_algorithms
 import utility.images as u_images
+import utility.bingo as u_bingo
 
 bingo_time = datetime.time(
     hour = 23,
@@ -170,6 +172,69 @@ class Triggers_cog(u_custom.CustomCog, name="Triggers", description="Hey there! 
     )
     async def daily_loop(self):
         print("Daily loop triggered at {}".format(datetime.datetime.now()))
+
+        hour_offset = 5 # The number of hours to subract from the current unix timestamp.
+        day_of_the_week = ((int(time.time()) - (hour_offset * 3600)) // 86400 + 4) % 7
+        weekly_board = day_of_the_week == 0
+
+        # Archive daily board and the weekly board if it's Monday.
+        live_data = u_bingo.live()
+
+        archive_5x5 = u_files.load("data/bingo/previous_5x5_boards.json")
+
+        archive_5x5[str(live_data["daily_board_id"])] = {
+            "tile_string": live_data["daily_tile_string"],
+            "enabled": live_data["daily_enabled"]
+        }
+
+        u_files.save("data/bingo/previous_5x5_boards.json", archive_5x5)
+
+        # If it's the day of the weekly board then archive it since we'll be making a new one.
+        if weekly_board:
+            archive_9x9 = u_files.load("data/bingo/previous_9x9_boards.json")
+
+            archive_9x9[str(live_data["weekly_board_id"])] = {
+                "tile_string": live_data["weekly_tile_string"],
+                "enabled": live_data["weekly_enabled"]
+            }
+
+            u_files.save("data/bingo/previous_9x9_boards.json", archive_9x9)
+
+        # Now, make new boards.
+
+        new_daily = u_bingo.generate_5x5_board()
+
+        live_data["daily_tile_string"] = new_daily
+        live_data["daily_enabled"] = 0
+        live_data["daily_board_id"] += 1
+
+        if weekly_board:
+            new_weekly = u_bingo.generate_9x9_board()
+
+            live_data["weekly_tile_string"] = new_weekly
+            live_data["weekly_enabled"] = 0
+            live_data["weekly_board_id"] += 1
+        
+        u_bingo.update_live(live_data)
+
+        # Send the daily board to the daily board channel.
+        daily_channel = await self.bot.fetch_channel(DAILY_BOARD_CHANNEL)
+        u_images.render_full_5x5(
+            tile_string = new_daily,
+            enabled = 0
+        )
+
+        await daily_channel.send("Bingo Board #{}!\nThe wiki:\n<https://bread.miraheze.org/wiki/The_Bread_Game_Wiki>".format(live_data["daily_board_id"]), file=discord.File(r'images/generated/bingo_board.png'))
+        
+        # If it's the day for it, send the weekly board.
+        if weekly_board:
+            weekly_channel = await self.bot.fetch_channel(WEEKLY_BOARD_CHANNEL)
+            u_images.render_board_9x9(
+                tile_string = new_weekly,
+                enabled = 0
+            )
+
+            await weekly_channel.send("Weekly Bingo Board #{}!".format(live_data["weekly_board_id"]), file=discord.File(r'images/generated/bingo_board.png'))
 
         # Running _daily_task in other cogs.
         for cog in self.bot.cogs.values():
@@ -507,9 +572,6 @@ class Triggers_cog(u_custom.CustomCog, name="Triggers", description="Hey there! 
         # 727 pings.
         if "727" in message.content:
             await self.seven_twenty_seven(message)
-        
-        if message.content == "test" and message.author.id == 658290426435862619:
-            await self.hourly_loop()
     
 
 async def setup(bot: commands.Bot):

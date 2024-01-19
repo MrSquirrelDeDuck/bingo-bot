@@ -162,6 +162,32 @@ def render_board_5x5(tile_string: str, enabled: int) -> PIL_Image:
         board_size = 5
     )
 
+def render_full_5x5(tile_string: str, enabled: int) -> PIL_Image:
+    """Renders the 5x5 board in the announcement version."""
+
+    tile_list = u_bingo.tile_list_5x5()
+
+    main_board = render_board(
+        tile_string = tile_string,
+        enabled = enabled,
+        tile_list = tile_list,
+        board_size = 5
+    )
+
+    base = PIL_Image.open("images/bases/full_5x5_base.png").copy().convert("RGBA")
+
+    base.paste(main_board, (0, 270))
+
+    current_data = u_files.load(f"data{SLASH}bingo{SLASH}last_generated.json")
+
+    current_data["last_size"] = "5x5_full"
+
+    u_files.save(f"data{SLASH}bingo{SLASH}last_generated.json", current_data)
+
+    base.save(f"images{SLASH}generated{SLASH}bingo_board.png")
+
+    return base
+
 def render_board_9x9(tile_string: str, enabled: int) -> PIL_Image:
     """Renders a 9x9 bingo board and saves to images/generated/bingo_board.png
 
