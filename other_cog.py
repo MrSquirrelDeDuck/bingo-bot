@@ -1377,7 +1377,7 @@ class Other_cog(u_custom.CustomCog, name="Other", description="Commands that don
 
             board_svg = chess.svg.board(board, lastmove=last_move)
 
-            cairosvg.svg2png(bytestring=board_svg,write_to='images/chess_position.png')
+            cairosvg.svg2png(bytestring=board_svg,write_to='images/generated/chess_position.png')
 
             fields.append(
                 ("Highlighted game:", f"White: {ret_json['featured']['white']['name']} (*{u_text.smart_number(ret_json['featured']['white']['rating'])}*)\nBlack: {ret_json['featured']['black']['name']} (*{u_text.smart_number(ret_json['featured']['black']['rating'])}*)", False)
@@ -1385,7 +1385,7 @@ class Other_cog(u_custom.CustomCog, name="Other", description="Commands that don
 
             image = "attachment://chess_position.png"
             
-            image_file = discord.File("images/chess_position.png", filename="chess_position.png")
+            image_file = discord.File("images/generated/chess_position.png", filename="chess_position.png")
 
         
         embed = u_interface.embed(
