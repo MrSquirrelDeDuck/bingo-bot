@@ -306,43 +306,45 @@ class Triggers_cog(u_custom.CustomCog, name="Triggers", description="Hey there! 
 
         counting_data = u_files.get_counting_data(message.channel.id)
 
-        if sent_number > counting_data["count"]:
-            if sent_number > counting_data["count"] + 1:
-                if counting_data["count"] == 0: # If 1 hasn't been sent since the last break.
-                    return
-                
-                u_files.set_counting_data(
-                    channel_id = message.channel.id,
-                    count = 0,
-                    sender = 0
-                )
-                embed = u_interface.embed(
-                    title = "You broke the counting!",
-                    description = "The counting was broken at **{}** by {}!\nYou must restart at 1.\nGet ready for the brick <:trol:1015821884450947173>".format(
-                        u_text.smart_number(counting_data["count"]),
-                        message.author.mention
-                    )
-                )
-                try:
-                    await message.add_reaction("<a:you_cant_count:1134902783095603300>")
-                    await u_interface.smart_reply(message, embed=embed)
-                except discord.errors.Forbidden:
-                    u_files.set_counting_data(channel_id = message.channel.id, count = counting_data["count"], sender = counting_data["sender"])
-                
+        if sent_number <= counting_data["count"]:
+            return
+
+        if sent_number > counting_data["count"] + 1:
+            if counting_data["count"] == 0: # If 1 hasn't been sent since the last break.
                 return
-            
-            if message.author.id == counting_data["sender"]:
-                return # So someone can't go twice in a row.
             
             u_files.set_counting_data(
                 channel_id = message.channel.id,
-                count = sent_number,
-                sender = message.author.id
+                count = 0,
+                sender = 0
+            )
+            embed = u_interface.embed(
+                title = "You broke the counting!",
+                description = "The counting was broken at **{}** by {}!\nYou must restart at 1.\nGet ready for the brick <:trol:1015821884450947173>".format(
+                    u_text.smart_number(counting_data["count"]),
+                    message.author.mention
+                )
             )
             try:
-                await message.add_reaction("<a:you_can_count:1133795506099867738>")
+                await message.add_reaction("<a:you_cant_count:1134902783095603300>")
+                await u_interface.smart_reply(message, embed=embed)
             except discord.errors.Forbidden:
                 u_files.set_counting_data(channel_id = message.channel.id, count = counting_data["count"], sender = counting_data["sender"])
+            
+            return
+        
+        if message.author.id == counting_data["sender"]:
+            return # So someone can't go twice in a row.
+        
+        u_files.set_counting_data(
+            channel_id = message.channel.id,
+            count = sent_number,
+            sender = message.author.id
+        )
+        try:
+            await message.add_reaction("<a:you_can_count:1133795506099867738>")
+        except discord.errors.Forbidden:
+            u_files.set_counting_data(channel_id = message.channel.id, count = counting_data["count"], sender = counting_data["sender"])
                 
     async def pk_reply(self, message: discord.Message):
         if message.flags.silent:
