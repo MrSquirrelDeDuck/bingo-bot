@@ -94,7 +94,7 @@ class Triggers_cog(u_custom.CustomCog, name="Triggers", description="Hey there! 
     
     def _get_channel_chain(self, channel_id: int) -> dict:
         """Returns the chains data for a specific channel."""
-        return self.chains_data[str(channel_id)]
+        return self.chains_data.get(str(channel_id), {"message": None, "sender": 0, "count": 0})
 
     def _update_channel_chain(self, channel_id: int, data: dict) -> None:
         """Updates the chains data for a specific channel."""
@@ -464,12 +464,17 @@ class Triggers_cog(u_custom.CustomCog, name="Triggers", description="Hey there! 
                     "count": 1
                 }
             )
+
             if channel_data["count"] >= 3:
                 await message.add_reaction("<a:you_broke_the_chain:1064256620617535538>")
             return
         
         if channel_data["sender"] == message.author.id:
             # So someone can't go twice in a row.
+            return
+        
+        if message.author.bot:
+            # Accounts with bot tags shouldn't be able to contribute to the chains, but can still break it.
             return
 
         self._update_channel_chain(
