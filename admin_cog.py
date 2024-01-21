@@ -576,6 +576,33 @@ class Admin_cog(u_custom.CustomCog, name="Admin", description="Administration co
         await ctx.reply("Done.")
 
         
+            
+
+        
+    ######################################################################################################################################################
+    ##### ADMIN MODIFY PINGLIST #######################################################################################################################
+    ######################################################################################################################################################
+    
+    @admin.command(
+        name="modify_pinglist",
+        brief = "Modifies pinglists.",
+        description = "Modifies pinglists."
+    )
+    @commands.is_owner()
+    async def admin_modify_pinglist(self, ctx,
+            mode: typing.Optional[str] = commands.parameter(description = "The mode to use, 'add' or 'remove'."),
+            pinglist: typing.Optional[str] = commands.parameter(description = "The pinglist to use."),
+            user: typing.Optional[discord.Member] = commands.parameter(description = "The user to add to or remove from the pinglist.")
+        ):
+        if None in [mode, pinglist, user]:
+            await ctx.reply("You must provide the mode to use, the ping list name, and some user identifier.")
+            return
+        
+        database.update_ping_list(pinglist, user.id, mode == "add")
+        
+        await ctx.reply("Done.")
+
+        
 async def setup(bot: commands.Bot):
     cog = Admin_cog()
     cog.bot = bot
