@@ -16,6 +16,9 @@ import utility.text as u_text
 import utility.custom as u_custom
 import utility.interface as u_interface
 import utility.converters as u_converters
+import utility.files as u_files
+
+database = None # type: u_files.DatabaseInterface
 
 class Bingo_cog(u_custom.CustomCog, name="Bingo", description="Commands for running the bingo game!"):
     bot = None
@@ -46,9 +49,9 @@ class Bingo_cog(u_custom.CustomCog, name="Bingo", description="Commands for runn
         """Returns a tile list based on a string input. 'daily' will be the daily tile list and 'weekly' will be the weekly tile list."""
         match board:
             case "daily":
-                return u_bingo.tile_list_5x5()
+                return u_bingo.tile_list_5x5(database=database)
             case "weekly":
-                return u_bingo.tile_list_9x9()
+                return u_bingo.tile_list_9x9(database=database)
     
     def _generate_list(self, tile_list: list[dict], base_tile_list: list[dict], title: str, page: (int | None) = 0, type_text: str = "daily", command: str = "%objective list", page_size: int = 6, identifier: str = "in the daily tile list") -> discord.Embed:
         """Generates a list of objectives for the objective list and board stats commands. Returns a Discord.py embed object.
@@ -254,9 +257,10 @@ class Bingo_cog(u_custom.CustomCog, name="Bingo", description="Commands for runn
         if ctx.invoked_subcommand is not None:
             return
         
-        live_data = u_bingo.live()
+        live_data = u_bingo.live(database=database)
 
         u_images.render_board_5x5(
+            database = database,
             tile_string = live_data["daily_tile_string"],
             enabled = live_data["daily_enabled"]
         )
@@ -278,9 +282,9 @@ class Bingo_cog(u_custom.CustomCog, name="Bingo", description="Commands for runn
     async def daily_stats(self, ctx,
             page: typing.Optional[int] = commands.parameter(description = "An integer for what page to use.", displayed_default = 1)
         ):
-        base_tile_list = u_bingo.tile_list_5x5()
+        base_tile_list = u_bingo.tile_list_5x5(database=database)
 
-        live_data = u_bingo.live()
+        live_data = u_bingo.live(database=database)
 
         live_list = u_text.split_chunks(live_data["daily_tile_string"], 3)
 
@@ -310,11 +314,14 @@ class Bingo_cog(u_custom.CustomCog, name="Bingo", description="Commands for runn
         brief = "Tick off a tile on the bingo board.",
         description = "Tick off a tile on the bingo board."
     )
-    @commands.check(u_checks.bingo_tick_check)
     async def tick(self, ctx,
             coord_x: typing.Optional[int] = commands.parameter(description = "The X coordinate of the tile to tick."),
             coord_y: typing.Optional[int] = commands.parameter(description = "The Y coordinate of the tile to tick.")
         ):
+        if not u_checks.bingo_tick_check(database, ctx):
+            await ctx.reply("I am sorry, but you can't use this command.")
+            return
+        
         if ctx.invoked_subcommand is not None:
             return
         
@@ -332,12 +339,12 @@ class Bingo_cog(u_custom.CustomCog, name="Bingo", description="Commands for runn
             return
         
         # If the tile is already ticked.
-        if u_bingo.get_tile_state_5x5(tile_id):
+        if u_bingo.get_tile_state_5x5(database=database, tile_id=tile_id):
             await ctx.reply("That tile is already ticked.")
             return
         
         # Tick the tile, and then convert the result into three variables.
-        pre_tick_bingos, post_tick_bingos, objective_id, new_live = u_bingo.tick_5x5(tile_id)
+        pre_tick_bingos, post_tick_bingos, objective_id, new_live = u_bingo.tick_5x5(database=database, tile_id=tile_id)
 
         # Update the bingo cache.
         self.bot.update_bingo_cache(new_live)
@@ -349,7 +356,7 @@ class Bingo_cog(u_custom.CustomCog, name="Bingo", description="Commands for runn
         bingos_made = post_tick_bingos - pre_tick_bingos
         
         # Get the name and description of the tile that was ticked.
-        objective_data = u_bingo.get_objective_5x5(objective_id)
+        objective_data = u_bingo.get_objective_5x5(database=database, objective_id=objective_id)
 
         # Make the bonus text sent if a bingo is made.
         if bingos_made >= 1:
@@ -371,11 +378,14 @@ class Bingo_cog(u_custom.CustomCog, name="Bingo", description="Commands for runn
         brief = "Untick a tile on the bingo board.",
         description = "Untick a tile on the bingo board."
     )
-    @commands.check(u_checks.bingo_tick_check)
     async def untick(self, ctx,
             coord_x: typing.Optional[int] = commands.parameter(description = "The X coordinate of the tile to untick."),
             coord_y: typing.Optional[int] = commands.parameter(description = "The Y coordinate of the tile to untick.")
         ):
+        if not u_checks.bingo_tick_check(database, ctx):
+            await ctx.reply("I am sorry, but you can't use this command.")
+            return
+        
         # Ensure at least 1 number is provided, if just an x coordinate is provided, it is used as a tile id.
         if coord_x is None:
             await ctx.reply("You must provide a coordinate, as a single tile id or an X and Y coordinate.\nYou can use `%tick guide` to get a guide.")
@@ -390,12 +400,12 @@ class Bingo_cog(u_custom.CustomCog, name="Bingo", description="Commands for runn
             return
         
         # If the tile isn't ticked in the first place.
-        if not u_bingo.get_tile_state_5x5(tile_id):
+        if not u_bingo.get_tile_state_5x5(database=database, tile_id=tile_id):
             await ctx.reply("That tile isn't already ticked.")
             return
         
         # Tick the tile, and then convert the result into two variables.
-        pre_tick_bingos, post_tick_bingos, new_live = u_bingo.untick_5x5(tile_id)
+        pre_tick_bingos, post_tick_bingos, new_live = u_bingo.untick_5x5(database=database, tile_id=tile_id)
 
         # Update the bingo cache.
         self.bot.update_bingo_cache(new_live)
@@ -423,9 +433,13 @@ class Bingo_cog(u_custom.CustomCog, name="Bingo", description="Commands for runn
         brief = "Get a handy tile id guide for ticking.",
         description = "Get a handy tile id guide for ticking."
     )
-    @commands.check(u_checks.bingo_tick_check)
     async def tick_guide(self, ctx):
+        if not u_checks.bingo_tick_check(database, ctx):
+            await ctx.reply("I am sorry, but you can't use this command.")
+            return
+        
         u_images.render_board(
+            database = database,
             tile_string = "".join([f"{i:03}" for i in range(25)]),
             enabled = 0,
             board_size = 5,
@@ -450,7 +464,7 @@ class Bingo_cog(u_custom.CustomCog, name="Bingo", description="Commands for runn
         hidden = True
     )
     async def board_generate(self, ctx):
-        await ctx.reply("`{}`".format(u_bingo.generate_5x5_board()))
+        await ctx.reply("`{}`".format(u_bingo.generate_5x5_board(database=database)))
 
     
     
@@ -483,7 +497,7 @@ class Bingo_cog(u_custom.CustomCog, name="Bingo", description="Commands for runn
             return
         
         split_tile_string = u_text.split_chunks(tile_string, 3)
-        objective_list = u_bingo.tile_list_5x5()
+        objective_list = u_bingo.tile_list_5x5(database=database)
 
         for objective_id in split_tile_string:
             if int(objective_id) >= len(objective_list):
@@ -496,6 +510,7 @@ class Bingo_cog(u_custom.CustomCog, name="Bingo", description="Commands for runn
         enabled_number = min(max(enabled_number, 0), 33554431)
 
         u_images.render_board_5x5(
+            database = database,
             tile_string = tile_string,
             enabled = enabled_number
         )
@@ -530,9 +545,10 @@ class Bingo_cog(u_custom.CustomCog, name="Bingo", description="Commands for runn
         if ctx.invoked_subcommand is not None:
             return
         
-        live_data = u_bingo.live()
+        live_data = u_bingo.live(database=database)
 
         u_images.render_board_9x9(
+            database = database,
             tile_string = live_data["weekly_tile_string"],
             enabled = live_data["weekly_enabled"]
         )
@@ -557,9 +573,9 @@ class Bingo_cog(u_custom.CustomCog, name="Bingo", description="Commands for runn
     async def weekly_stats(self, ctx,
             page: typing.Optional[int] = commands.parameter(description = "An integer for what page to use.", displayed_default = 1)
         ):
-        base_tile_list = u_bingo.tile_list_9x9()
+        base_tile_list = u_bingo.tile_list_9x9(database=database)
 
-        live_data = u_bingo.live()
+        live_data = u_bingo.live(database=database)
 
         live_list = u_text.split_chunks(live_data["weekly_tile_string"], 3)
 
@@ -589,13 +605,17 @@ class Bingo_cog(u_custom.CustomCog, name="Bingo", description="Commands for runn
         brief = "Tick off a tile on the weekly board.",
         description = "Tick off a tile on the weekly board."
     )
-    @commands.check(u_checks.bingo_tick_check)
     async def weekly_tick(self, ctx,
             coord_x: typing.Optional[int] = commands.parameter(description = "The X coordinate of the tile to tick."),
             coord_y: typing.Optional[int] = commands.parameter(description = "The Y coordinate of the tile to tick.")
         ):
         if ctx.invoked_subcommand is not None:
             return
+        
+        if not u_checks.bingo_tick_check(database, ctx):
+            await ctx.reply("I am sorry, but you can't use this command.")
+            return
+        
         
         # Ensure at least 1 number is provided, if just an x coordinate is provided, it is used as a tile id.
         if coord_x is None:
@@ -611,12 +631,12 @@ class Bingo_cog(u_custom.CustomCog, name="Bingo", description="Commands for runn
             return
         
         # If the tile is already ticked.
-        if u_bingo.get_tile_state_9x9(tile_id):
+        if u_bingo.get_tile_state_9x9(database=database, tile_id=tile_id):
             await ctx.reply("That tile is already ticked.")
             return
         
         # Tick the tile, and then convert the result into three variables.
-        pre_tick_bingos, post_tick_bingos, objective_id, new_live = u_bingo.tick_9x9(tile_id)
+        pre_tick_bingos, post_tick_bingos, objective_id, new_live = u_bingo.tick_9x9(database=database, tile_id=tile_id)
 
         # Update the bingo cache.
         self.bot.update_bingo_cache(new_live)
@@ -628,7 +648,7 @@ class Bingo_cog(u_custom.CustomCog, name="Bingo", description="Commands for runn
         bingos_made = post_tick_bingos - pre_tick_bingos
         
         # Get the name and description of the tile that was ticked.
-        objective_data = u_bingo.get_objective_9x9(objective_id)
+        objective_data = u_bingo.get_objective_9x9(database=database, objective_id=objective_id)
 
         # Make the bonus text sent if a bingo is made.
         if bingos_made >= 1:
@@ -650,11 +670,14 @@ class Bingo_cog(u_custom.CustomCog, name="Bingo", description="Commands for runn
         brief = "Untick a tile on the weekly board.",
         description = "Untick a tile on the weekly board."
     )
-    @commands.check(u_checks.bingo_tick_check)
     async def weekly_untick(self, ctx,
             coord_x: typing.Optional[int] = commands.parameter(description = "The X coordinate of the tile to untick."),
             coord_y: typing.Optional[int] = commands.parameter(description = "The Y coordinate of the tile to untick.")
         ):
+        if not u_checks.bingo_tick_check(database, ctx):
+            await ctx.reply("I am sorry, but you can't use this command.")
+            return
+        
         # Ensure at least 1 number is provided, if just an x coordinate is provided, it is used as a tile id.
         if coord_x is None:
             await ctx.reply("You must provide a coordinate, as a single tile id or an X and Y coordinate.\nYou can use `%weekly tick guide` to get a guide.")
@@ -669,12 +692,12 @@ class Bingo_cog(u_custom.CustomCog, name="Bingo", description="Commands for runn
             return
         
         # If the tile isn't ticked in the first place.
-        if not u_bingo.get_tile_state_9x9(tile_id):
+        if not u_bingo.get_tile_state_9x9(database=database, tile_id=tile_id):
             await ctx.reply("That tile isn't already ticked.")
             return
         
         # Tick the tile, and then convert the result into two variables.
-        pre_tick_bingos, post_tick_bingos, new_live = u_bingo.untick_9x9(tile_id)
+        pre_tick_bingos, post_tick_bingos, new_live = u_bingo.untick_9x9(database=database, tile_id=tile_id)
 
         # Update the bingo cache.
         self.bot.update_bingo_cache(new_live)
@@ -702,9 +725,13 @@ class Bingo_cog(u_custom.CustomCog, name="Bingo", description="Commands for runn
         brief = "Get a handy tile id guide for ticking.",
         description = "Get a handy tile id guide for ticking."
     )
-    @commands.check(u_checks.bingo_tick_check)
     async def weekly_tick_guide(self, ctx):
+        if not u_checks.bingo_tick_check(database, ctx):
+            await ctx.reply("I am sorry, but you can't use this command.")
+            return
+        
         u_images.render_board(
+            database = database,
             tile_string = "".join([f"{i:03}" for i in range(81)]),
             enabled = 0,
             board_size = 9,
@@ -727,7 +754,7 @@ class Bingo_cog(u_custom.CustomCog, name="Bingo", description="Commands for runn
         description = "Generates the tile string for a 9x9 bingo board."
     )
     async def weekly_generate(self, ctx):
-        await ctx.reply("`{}`".format(u_bingo.generate_9x9_board()))
+        await ctx.reply("`{}`".format(u_bingo.generate_9x9_board(database=database)))
 
     
     
@@ -760,7 +787,7 @@ class Bingo_cog(u_custom.CustomCog, name="Bingo", description="Commands for runn
             return
         
         split_tile_string = u_text.split_chunks(tile_string, 3)
-        objective_list = u_bingo.tile_list_9x9()
+        objective_list = u_bingo.tile_list_9x9(database=database)
 
         for objective_id in split_tile_string:
             if int(objective_id) >= len(objective_list):
@@ -773,6 +800,7 @@ class Bingo_cog(u_custom.CustomCog, name="Bingo", description="Commands for runn
         enabled_number = min(max(enabled_number, 0), 2417851639229258349412351)
 
         u_images.render_board_9x9(
+            database = database,
             tile_string = tile_string,
             enabled = enabled_number
         )
@@ -789,6 +817,9 @@ class Bingo_cog(u_custom.CustomCog, name="Bingo", description="Commands for runn
 async def setup(bot: commands.Bot):
     cog = Bingo_cog()
     cog.bot = bot
+
+    global database
+    database = bot.database
     
     # Add attributes for sys.modules and globals() so the _reload_module() function in utility.custom can read it and get the module objects.
     cog.modules = sys.modules

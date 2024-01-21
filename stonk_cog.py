@@ -21,6 +21,8 @@ import utility.custom as u_custom
 import utility.images as u_images
 import utility.algorithms as u_algorithms
 
+database = None # type: u_files.DatabaseInterface
+
 class Stonk_cog(u_custom.CustomCog, name="Stonk", description="Commands for working with the stonks in The Bread Game!"):
 
     @commands.group(
@@ -96,7 +98,7 @@ class Stonk_cog(u_custom.CustomCog, name="Stonk", description="Commands for work
         brief = "Get information about the current tick."
     )
     async def stonk_current(self, ctx):
-        stonk_data = u_stonks.full_current_values()
+        stonk_data = u_stonks.full_current_values(database)
 
         tick_data = stonk_data["values"]
         
@@ -136,11 +138,11 @@ class Stonk_cog(u_custom.CustomCog, name="Stonk", description="Commands for work
         if state in ["on", "off"]:
             new_state = state == "on"
         else:
-            on_pinglist = u_files.user_on_ping_list("stonk_tick_pings", ctx.author.id)
+            on_pinglist = database.user_on_ping_list("stonk_tick_pings", ctx.author.id)
 
             new_state = not on_pinglist
 
-        u_files.update_ping_list("stonk_tick_pings", ctx.author.id, new_state)
+        database.update_ping_list("stonk_tick_pings", ctx.author.id, new_state)
 
         embed = u_interface.embed(
             title = "Stonk tick ping list",
@@ -265,7 +267,7 @@ class Stonk_cog(u_custom.CustomCog, name="Stonk", description="Commands for work
         brief = "Get a link to the last stonk tick."
     )
     async def stonk_message(self, ctx):
-        await ctx.reply(u_stonks.full_current_values()["message_link"])
+        await ctx.reply(u_stonks.full_current_values(database)["message_link"])
     
 
 
@@ -771,9 +773,9 @@ class Stonk_cog(u_custom.CustomCog, name="Stonk", description="Commands for work
             await ctx.reply(embed=embed)
             return
         
-        algorithms = u_algorithms.StonkAlgorithms()
+        algorithms = u_algorithms.StonkAlgorithms(database)
 
-        algorithm_info = u_algorithms.get_info(algorithm_name=algorithm_name, algorithms=algorithms)
+        algorithm_info = u_algorithms.get_info(database=database, algorithm_name=algorithm_name, algorithms=algorithms)
 
         title = algorithm_name.replace("_", " ").title()
 
@@ -839,7 +841,7 @@ class Stonk_cog(u_custom.CustomCog, name="Stonk", description="Commands for work
         def check(algorithm_info):
             return algorithm_info["data"]["current_total"]
         
-        sorted_list = u_algorithms.get_leaderboard(check)
+        sorted_list = u_algorithms.get_leaderboard(database, check)
 
         highlight_point = -5
 
@@ -1045,6 +1047,9 @@ class Stonk_cog(u_custom.CustomCog, name="Stonk", description="Commands for work
 async def setup(bot: commands.Bot):
     cog = Stonk_cog()
     cog.bot = bot
+
+    global database
+    database = bot.database
     
     # Add attributes for sys.modules and globals() so the _reload_module() function in utility.custom can read it and get the module objects.
     cog.modules = sys.modules

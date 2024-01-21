@@ -90,6 +90,8 @@ class CustomContext(commands.Context):
                 return await self.send(f"{u_text.ping_filter(u_interface.get_display_name(self.author))},\n\n{content}", **kwargs)
 
 class CustomBot(commands.Bot):
+    # THIS CAN ONLY BE RELOADED BY RESTARTING THE ENTIRE BOT.
+    
     async def get_context(self, message: discord.Message, *, cls=CustomContext):
         return await super().get_context(message, cls=cls)
     

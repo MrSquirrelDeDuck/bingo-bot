@@ -163,9 +163,11 @@ cython_debug/
 *.code-workspace
 
 images/generated/
-data/
+data/stonks/
 
 patch_notes.txt
 
 algorithms.py
 ciphers.py
+database.json
+backups/

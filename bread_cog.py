@@ -24,6 +24,8 @@ import utility.values as u_values
 import utility.custom as u_custom
 import utility.solvers as u_solvers
 
+database = None # type: u_files.DatabaseInterface
+
 class Bread_cog(u_custom.CustomCog, name="Bread", description="Utility commands for The Bread Game!"):
     bread_wiki_searching = False
 
@@ -36,11 +38,11 @@ class Bread_cog(u_custom.CustomCog, name="Bread", description="Utility commands 
 
     def _get_reminder_data(self: typing.Self) -> dict:
         """Returns the reminder data as loaded from data/reminders.json."""
-        return u_files.load("data/reminders.json")
+        return database.load("reminders")
     
     def _save_reminder_data(self: typing.Self, data: dict) -> None:
         """Saves a dict to the reminder data file."""
-        u_files.save("data/reminders.json", data)
+        database.save("reminders", data=data)
     
     async def _send_reminder_list(self: typing.Self, ctx: typing.Union[commands.Context, u_custom.CustomContext], target: discord.Member, footer: str, reminder_data: dict = None) -> discord.Message:
         """Sends the list of reminders the author has, using ctx."""
@@ -667,7 +669,7 @@ class Bread_cog(u_custom.CustomCog, name="Bread", description="Utility commands 
             await ctx.reply("You must reply to a gamble message.")
             return
         
-        gamble_messages = u_files.load("data/bread/gamble_messages.json")
+        gamble_messages = database.load("bread", "gamble_messages")
 
         message_key = f"{replied_to.channel.id}.{replied_to.id}"
 
@@ -1142,7 +1144,10 @@ class Bread_cog(u_custom.CustomCog, name="Bread", description="Utility commands 
         if ctx.invoked_subcommand is not None:
             return
         
-        stored = u_bread.get_stored_data(ctx.author.id)
+        stored = u_bread.get_stored_data(
+            database = database,
+            user_id = ctx.author.id
+        )
 
         stored_message = "You do not have any stored data." if stored is None else "You have stored data!"
 
@@ -1178,7 +1183,11 @@ class Bread_cog(u_custom.CustomCog, name="Bread", description="Utility commands 
             await ctx.reply("You must reply to stats message.")
             return
         
-        u_bread.update_stored_data(ctx.author.id, parsed["stats"])
+        u_bread.update_stored_data(
+            database = database,
+            user_id = ctx.author.id,
+            data = parsed["stats"]
+        )
 
         embed = u_interface.embed(
             title = "Stored data",
@@ -1207,7 +1216,10 @@ class Bread_cog(u_custom.CustomCog, name="Bread", description="Utility commands 
 
         page = max(page - 1, 0)
 
-        stored = u_bread.get_stored_data(ctx.author.id)
+        stored = u_bread.get_stored_data(
+            database = database,
+            user_id = ctx.author.id
+        )
 
         if stored is None:
             await ctx.reply("You do not have any stored data.\nUse `%bread data` to get more information on how to store data.")
@@ -1261,7 +1273,10 @@ class Bread_cog(u_custom.CustomCog, name="Bread", description="Utility commands 
         description = "Clears your current stored data.\n\nTo get a list of all the command that use the stored data feature, use '%help bread data'"
     )
     async def bread_data_clear(self, ctx):
-        u_bread.clear_stored_data(ctx.author.id)
+        u_bread.clear_stored_data(
+            database = database,
+            user_id = ctx.author.id
+        )
         
         embed = u_interface.embed(
             title = "Stored data cleared",
@@ -1306,7 +1321,10 @@ class Bread_cog(u_custom.CustomCog, name="Bread", description="Utility commands 
         description = "The chessatron solver.\nThis does require storing data with the `%bread data` feature."
     )
     async def bread_chessatron_solve(self, ctx):
-        stored_data = u_bread.get_stored_data(ctx.author.id)
+        stored_data = u_bread.get_stored_data(
+            database = database,
+            user_id = ctx.author.id
+        )
 
         if stored_data is None:
             await ctx.reply("You do not have any stored data.\nUse `%bread data` to get more information on how to store data.")
@@ -1365,7 +1383,10 @@ class Bread_cog(u_custom.CustomCog, name="Bread", description="Utility commands 
         description = "Tells how many chessatrons can be made from just pawns.\nNote that this uses the data stored with the `%bread data` feature.\nThis is assuming pawns are the limiting factor.\nIt uses this formula:\n((bpawn - wpawn) / 3 + wpawn) / 8\n\nThis does require storing data with the `%bread data` feature."
     )
     async def bread_chessatron_solve(self, ctx):
-        stored_data = u_bread.get_stored_data(ctx.author.id)
+        stored_data = u_bread.get_stored_data(
+            database = database,
+            user_id = ctx.author.id
+        )
 
         if stored_data is None:
             await ctx.reply("You do not have any stored data.\nUse `%bread data` to get more information on how to store data.")
@@ -1413,7 +1434,10 @@ class Bread_cog(u_custom.CustomCog, name="Bread", description="Utility commands 
             percentage: typing.Optional[u_converters.parse_percent] = commands.parameter(description = "What percentage of the tron dough to gift."),
             stonk: typing.Optional[u_values.StonkConverter] = commands.parameter(description = "The stonk to use, will use whatever is closest if nothing is given.")
         ):
-        stored = u_bread.get_stored_data(ctx.author.id)
+        stored = u_bread.get_stored_data(
+            database = database,
+            user_id = ctx.author.id
+        )
 
         if stored is None:
             await ctx.reply("You do not have any stored data.\nUse `%bread data` to get more information on how to store data.")
@@ -1548,6 +1572,9 @@ class Bread_cog(u_custom.CustomCog, name="Bread", description="Utility commands 
 async def setup(bot: commands.Bot):
     cog = Bread_cog()
     cog.bot = bot
+
+    global database
+    database = bot.database
     
     # Add attributes for sys.modules and globals() so the _reload_module() function in utility.custom can read it and get the module objects.
     cog.modules = sys.modules

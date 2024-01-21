@@ -734,7 +734,7 @@ def parse_stats(message: discord.Message) -> dict[str, typing.Union[int, u_value
     # If nothing is found, say the parsing was unsuccessful.
     return {"parse_successful": False}
 
-def get_stored_data(user_id: int) -> dict[str | u_values.Item, int] | None:
+def get_stored_data(database: u_files.DatabaseInterface, user_id: int) -> dict[str | u_values.Item, int] | None:
     """Gets a piece of stored data.
 
     Args:
@@ -743,7 +743,7 @@ def get_stored_data(user_id: int) -> dict[str | u_values.Item, int] | None:
     Returns:
         dict[str | u_values.Item, int] | None: The returned data, with items replaced with u_values.Item objects. None will be returned if the user id is not in the data.
     """
-    stored_data = u_files.load("data/bread/data_storage.json")
+    stored_data = database.load("bread", "data_storage", default={})
     
     user_id = str(user_id)
 
@@ -762,7 +762,7 @@ def get_stored_data(user_id: int) -> dict[str | u_values.Item, int] | None:
     
     return data
 
-def update_stored_data(user_id: int | str, data: dict[str | u_values.Item, int]) -> dict[str | u_values.Item, int]:
+def update_stored_data(database: u_files.DatabaseInterface, user_id: int | str, data: dict[str | u_values.Item, int]) -> dict[str | u_values.Item, int]:
     """Updates a piece of stored data.
 
     Args:
@@ -772,7 +772,7 @@ def update_stored_data(user_id: int | str, data: dict[str | u_values.Item, int])
     Returns:
         dict[str | u_values.Item, int]: The updated data.
     """
-    stored_data = u_files.load("data/bread/data_storage.json")
+    stored_data = database.load("bread", "data_storage", default={})
 
     user_id = str(user_id)
 
@@ -810,12 +810,12 @@ def update_stored_data(user_id: int | str, data: dict[str | u_values.Item, int])
     
     stored_data[user_id].update(data)
 
-    u_files.save("data/bread/data_storage.json", stored_data)
+    database.save("bread", "data_storage", data=stored_data)
 
     return stored_data[user_id]
 
-def clear_stored_data(user_id: int | str) -> None:
-    stored_data = u_files.load("data/bread/data_storage.json")
+def clear_stored_data(database: u_files.DatabaseInterface, user_id: int | str) -> None:
+    stored_data = database.load("bread", "data_storage", default={})
     
     user_id = str(user_id)
 
@@ -824,4 +824,4 @@ def clear_stored_data(user_id: int | str) -> None:
     
     stored_data.pop(user_id)
 
-    u_files.save("data/bread/data_storage.json", stored_data)
+    database.save("bread", "data_storage", data=stored_data)

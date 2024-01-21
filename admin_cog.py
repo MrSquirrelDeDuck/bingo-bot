@@ -16,6 +16,9 @@ import utility.custom as u_custom
 import utility.checks as u_checks
 import utility.algorithms as u_algorithms
 import utility.images as u_images
+import utility.files as u_files
+
+database = None # type: u_files.DatabaseInterface
 
 class Admin_cog(u_custom.CustomCog, name="Admin", description="Administration commands for the Bingo-Bot."):
     bot = None
@@ -28,26 +31,19 @@ class Admin_cog(u_custom.CustomCog, name="Admin", description="Administration co
         "stonk_cog"
     ]
 
-    ######################
-    ##### LISTENERS ######
-    ######################
+    ####################################
+    ##### GLOBAL UTILITY FUNCTIONS #####
+    ####################################
 
-    @commands.Cog.listener()
-    async def on_command_error(self, ctx, error):
-        # Command check errors.
-        if isinstance(error, commands.errors.CheckFailure):
-            # A command check failed.
-            return
+    def reload_database(self):
+        """Reloads the database."""
+        self.bot.database.save_database(make_backup=True)
+        self.bot.database = u_files.DatabaseInterface()
+    
+    def cog_unload(self):
+        """This runs when the cog is unloaded."""
+        database.save_database(make_backup=True)
         
-        if isinstance(error, commands.errors.CommandNotFound):
-            # Someone tried to run a command that does not exist.
-            return
-        
-        # Print the error, so it's easier to see.
-        traceback.print_exception(error)
-
-        # Let whoever ran the command know that something went awry.
-        await ctx.reply("Something went wrong processing that command.")
 
     #####################
     #####  CHECKS  ######
@@ -262,8 +258,10 @@ class Admin_cog(u_custom.CustomCog, name="Admin", description="Administration co
         brief = "Shuts the bot down.",
         description = "Shuts the bot down.\nPlease only use if it is the last option."
     )
-    @commands.check(u_checks.shutdown_check)
     async def admin_shutdown(self, ctx):
+        if not u_checks.shutdown_check(database, ctx):
+            return
+        
         letters = list("abcdefghijklmnopqrstuvwxyABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789")
         security_code = "".join(random.choice(letters) for i in range(16))
 
@@ -376,7 +374,7 @@ class Admin_cog(u_custom.CustomCog, name="Admin", description="Administration co
     async def admin_resimulate_algorithms(self, ctx):
         await ctx.reply("Resimulating stonk algorithms, this will take some time.")
 
-        u_algorithms.resimulate_all()
+        u_algorithms.resimulate_all(database)
 
         await ctx.reply("Done.")
 
@@ -394,14 +392,58 @@ class Admin_cog(u_custom.CustomCog, name="Admin", description="Administration co
     )
     @commands.is_owner()
     async def admin_generate_report(self, ctx):
-        u_images.stonk_report()
+        u_images.stonk_report(database)
         
         await ctx.reply(file=discord.File(f"images/generated/stonk_report.png"))
+    
+    
+    
+    
+    
+    
+    
+    @admin.command(
+        name="dump",
+        brief = "Prints a part of the database.",
+        description = "Prints a part of the database."
+    )
+    @commands.is_owner()
+    async def admin_dump(self, ctx,
+            key: typing.Optional[str] = commands.parameter(description = "The key to dump.")
+        ):
+        if key is None:
+            print("Dumping the entire database:")
+            print(self.bot.database.database)
+        else:
+            print("Dumping key \"{}\":".format(key))
+            print(self.bot.database.load(key))
+            
+        await ctx.reply("Done.")
+    
+    
+    
+    
+    
+    
+    
+    @admin.command(
+        name="rebuild_database",
+        brief = "Reloads the database.",
+        description = "Reloads the database."
+    )
+    @commands.is_owner()
+    async def admin_reload_database(self, ctx):
+        self.reload_database()
+
+        await ctx.reply("Done.")
 
         
 async def setup(bot: commands.Bot):
     cog = Admin_cog()
     cog.bot = bot
+
+    global database
+    database = bot.database
     
     # Add attributes for sys.modules and globals() so the _reload_module() function in utility.custom can read it and get the module objects.
     cog.modules = sys.modules

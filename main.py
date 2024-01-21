@@ -5,6 +5,7 @@ import dotenv
 import os
 
 import utility.custom as u_custom
+import utility.files as u_files
 
 dotenv.load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
@@ -27,12 +28,18 @@ bot = u_custom.CustomBot(
 @bot.event
 async def on_ready():
     print("on_ready() called.")
+    print("Setting up database.")
+    bot.database = u_files.DatabaseInterface()
+    print("Database setup complete.")
+
+
     print("Loading admin_cog.")
 
     try:
         await bot.load_extension("admin_cog")
 
         admin_cog = bot.get_cog("Admin")
+
         await admin_cog._load_all_extensions()
         admin_cog.add_checks()
     except commands.ExtensionAlreadyLoaded:

@@ -29,6 +29,8 @@ import utility.bread as u_bread
 import utility.bingo as u_bingo
 import utility.files as u_files
 
+database = None # type: u_files.DatabaseInterface
+
 class TruthOrDare_Buttons(discord.ui.View):
     def __init__(self, timeout=3600.0):
         super().__init__(timeout=timeout)
@@ -82,7 +84,7 @@ async def send_truth_or_dare(ctx, type_input="truth", interaction=None):
             type_input = "dare"
             prompt_type = "RANDOM: DARE"
 
-    prompts = u_files.load("data/truth_or_dare.json")
+    prompts = database.load("truth_or_dare")
     options = prompts[type_input]
     if prompt_type is None:
         prompt_type = type_input.upper()
@@ -241,7 +243,7 @@ class Other_cog(u_custom.CustomCog, name="Other", description="Commands that don
             await ctx.reply("||\n||")
             return
         
-        bingo_data = u_bingo.live()
+        bingo_data = u_bingo.live(database=database)
         
         # Rules list:
         # Must start with a capital letter.
@@ -923,11 +925,11 @@ class Other_cog(u_custom.CustomCog, name="Other", description="Commands that don
         if state in ["on", "off"]:
             new_state = state == "on"
         else:
-            on_pinglist = u_files.user_on_ping_list("xkcd_strips", ctx.author.id)
+            on_pinglist = database.user_on_ping_list("xkcd_strips", ctx.author.id)
 
             new_state = not on_pinglist
 
-        u_files.update_ping_list("xkcd_strips", ctx.author.id, new_state)
+        database.update_ping_list("xkcd_strips", ctx.author.id, new_state)
 
         embed = u_interface.embed(
             title = "xkcd strip ping list",
@@ -957,15 +959,16 @@ class Other_cog(u_custom.CustomCog, name="Other", description="Commands that don
             await ctx.reply("This is not the channel for that.")
             return
 
+        channel_data = database.get_ouija_data(ctx.channel.id)
+
         if question is None:
-            channel_data = u_files.get_ouija_data(ctx.channel.id)
             if channel_data["active"]:
                 await ctx.reply("Current letters: {}".format(channel_data["letters"]))
             else:
                 await ctx.reply("There is no question going on in this channel.\nYou can ask a question via `%askouija <question>`.")
             return
         
-        if u_files.get_ouija_data(ctx.channel.id)["active"]:
+        if channel_data["active"]:
             await ctx.reply("There is already a question going on in this channel.")
             return
         
@@ -973,7 +976,7 @@ class Other_cog(u_custom.CustomCog, name="Other", description="Commands that don
             await ctx.reply("Question cannot contain any pings.")
             return
         
-        u_files.set_ouija_data(
+        database.set_ouija_data(
             channel_id = ctx.channel.id,
             active = True,
             letters = "",
@@ -1002,7 +1005,7 @@ class Other_cog(u_custom.CustomCog, name="Other", description="Commands that don
             await ctx.reply("This is not the channel for that.")
             return
         
-        counting_data = u_files.get_counting_data(ctx.channel.id)
+        counting_data = database.get_counting_data(ctx.channel.id)
 
         if counting_data["count"] == 0:
             await ctx.reply("There is no count here yet! Send `1` to start it.")
@@ -1451,7 +1454,7 @@ class Other_cog(u_custom.CustomCog, name="Other", description="Commands that don
             for emoji in guild.emojis:
                 emoji_list.append((str(emoji), score_emoji(emoji.name)))
         
-        emoji_data = u_files.load("data/emoji_data.json")
+        emoji_data = database.load_json_file("data/emoji_data.json") # This file isn't loaded into the database since it's really large and also shouldn't be changing.
         for data in emoji_data:
             emoji_list.append((data["text"], score_emoji(data["name"])))
         
@@ -1599,6 +1602,9 @@ class Other_cog(u_custom.CustomCog, name="Other", description="Commands that don
 async def setup(bot: commands.Bot):
     cog = Other_cog()
     cog.bot = bot
+
+    global database
+    database = bot.database
     
     # Add attributes for sys.modules and globals() so the _reload_module() function in utility.custom can read it and get the module objects.
     cog.modules = sys.modules

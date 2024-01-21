@@ -10,13 +10,13 @@ import utility.files as u_files
 import utility.values as u_values
 import utility.text as u_text
 
-def stonk_history() -> list[dict[str, int]]:
+def stonk_history(database: u_files.DatabaseInterface) -> list[dict[str, int]]:
     """Returns the entire stonk history."""
-    return u_files.load(f"data{SLASH}stonks{SLASH}stonk_history.json")
+    return database.load("stonks", "stonk_history")
 
-def full_current_values() -> dict[str, typing.Union[dict[str, int], int]]:
+def full_current_values(database: u_files.DatabaseInterface) -> dict[str, typing.Union[dict[str, int], int]]:
     """Returns the raw values from current_values.json."""
-    return u_files.load(f"data{SLASH}stonks{SLASH}current_values.json")
+    return database.load("stonks", "current_values")
 
 def current_values() -> dict[str, int]:
     """Returns just the current stonk values."""

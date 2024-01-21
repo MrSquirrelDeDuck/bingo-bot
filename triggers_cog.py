@@ -40,13 +40,15 @@ DAILY_BOARD_CHANNEL = 1196865970355052644
 WEEKLY_BOARD_CHANNEL = 1196865991632748614
 # lol they get longer by 1 letter each time
 
+database = None # type: u_files.DatabaseInterface
+
 class Triggers_cog(u_custom.CustomCog, name="Triggers", description="Hey there! owo\n\nyou just lost the game >:3"):
     bot = None
 
-    bingo_cache = u_bingo.live()
-    parsed_bingo_cache = {}
+    # bingo_cache = u_bingo.live(database=database)
+    # parsed_bingo_cache = {}
 
-    chains_data = u_files.load("data/chains_data.json")
+    # chains_data = u_files.load("data/chains_data.json")
 
     last_pk_trigger = 0
     pk_triggers = ["why is the bot talking", "why is this bot talking", "why bot talk", "why are you a bot", "are you actually a bot", "are you a bot", "what is this bot", "what is pk",
@@ -65,44 +67,44 @@ class Triggers_cog(u_custom.CustomCog, name="Triggers", description="Hey there! 
         self.hourly_loop.start()
         self.daily_loop.start()
 
-        self.bingo_cache_updated()
+        # self.bingo_cache_updated()
     
     def cog_unload(self):
         self.hourly_loop.cancel()
         self.daily_loop.cancel()
 
-        self._save_chains_data()
+        # self._save_chains_data()
     
-    def bingo_cache_updated(self: typing.Self) -> None:
-        """Runs whenever the bingo cache is updated."""
-        self.parsed_bingo_cache = {
-            "daily_tile_string": u_text.split_chunks(self.bingo_cache["daily_tile_string"], 3),
-            "daily_enabled": u_bingo.decompile_enabled(self.bingo_cache["daily_enabled"], 5),
-            "daily_board_id": self.bingo_cache["daily_board_id"],
-            "weekly_tile_string": u_text.split_chunks(self.bingo_cache["weekly_tile_string"], 3),
-            "weekly_enabled": u_bingo.decompile_enabled(self.bingo_cache["weekly_enabled"], 9),
-            "weekly_board_id": self.bingo_cache["weekly_board_id"]
-        }
+    # def bingo_cache_updated(self: typing.Self) -> None:
+    #     """Runs whenever the bingo cache is updated."""
+    #     self.parsed_bingo_cache = {
+    #         "daily_tile_string": u_text.split_chunks(self.bingo_cache["daily_tile_string"], 3),
+    #         "daily_enabled": u_bingo.decompile_enabled(self.bingo_cache["daily_enabled"], 5),
+    #         "daily_board_id": self.bingo_cache["daily_board_id"],
+    #         "weekly_tile_string": u_text.split_chunks(self.bingo_cache["weekly_tile_string"], 3),
+    #         "weekly_enabled": u_bingo.decompile_enabled(self.bingo_cache["weekly_enabled"], 9),
+    #         "weekly_board_id": self.bingo_cache["weekly_board_id"]
+    #     }
 
-    def _save_chains_data(self) -> None:
-        """Saves self.chains_data to the data file."""
-        u_files.save("data/chains_data.json", self.chains_data)
+    # def _save_chains_data(self) -> None:
+    #     """Saves self.chains_data to the data file."""
+    #     u_files.save("data/chains_data.json", self.chains_data)
 
-    def _refresh_chains_data(self) -> None:
-        """Refreshes self.chains_data from the data file."""
-        self.chains_data = u_files.load("data/chains_data.json")
+    # def _refresh_chains_data(self) -> None:
+    #     """Refreshes self.chains_data from the data file."""
+    #     self.chains_data = u_files.load("data/chains_data.json")
     
     def _get_channel_chain(self, channel_id: int) -> dict:
         """Returns the chains data for a specific channel."""
-        return self.chains_data.get(str(channel_id), {"message": None, "sender": 0, "count": 0})
+        return database.load("chains_data", str(channel_id), default = {"message": None, "sender": 0, "count": 0})
 
     def _update_channel_chain(self, channel_id: int, data: dict) -> None:
         """Updates the chains data for a specific channel."""
-        self.chains_data[str(channel_id)] = data
+        database.save("chains_data", str(channel_id), data=data)
     
-    def save_all_data(self) -> None:
-        """Saves all stored data to files."""
-        self._save_chains_data()
+    # def save_all_data(self) -> None:
+    #     """Saves all stored data to files."""
+    #     self._save_chains_data()
 
 
 
@@ -172,12 +174,13 @@ class Triggers_cog(u_custom.CustomCog, name="Triggers", description="Hey there! 
         await ctx.reply("Latent-Dreamer is a bot that creates new responses via ChatGPT when triggered by specific phrases.\nWhen triggered she will send a message based on what the trigger was.\nThings like 'google en passant' and 'chess 2' always use the same prompt. Triggers such as 'what is ...' and 'google ...' will have ChatGPT provide an answer to the question or generate a list of search terms, depending on which was triggered.\n\nLatent-Dreamer also has a credits system to limit the amount of times people can trigger her per day.\nMore information about the credits system can be found [here](<https://discord.com/channels/958392331671830579/958392332590387262/1110078862286671962>) or by pinging Latent-Dreamer with the word 'credits'.")
 
     @commands.command(
-        name = "test"
+        name = "test",
+        description = "testing.",
+        brief = "testing."
     )
-    async def test_command(self, ctx):
-        print(self.parsed_bingo_cache)
-
-
+    @commands.is_owner()
+    async def test(self, ctx):
+        await self.hourly_loop()
 
     
     
@@ -195,7 +198,7 @@ class Triggers_cog(u_custom.CustomCog, name="Triggers", description="Hey there! 
 
         bst_time = u_bread.bread_time().total_seconds() // 3600
 
-        reminder_data = u_files.load("data/reminders.json")
+        reminder_data = database.load("reminders")
         reminder_channel = None
 
         for reminder in reminder_data["reminder_list"]:
@@ -220,7 +223,7 @@ class Triggers_cog(u_custom.CustomCog, name="Triggers", description="Hey there! 
                 
                 return_json = await resp.json()
         
-        ping_list_data = u_files.load("data/ping_lists.json")
+        ping_list_data = database.load("ping_lists")
 
         if return_json["num"] > ping_list_data["xkcd_previous"]:
             ping_list_channel = await self.bot.fetch_channel(PING_LISTS_CHANNEL)
@@ -236,7 +239,7 @@ class Triggers_cog(u_custom.CustomCog, name="Triggers", description="Hey there! 
             xkcd_message = await ping_list_channel.send(content=content, embed=embed)
 
             ping_list_data["xkcd_previous"] = return_json["num"]
-            u_files.save("data/ping_lists.json", ping_list_data)
+            database.save("ping_lists", data=ping_list_data)
 
             try:
                 created_thread = await xkcd_message.create_thread(
@@ -250,10 +253,13 @@ class Triggers_cog(u_custom.CustomCog, name="Triggers", description="Hey there! 
                 print(traceback.format_exc())
         
         # Update chains data and reload the bingo cache.
-        print("Updaing data.")
-        self.bot.save_all_data()
-        self.bot.update_bingo_cache(u_bingo.live())
-        print("Done.")
+        # print("Updaing data.")
+        # self.bot.save_all_data()
+        # self.bot.update_bingo_cache(u_bingo.live(database=database))
+        # print("Done.")
+        
+        # Save and backup database.
+        database.save_database(make_backup=True)
 
         # Running _hourly_task in other cogs.
         for cog in self.bot.cogs.values():
@@ -306,49 +312,50 @@ class Triggers_cog(u_custom.CustomCog, name="Triggers", description="Hey there! 
         weekly_board = day_of_the_week == 0
 
         # Archive daily board and the weekly board if it's Monday.
-        live_data = u_bingo.live()
+        live_data = u_bingo.live(database=database)
 
-        archive_5x5 = u_files.load("data/bingo/previous_5x5_boards.json")
+        archive_5x5 = database.load("bingo", "previous_5x5_boards")
 
         archive_5x5[str(live_data["daily_board_id"])] = {
             "tile_string": live_data["daily_tile_string"],
             "enabled": live_data["daily_enabled"]
         }
 
-        u_files.save("data/bingo/previous_5x5_boards.json", archive_5x5)
+        database.save("bingo", "previous_5x5_boards", data=archive_5x5)
 
         # If it's the day of the weekly board then archive it since we'll be making a new one.
         if weekly_board:
-            archive_9x9 = u_files.load("data/bingo/previous_9x9_boards.json")
+            archive_9x9 = database.load("bingo", "previous_9x9_boards")
 
             archive_9x9[str(live_data["weekly_board_id"])] = {
                 "tile_string": live_data["weekly_tile_string"],
                 "enabled": live_data["weekly_enabled"]
             }
 
-            u_files.save("data/bingo/previous_9x9_boards.json", archive_9x9)
+            database.save("bingo", "previous_9x9_boards", data=archive_9x9)
 
         # Now, make new boards.
 
-        new_daily = u_bingo.generate_5x5_board()
+        new_daily = u_bingo.generate_5x5_board(database=database)
 
         live_data["daily_tile_string"] = new_daily
         live_data["daily_enabled"] = 0
         live_data["daily_board_id"] += 1
 
         if weekly_board:
-            new_weekly = u_bingo.generate_9x9_board()
+            new_weekly = u_bingo.generate_9x9_board(database=database)
 
             live_data["weekly_tile_string"] = new_weekly
             live_data["weekly_enabled"] = 0
             live_data["weekly_board_id"] += 1
         
-        u_bingo.update_live(live_data)
+        u_bingo.update_live(database=database, new_data=live_data)
         self.bot.update_bingo_cache(live_data)
 
         # Send the daily board to the daily board channel.
         daily_channel = await self.bot.fetch_channel(DAILY_BOARD_CHANNEL)
         u_images.render_full_5x5(
+            database = database,
             tile_string = new_daily,
             enabled = 0
         )
@@ -359,6 +366,7 @@ class Triggers_cog(u_custom.CustomCog, name="Triggers", description="Hey there! 
         if weekly_board:
             weekly_channel = await self.bot.fetch_channel(WEEKLY_BOARD_CHANNEL)
             u_images.render_board_9x9(
+                database = database,
                 tile_string = new_weekly,
                 enabled = 0
             )
@@ -400,7 +408,7 @@ class Triggers_cog(u_custom.CustomCog, name="Triggers", description="Hey there! 
 
         stonk_history.append(append)
         
-        u_files.save("data/stonks/stonk_history.json", stonk_history)
+        database.save("stonks", "stonk_history", data=stonk_history)
 
         ### Updating current values. ###
         new = {
@@ -409,17 +417,17 @@ class Triggers_cog(u_custom.CustomCog, name="Triggers", description="Hey there! 
             "values": append
         }
 
-        u_files.save("data/stonks/current_values.json", new)
+        database.save("stonks", "current_values", data=new)
         
         ### Running the stonk algorithms. ###
 
-        u_algorithms.run_all_algorithms()
+        u_algorithms.run_all_algorithms(database)
 
         ### Attempt to generate the stonk report. ###
 
         send_file = None
         try:
-            u_images.stonk_report()
+            u_images.stonk_report(database)
             send_file = discord.File("images/generated/stonk_report.png")
         except:
             # Something went wrong :(
@@ -427,7 +435,7 @@ class Triggers_cog(u_custom.CustomCog, name="Triggers", description="Hey there! 
 
         ### Send message. ###
 
-        stonk_pinglist = u_files.get_ping_list("stonk_tick_pings")
+        stonk_pinglist = database.get_ping_list("stonk_tick_pings")
 
         await message.reply("{}\n\nCopy of tick {}:\n\n{}".format(
             "".join(["<@{}>".format(user_id) for user_id in stonk_pinglist]),
@@ -436,6 +444,9 @@ class Triggers_cog(u_custom.CustomCog, name="Triggers", description="Hey there! 
             ),
             file = send_file
         )
+        
+        # Save the database to file.
+        database.save_database(make_backup=True)
 
         # Running _on_stonk_tick in other cogs.
         for cog in self.bot.cogs.values():
@@ -492,26 +503,26 @@ class Triggers_cog(u_custom.CustomCog, name="Triggers", description="Hey there! 
         
     async def on_gamble(self, message: discord.Message):
         # Gamble messages.
-        gamble_messages = u_files.load("data/bread/gamble_messages.json")
+        gamble_messages = database.load("bread", "gamble_messages")
 
         gamble_messages[f"{message.channel.id}.{message.id}"] = message.content
 
         if len(gamble_messages) > 500:
             gamble_messages.pop(next(iter(gamble_messages)))
         
-        u_files.save("data/bread/gamble_messages.json", gamble_messages)
+        database.save("bread", "gamble_messages", data=gamble_messages)
     
     async def ask_ouija(self, message: discord.Message):
         if u_checks.sensitive_check(message.channel):
             return
         
-        ouija_data = u_files.get_ouija_data(message.channel.id)
+        ouija_data = database.get_ouija_data(message.channel.id)
 
         if not ouija_data["active"]:
             return
         
         if message.content.lower() == "goodbye":
-            u_files.set_ouija_data(message.channel.id, active = False)
+            database.set_ouija_data(message.channel.id, active = False)
 
             reply_message = message.channel.get_partial_message(ouija_data["message_id"])
 
@@ -530,7 +541,7 @@ class Triggers_cog(u_custom.CustomCog, name="Triggers", description="Hey there! 
         if content == "** **":
             content = " "
 
-        u_files.set_ouija_data(message.channel.id, letters = "{}{}".format(ouija_data["letters"], content))
+        database.set_ouija_data(message.channel.id, letters = "{}{}".format(ouija_data["letters"], content))
     
     async def counting(self, message: discord.Message):
         if u_checks.sensitive_check(message.channel):
@@ -538,7 +549,7 @@ class Triggers_cog(u_custom.CustomCog, name="Triggers", description="Hey there! 
         
         sent_number = u_converters.parse_int(message.content)
 
-        counting_data = u_files.get_counting_data(message.channel.id)
+        counting_data = database.get_counting_data(message.channel.id)
 
         if sent_number <= counting_data["count"]:
             return
@@ -547,7 +558,7 @@ class Triggers_cog(u_custom.CustomCog, name="Triggers", description="Hey there! 
             if counting_data["count"] == 0: # If 1 hasn't been sent since the last break.
                 return
             
-            u_files.set_counting_data(
+            counting_data.set_counting_data(
                 channel_id = message.channel.id,
                 count = 0,
                 sender = 0
@@ -563,14 +574,14 @@ class Triggers_cog(u_custom.CustomCog, name="Triggers", description="Hey there! 
                 await message.add_reaction("<a:you_cant_count:1134902783095603300>")
                 await u_interface.smart_reply(message, embed=embed)
             except discord.errors.Forbidden:
-                u_files.set_counting_data(channel_id = message.channel.id, count = counting_data["count"], sender = counting_data["sender"])
+                database.set_counting_data(channel_id = message.channel.id, count = counting_data["count"], sender = counting_data["sender"])
             
             return
         
         if message.author.id == counting_data["sender"]:
             return # So someone can't go twice in a row.
         
-        u_files.set_counting_data(
+        database.set_counting_data(
             channel_id = message.channel.id,
             count = sent_number,
             sender = message.author.id
@@ -578,7 +589,7 @@ class Triggers_cog(u_custom.CustomCog, name="Triggers", description="Hey there! 
         try:
             await message.add_reaction("<a:you_can_count:1133795506099867738>")
         except discord.errors.Forbidden:
-            u_files.set_counting_data(channel_id = message.channel.id, count = counting_data["count"], sender = counting_data["sender"])
+            database.set_counting_data(channel_id = message.channel.id, count = counting_data["count"], sender = counting_data["sender"])
                 
     async def pk_reply(self, message: discord.Message):
         if message.flags.silent:
@@ -675,7 +686,7 @@ class Triggers_cog(u_custom.CustomCog, name="Triggers", description="Hey there! 
             return
         
         # Now, fetch the users in the "727_pinglist" from the pinglist data and send a message pinging all of them.
-        ping_data = u_files.get_ping_list("727_pinglist")
+        ping_data = database.get_ping_list("727_pinglist")
 
         await message.reply("".join([f"<@{user_id}>" for user_id in ping_data]), mention_author=False)
         return
@@ -779,12 +790,41 @@ class Triggers_cog(u_custom.CustomCog, name="Triggers", description="Hey there! 
         if payload.emoji.name == "❌":
             await self.pk_explanation_deletion(payload)
 
+
+
+
+    
+    
+    ######################################################################################################################################################
+    ##### ON COMMAND ERROR ###############################################################################################################################
+    ######################################################################################################################################################
+
+    @commands.Cog.listener()
+    async def on_command_error(self, ctx, error):
+        # Command check errors.
+        if isinstance(error, commands.errors.CheckFailure):
+            # A command check failed.
+            return
+        
+        if isinstance(error, commands.errors.CommandNotFound):
+            # Someone tried to run a command that does not exist.
+            return
+        
+        # Print the error, so it's easier to see.
+        traceback.print_exception(error)
+
+        # Let whoever ran the command know that something went awry.
+        await ctx.reply("Something went wrong processing that command.")
+
         
 
 
 async def setup(bot: commands.Bot):
     cog = Triggers_cog()
     cog.bot = bot
+
+    global database
+    database = bot.database
     
     # Add attributes for sys.modules and globals() so the _reload_module() function in utility.custom can read it and get the module objects.
     cog.modules = sys.modules

@@ -70,7 +70,7 @@ def bingo_board_base(board_size: int, solo: bool = False) -> PIL_Image:
     # Return the finished image.
     return img
 
-def render_board(tile_string: str, enabled: int, tile_list: list[dict], board_size: int, solo: bool = False, force: bool = False) -> PIL_Image:
+def render_board(database: u_files.DatabaseInterface, tile_string: str, enabled: int, tile_list: list[dict], board_size: int, solo: bool = False, force: bool = False) -> PIL_Image:
     """Generates an image for a 5x5 bingo board and saves it to images/generated/bingo_board.png
 
     Board size is in length of one face of the sqaure, so for a 5x5 board it would be 5.
@@ -80,7 +80,7 @@ def render_board(tile_string: str, enabled: int, tile_list: list[dict], board_si
     # Get the current data, since if the last image generated is the same as the one we're making, then we don't need to make anything new.
     if not force:
         # If force is true, then we don't do this check.
-        current_data = u_files.load(f"data{SLASH}bingo{SLASH}last_generated.json")
+        current_data = database.load("bingo", "last_generated")
         if all([
                 board_size == current_data.get("last_size"),
                 tile_string == current_data.get(f"board"),
@@ -135,20 +135,18 @@ def render_board(tile_string: str, enabled: int, tile_list: list[dict], board_si
     # Save the image to images/generated/bingo_board.png
     img.save(f"images{SLASH}generated{SLASH}bingo_board.png")
 
-    # Update the data in data/bingo/last_generated.json.
-    current_data = u_files.load(f"data{SLASH}bingo{SLASH}last_generated.json")
-
-    current_data["board"] = tile_string
-    current_data["enabled"] = enabled
-    current_data["solo"] = solo
-    current_data["last_size"] = board_size
-
-    u_files.save(f"data{SLASH}bingo{SLASH}last_generated.json", current_data)
+    # Update the data in bingo/last_generated.
+    database.save("bingo", "last_generated", data={
+        "board": tile_string,
+        "enabled": enabled,
+        "solo": solo,
+        "last_size": board_size
+    })
 
     # Return the image.
     return img
 
-def render_board_5x5(tile_string: str, enabled: int) -> PIL_Image:
+def render_board_5x5(database: u_files.DatabaseInterface, tile_string: str, enabled: int) -> PIL_Image:
     """Renders a 5x5 bingo board and saves to images/generated/bingo_board.png
 
     After saving the image it will return the image object."""
@@ -156,18 +154,20 @@ def render_board_5x5(tile_string: str, enabled: int) -> PIL_Image:
     tile_list = u_bingo.tile_list_5x5()
 
     return render_board(
+        database = database,
         tile_string = tile_string,
         enabled = enabled,
         tile_list = tile_list,
         board_size = 5
     )
 
-def render_full_5x5(tile_string: str, enabled: int) -> PIL_Image:
+def render_full_5x5(database: u_files.DatabaseInterface, tile_string: str, enabled: int) -> PIL_Image:
     """Renders the 5x5 board in the announcement version."""
 
     tile_list = u_bingo.tile_list_5x5()
 
     main_board = render_board(
+        database = database,
         tile_string = tile_string,
         enabled = enabled,
         tile_list = tile_list,
@@ -178,17 +178,17 @@ def render_full_5x5(tile_string: str, enabled: int) -> PIL_Image:
 
     base.paste(main_board, (0, 270))
 
-    current_data = u_files.load(f"data{SLASH}bingo{SLASH}last_generated.json")
+    current_data = database.load("bingo", "last_generated")
 
     current_data["last_size"] = "5x5_full"
 
-    u_files.save(f"data{SLASH}bingo{SLASH}last_generated.json", current_data)
+    database.save("bingo", "last_generated", data=current_data)
 
     base.save(f"images{SLASH}generated{SLASH}bingo_board.png")
 
     return base
 
-def render_board_9x9(tile_string: str, enabled: int) -> PIL_Image:
+def render_board_9x9(database: u_files.DatabaseInterface, tile_string: str, enabled: int) -> PIL_Image:
     """Renders a 9x9 bingo board and saves to images/generated/bingo_board.png
 
     After saving the image it will return the image object."""
@@ -196,6 +196,7 @@ def render_board_9x9(tile_string: str, enabled: int) -> PIL_Image:
     tile_list = u_bingo.tile_list_9x9()
 
     return render_board(
+        database = database,
         tile_string = tile_string,
         enabled = enabled,
         tile_list = tile_list,
@@ -265,10 +266,10 @@ def generate_graph(
 ##### STONK REPORT ###################################################################################################################
 ######################################################################################################################################
 
-def stonk_report():
+def stonk_report(database: u_files.DatabaseInterface):
     START_TICK = 2000 # The starting tick for the average value calculation.
 
-    stonk_history = u_stonks.stonk_history()
+    stonk_history = u_stonks.stonk_history(database)
 
     current_tick = u_stonks.convert_tick(stonk_history[-1])
     previous_tick = u_stonks.convert_tick(stonk_history[-2])
@@ -283,9 +284,9 @@ def stonk_report():
     importlib.reload(u_algorithms)
     check = lambda data: (data["data"]["current_total"] / 5000) ** (1 / (data["data"]["current_portfolio"]["tick"] - 2000))
 
-    leaderboard = u_algorithms.get_leaderboard(check, filter_list=["hide_report"])
+    leaderboard = u_algorithms.get_leaderboard(database, check, filter_list=["hide_report"])
 
-    algorithm_data = u_algorithms.get_info(leaderboard[0][0])
+    algorithm_data = u_algorithms.get_info(database, leaderboard[0][0])
     algorithm_portfolio = algorithm_data["func"](1_000_000)["portfolio"]
 
     algorithm_choices = [ # This can be called via list[bool] to get whether it was chosen by the algorithm or not.

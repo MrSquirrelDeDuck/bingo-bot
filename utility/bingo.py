@@ -46,15 +46,15 @@ def generate_custom_board(tile_list: dict, size: int = 25) -> str:
 
     return result
 
-def generate_5x5_board() -> str:
-    """Generates a board for the 5x5 bingo game, using the tile list in data/bingo/tile_list_5x5.json"""
-    tile_list = tile_list_5x5()
+def generate_5x5_board(database: u_files.DatabaseInterface) -> str:
+    """Generates a board for the 5x5 bingo game, using the tile list in the bingo/tile_list_5x5 part of the database."""
+    tile_list = tile_list_5x5(database=database)
 
     return generate_custom_board(tile_list, 25)
 
-def generate_9x9_board() -> str:
-    """Generates a board for the 5x5 bingo game, using the tile list in data/bingo/tile_list_9x9.json"""
-    tile_list = tile_list_9x9()
+def generate_9x9_board(database: u_files.DatabaseInterface) -> str:
+    """Generates a board for the 5x5 bingo game, using the tile list in the bingo/tile_list_9x9 part of the database."""
+    tile_list = tile_list_9x9(database=database)
 
     return generate_custom_board(tile_list, 81)
 
@@ -128,64 +128,64 @@ def count_bingos(enabled_data: list[bool] | int, board_size: int = None) -> int:
     
     return bingos_found
 
-def tile_list_5x5() -> list[dict]:
+def tile_list_5x5(database: u_files.DatabaseInterface) -> list[dict]:
     """Returns the 5x5 board tile list."""
-    return u_files.load("data/bingo/tile_list_5x5.json")
+    return database.load("bingo", "tile_list_5x5")
 
-def get_objective_5x5(objective_id: int) -> dict:
+def get_objective_5x5(database: u_files.DatabaseInterface, objective_id: int) -> dict:
     """Gets the data for an objective from the 5x5 tile list."""
-    return tile_list_5x5()[objective_id]
+    return tile_list_5x5(database=database)[objective_id]
 
-def tile_list_9x9() -> list[dict]:
+def tile_list_9x9(database: u_files.DatabaseInterface) -> list[dict]:
     """Returns the 9x9 board tile list."""
-    return u_files.load("data/bingo/tile_list_9x9.json")
+    return database.load("bingo", "tile_list_9x9")
 
-def get_objective_9x9(objective_id: int) -> dict:
+def get_objective_9x9(database: u_files.DatabaseInterface, objective_id: int) -> dict:
     """Gets the data for an objective from the 9x9 tile list."""
-    return tile_list_9x9()[objective_id]
+    return tile_list_9x9(database=database)[objective_id]
 
-def live() -> dict:
+def live(database: u_files.DatabaseInterface) -> dict:
     """Returns the current live data dict."""
-    return u_files.load("data/bingo/live_data.json")
+    return database.load("bingo", "live_data")
 
-def update_live(new_data: dict) -> None:
+def update_live(database: u_files.DatabaseInterface, new_data: dict) -> None:
     """Updates the live data with the provided dict."""
-    u_files.save("data/bingo/live_data.json", new_data)
+    database.save("bingo", "live_data", data=new_data)
 
-def set_live(key: str, value: typing.Any) -> dict:
+def set_live(database: u_files.DatabaseInterface, key: str, value: typing.Any) -> dict:
     """Sets a single value in the live data, takes the key and new value. Returns the new version of the live data."""
     
     # Get the current data.
-    live_data = live()
+    live_data = live(database=database)
 
     # Update the key with the new value.
     live_data[key] = value
 
     # Save the data.
-    update_live(live_data)
+    update_live(database=database, new_data=live_data)
 
     # Return the new version of the live data.
     return live_data
 
-def get_tile_state_5x5(tile_id: int) -> bool:
+def get_tile_state_5x5(database: u_files.DatabaseInterface, tile_id: int) -> bool:
     """Gets a bool for whether a specific tile on the 5x5 board is ticked or not."""
 
     # Get the live data.
-    live_data = live()
+    live_data = live(database=database)
 
     # Decompile the enabled integer into a list of bools, and return the one chosen by the tile_id parameter.
     return decompile_enabled(live_data["daily_enabled"], 5)[tile_id]
 
-def get_tile_state_9x9(tile_id: int) -> bool:
+def get_tile_state_9x9(database: u_files.DatabaseInterface, tile_id: int) -> bool:
     """Gets a bool for whether a specific tile on the 9x9 board is ticked or not."""
 
     # Get the live data.
-    live_data = live()
+    live_data = live(database=database)
 
     # Decompile the enabled integer into a list of bools, and return the one chosen by the tile_id parameter.
     return decompile_enabled(live_data["weekly_enabled"], 9)[tile_id]
 
-def update_tile(tile_id: int, board_size: int, live_data_key: str, new_value: bool, live_data: dict = None) -> tuple[int, int, dict]:
+def update_tile(database: u_files.DatabaseInterface, tile_id: int, board_size: int, live_data_key: str, new_value: bool, live_data: dict = None) -> tuple[int, int, dict]:
     """Updates a tile on a bingo board.
     
     Parameters:
@@ -202,7 +202,7 @@ def update_tile(tile_id: int, board_size: int, live_data_key: str, new_value: bo
 
     # If live_data was not provided, get the current data.
     if live_data is None:
-        live_data = live()
+        live_data = live(database=database)
 
     # Get a copy of the pre-tick enabled integer.
     pre_tick = live_data[live_data_key]
@@ -217,12 +217,12 @@ def update_tile(tile_id: int, board_size: int, live_data_key: str, new_value: bo
     post_tick = compile_enabled(decompiled)
 
     # Save the data, while compiling the `decompiled` list into a number.
-    new_live = set_live(live_data_key, post_tick)
+    new_live = set_live(database=database, key=live_data_key, value=post_tick)
 
     # Return the before and after version of the enabled integer.
     return (pre_tick, post_tick, new_live)
 
-def tick_5x5(tile_id: int) -> tuple[int, int, int, dict]:
+def tick_5x5(database: u_files.DatabaseInterface, tile_id: int) -> tuple[int, int, int, dict]:
     """Ticks a tile on the 5x5 board, takes a tile id.
     
     Returns a tuple of:
@@ -232,9 +232,10 @@ def tick_5x5(tile_id: int) -> tuple[int, int, int, dict]:
     - The new live data."""
 
     # Get the current data.
-    live_data = live()
+    live_data = live(database=database)
 
     pre_tick, post_tick, new_live = update_tile(
+        database = database,
         tile_id = tile_id,
         board_size = 5,
         live_data_key = "daily_enabled",
@@ -249,7 +250,7 @@ def tick_5x5(tile_id: int) -> tuple[int, int, int, dict]:
     # Return an integer version of the objective id of the ticked tile.
     return (pre_tick, post_tick, int(split_tile_string[tile_id]), new_live)
 
-def untick_5x5(tile_id: int) -> tuple[int, int, dict]:
+def untick_5x5(database: u_files.DatabaseInterface, tile_id: int) -> tuple[int, int, dict]:
     """Unticks a tile on the 5x5 board, takes a tile id.
     
     Returns a tuple of:
@@ -258,6 +259,7 @@ def untick_5x5(tile_id: int) -> tuple[int, int, dict]:
     - The new live data."""
 
     pre_tick, post_tick, new_live = update_tile(
+        database = database,
         tile_id = tile_id,
         board_size = 5,
         live_data_key = "daily_enabled",
@@ -267,7 +269,7 @@ def untick_5x5(tile_id: int) -> tuple[int, int, dict]:
     # Return an integer version of the objective id of the ticked tile.
     return (pre_tick, post_tick, new_live)
 
-def tick_9x9(tile_id: int) -> tuple[int, int, int, dict]:
+def tick_9x9(database: u_files.DatabaseInterface, tile_id: int) -> tuple[int, int, int, dict]:
     """Ticks a tile on the 9x9 board, takes a tile id.
     
     Returns a tuple of:
@@ -277,9 +279,10 @@ def tick_9x9(tile_id: int) -> tuple[int, int, int, dict]:
     - The new live data."""
 
     # Get the current data.
-    live_data = live()
+    live_data = live(database=database)
 
     pre_tick, post_tick, new_live = update_tile(
+        database = database,
         tile_id = tile_id,
         board_size = 9,
         live_data_key = "weekly_enabled",
@@ -294,7 +297,7 @@ def tick_9x9(tile_id: int) -> tuple[int, int, int, dict]:
     # Return an integer version of the objective id of the ticked tile.
     return (pre_tick, post_tick, int(split_tile_string[tile_id]), new_live)
 
-def untick_9x9(tile_id: int) -> tuple[int, int, dict]:
+def untick_9x9(database: u_files.DatabaseInterface, tile_id: int) -> tuple[int, int, dict]:
     """Unticks a tile on the 9x9 board, takes a tile id.
     
     Returns a tuple of:
@@ -303,6 +306,7 @@ def untick_9x9(tile_id: int) -> tuple[int, int, dict]:
     - The new live data."""
 
     pre_tick, post_tick, new_live = update_tile(
+        database = database,
         tile_id = tile_id,
         board_size = 9,
         live_data_key = "weekly_enabled",
