@@ -399,7 +399,7 @@ class Triggers_cog(u_custom.CustomCog, name="Triggers", description="Hey there! 
         stonk_values = u_stonks.parse_stonk_tick(message)
 
         ### Updating stonk history. ###
-        stonk_history = u_stonks.stonk_history()
+        stonk_history = u_stonks.stonk_history(database)
 
         append = {
             stonk.internal_name: values[-1]

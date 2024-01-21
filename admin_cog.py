@@ -31,9 +31,14 @@ class Admin_cog(u_custom.CustomCog, name="Admin", description="Administration co
         "stonk_cog"
     ]
 
-    ####################################
-    ##### GLOBAL UTILITY FUNCTIONS #####
-    ####################################
+
+
+
+
+
+    ######################################################################################################################################################
+    ##### GLOBAL UTILITY FUNCTIONS #######################################################################################################################
+    ######################################################################################################################################################
 
     def reload_database(self):
         """Reloads the database."""
@@ -43,11 +48,15 @@ class Admin_cog(u_custom.CustomCog, name="Admin", description="Administration co
     def cog_unload(self):
         """This runs when the cog is unloaded."""
         database.save_database(make_backup=True)
-        
 
-    #####################
-    #####  CHECKS  ######
-    #####################
+
+
+
+
+
+    ######################################################################################################################################################
+    ##### CHECKS #########################################################################################################################################
+    ######################################################################################################################################################
 
     async def cog_check(self, ctx):
         if ctx.author.id == self.bot.owner_id:
@@ -74,9 +83,14 @@ class Admin_cog(u_custom.CustomCog, name="Admin", description="Administration co
         """Adds a list of global checks that are in Admin_cog."""
         self.bot.add_check(self.test, call_once = True)
 
-    #################################
-    ##### COG UTILITY FUNCTIONS #####
-    #################################
+
+
+
+
+
+    ######################################################################################################################################################
+    ##### COG UTILITY FUNCTIONS ##########################################################################################################################
+    ######################################################################################################################################################
 
     async def _load_all_extensions(self) -> None:
         """Uses self.all_extensions to load all listed cogs."""
@@ -230,9 +244,10 @@ class Admin_cog(u_custom.CustomCog, name="Admin", description="Administration co
     
     
     
-    #####################
-    ##### COMMANDS ######
-    #####################
+    
+    ######################################################################################################################################################
+    ##### ADMIN ##########################################################################################################################################
+    ######################################################################################################################################################
 
     @commands.group(
         name="admin",
@@ -245,12 +260,119 @@ class Admin_cog(u_custom.CustomCog, name="Admin", description="Administration co
     async def admin(self, ctx):
         await ctx.reply("You're missing a subcommand.")
 
+        
+            
+
+        
+    ######################################################################################################################################################
+    ##### ADMIN DATABASE #################################################################################################################################
+    ######################################################################################################################################################
     
+    @admin.group(
+        name="database",
+        brief = "Commands for dealing with the database.",
+        description = "Commands for dealing with the database.",
+        pass_context = True,
+        invoke_without_command = True
+    )
+    @commands.is_owner()
+    async def admin_database(self, ctx):
+        if ctx.invoked_subcommand is not None:
+            return
+        
+        await ctx.send_help(self.admin_database)
+
+        
+            
+
+        
+    ######################################################################################################################################################
+    ##### ADMIN DATABASE RELOAD ##########################################################################################################################
+    ######################################################################################################################################################
     
+    @admin_database.command(
+        name="reload",
+        aliases = ["rebuild"],
+        brief = "Reloads the database.",
+        description = "Reloads the database."
+    )
+    @commands.is_owner()
+    async def admin_database_reload(self, ctx):
+        self.reload_database()
+
+        await ctx.reply("Done.")
+
+        
+            
+
+        
+    ######################################################################################################################################################
+    ##### ADMIN DATABASE SAVE ############################################################################################################################
+    ######################################################################################################################################################
     
+    @admin_database.command(
+        name="save",
+        brief = "Saves the database.",
+        description = "Saves the database."
+    )
+    @commands.is_owner()
+    async def admin_database_save(self, ctx):
+        database.save_database(make_backup=True)
+
+        await ctx.reply("Done.")
+
+        
+            
+
+        
+    ######################################################################################################################################################
+    ##### ADMIN DATABASE LOAD ############################################################################################################################
+    ######################################################################################################################################################
     
+    @admin_database.command(
+        name="load",
+        brief = "Loads the database.",
+        description = "Loads the database."
+    )
+    @commands.is_owner()
+    async def admin_database_load(self, ctx):
+        database.load_database()
+
+        await ctx.reply("Done.")
+
+        
+            
+
+        
+    ######################################################################################################################################################
+    ##### ADMIN DATABASE DUMP #####################################################################################################################################
+    ######################################################################################################################################################
     
-    
+    @admin_database.command(
+        name="dump",
+        brief = "Prints a part of the database.",
+        description = "Prints a part of the database."
+    )
+    @commands.is_owner()
+    async def admin_database_dump(self, ctx,
+            *key: typing.Optional[str]
+        ):
+        if len(key) == 0:
+            print("Dumping the entire database:")
+            print(self.bot.database.database)
+        else:
+            print("Dumping key \"{}\":".format(key))
+            print(self.bot.database.load(*key))
+            
+        await ctx.reply("Done.")
+
+        
+            
+
+        
+    ######################################################################################################################################################
+    ##### ADMIN SHUTDOWN #################################################################################################################################
+    ######################################################################################################################################################
     
     @admin.command(
         name = "shutdown",
@@ -274,12 +396,13 @@ class Admin_cog(u_custom.CustomCog, name="Admin", description="Administration co
             await self.bot.close()
             return
 
-    
-    
-    
-    
-    
-    
+        
+            
+
+        
+    ######################################################################################################################################################
+    ##### ADMIN LOAD #####################################################################################################################################
+    ######################################################################################################################################################
     
     @admin.command(
         name="load",
@@ -287,7 +410,9 @@ class Admin_cog(u_custom.CustomCog, name="Admin", description="Administration co
         description = "Load a cog."
     )
     @commands.is_owner()
-    async def admin_load(self, ctx, extension_name: typing.Optional[str]):
+    async def admin_load(self, ctx,
+            extension_name: typing.Optional[str] = commands.parameter(description = "The name of the extension to load.")
+        ):
         if extension_name is None:
             await ctx.reply("You must provide a cog name.")
             return
@@ -302,20 +427,23 @@ class Admin_cog(u_custom.CustomCog, name="Admin", description="Administration co
             traceback.print_exc()
             await ctx.send("Failed.")
 
-    
-    
-    
-    
-    
-    
-    
+        
+            
+
+        
+    ######################################################################################################################################################
+    ##### ADMIN UNLOAD ###################################################################################################################################
+    ######################################################################################################################################################
+            
     @admin.command(
         name="unload",
         brief = "Unload a cog.",
         description = "Unload a cog."
     )
     @commands.is_owner()
-    async def admin_unload(self, ctx, extension_name: typing.Optional[str]):
+    async def admin_unload(self, ctx,
+            extension_name: typing.Optional[str] = commands.parameter(description = "The name of the extension to unload.")
+        ):
         if extension_name is None:
             await ctx.reply("You must provide a cog name.")
             return
@@ -330,12 +458,13 @@ class Admin_cog(u_custom.CustomCog, name="Admin", description="Administration co
             traceback.print_exc()
             await ctx.send("Failed.")
 
-    
-    
-    
-    
-    
-    
+        
+            
+
+        
+    ######################################################################################################################################################
+    ##### ADMIN RELOAD ###################################################################################################################################
+    ######################################################################################################################################################
     
     @admin.command(
         name="reload",
@@ -343,7 +472,9 @@ class Admin_cog(u_custom.CustomCog, name="Admin", description="Administration co
         description = "Reload a cog/module, note that to load a module like utility.bingo, you need to say 'utility.bingo'."
     )
     @commands.is_owner()
-    async def admin_reload(self, ctx, extension_name: typing.Optional[str]):
+    async def admin_reload(self, ctx,
+            extension_name: typing.Optional[str] = commands.parameter(description = "The name of the extension to reload.")
+        ):
         if extension_name is None:
             await ctx.reply("You must provide a cog or utility name.")
             return
@@ -358,12 +489,13 @@ class Admin_cog(u_custom.CustomCog, name="Admin", description="Administration co
             traceback.print_exc()
             await ctx.send("Failed.")
 
-    
-    
-    
-    
-    
-    
+        
+            
+
+        
+    ######################################################################################################################################################
+    ##### ADMIN RESIMULATE ALGORITHMS ####################################################################################################################
+    ######################################################################################################################################################
     
     @admin.command(
         name="resimulate_algorithms",
@@ -378,12 +510,13 @@ class Admin_cog(u_custom.CustomCog, name="Admin", description="Administration co
 
         await ctx.reply("Done.")
 
-    
-    
-    
-    
-    
-    
+        
+            
+
+        
+    ######################################################################################################################################################
+    ##### ADMIN GENERATE REPORT ##########################################################################################################################
+    ######################################################################################################################################################
     
     @admin.command(
         name="generate_report",
@@ -395,46 +528,51 @@ class Admin_cog(u_custom.CustomCog, name="Admin", description="Administration co
         u_images.stonk_report(database)
         
         await ctx.reply(file=discord.File(f"images/generated/stonk_report.png"))
-    
-    
-    
-    
-    
-    
-    
-    @admin.command(
-        name="dump",
-        brief = "Prints a part of the database.",
-        description = "Prints a part of the database."
-    )
-    @commands.is_owner()
-    async def admin_dump(self, ctx,
-            key: typing.Optional[str] = commands.parameter(description = "The key to dump.")
-        ):
-        if key is None:
-            print("Dumping the entire database:")
-            print(self.bot.database.database)
-        else:
-            print("Dumping key \"{}\":".format(key))
-            print(self.bot.database.load(key))
-            
-        await ctx.reply("Done.")
-    
-    
-    
-    
-    
-    
-    
-    @admin.command(
-        name="rebuild_database",
-        brief = "Reloads the database.",
-        description = "Reloads the database."
-    )
-    @commands.is_owner()
-    async def admin_reload_database(self, ctx):
-        self.reload_database()
 
+        
+            
+
+        
+    ######################################################################################################################################################
+    ##### ADMIN MODIFY PERMISSIONS #######################################################################################################################
+    ######################################################################################################################################################
+    
+    @admin.command(
+        name="modify_permissions",
+        brief = "Modifies permissions.",
+        description = "Modifies permissions."
+    )
+    @commands.is_owner()
+    async def admin_modify_permissions(self, ctx,
+            mode: typing.Optional[str] = commands.parameter(description = "The mode to use, 'allow' or 'disallow'."),
+            permission: typing.Optional[str] = commands.parameter(description = "The permission name to allow or disallow."),
+            user: typing.Optional[discord.Member] = commands.parameter(description = "The user to allow or disallow the permission.")
+        ):
+        if None in [mode, permission, user]:
+            await ctx.reply("You must provide the mode to use, the permission name, and some user identifier.")
+            return
+        
+        permission_data = database.load("permissions")
+
+        if permission not in permission_data:
+            await ctx.reply("I don't recognize that permission.")
+            return
+        
+        if mode == "allow":
+            if user.id in permission_data[permission]:
+                await ctx.reply("That user already has access to that permission.")
+                return
+            
+            permission_data[permission].append(user.id)
+        elif mode == "disallow":
+            if user.id not in permission_data[permission]:
+                await ctx.reply("That user didn't have access to that permission in the first place.")
+                return
+            
+            permission_data[permission].remove(user.id)
+        
+        database.save("permissions", data=permission_data)
+        
         await ctx.reply("Done.")
 
         

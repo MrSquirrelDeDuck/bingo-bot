@@ -56,7 +56,7 @@ class Stonk_cog(u_custom.CustomCog, name="Stonk", description="Commands for work
     async def stonk_history(self, ctx,
             tick_id: typing.Optional[u_converters.parse_int] = commands.parameter(description = "An optional specific tick to look at.")
         ):
-        stonk_history = u_stonks.stonk_history()
+        stonk_history = u_stonks.stonk_history(database)
 
         if tick_id is None:
             tick_id = len(stonk_history) - 1
@@ -198,7 +198,7 @@ class Stonk_cog(u_custom.CustomCog, name="Stonk", description="Commands for work
         
         found_data = {stonk: [] for stonk in stonks_use}
         
-        stonk_history = u_stonks.stonk_history()
+        stonk_history = u_stonks.stonk_history(database)
 
         previous_tick = {}
         
@@ -337,8 +337,8 @@ class Stonk_cog(u_custom.CustomCog, name="Stonk", description="Commands for work
         
         parsed = parsed["stats"]
         
-        tick_data = u_stonks.stonk_history()[tick_id]
-        previous_tick_data = u_stonks.stonk_history()[max(tick_id - 1, 0)]
+        tick_data = u_stonks.stonk_history(database)[tick_id]
+        previous_tick_data = u_stonks.stonk_history(database)[max(tick_id - 1, 0)]
 
         dough_value = []
         previous_dough_value = []
@@ -385,6 +385,7 @@ class Stonk_cog(u_custom.CustomCog, name="Stonk", description="Commands for work
         brief = "Provides the entire stonk history as a json file."
     )
     async def stonk_file(self, ctx):
+        database.save_json_file("data/stonks/stonk_history.json", u_stonks.stonk_history(database))
         await ctx.reply(file=discord.File(f"data/stonks/stonk_history.json"))
     
 
@@ -428,7 +429,7 @@ class Stonk_cog(u_custom.CustomCog, name="Stonk", description="Commands for work
             await ctx.reply("Unfortunately, you must provide at least 1 stonk value.")
             return
         
-        stonk_history = u_stonks.stonk_history()
+        stonk_history = u_stonks.stonk_history(database)
 
         matched_ticks = []
 
@@ -482,7 +483,7 @@ class Stonk_cog(u_custom.CustomCog, name="Stonk", description="Commands for work
 
         split_counts = {stonk: 0 for stonk in u_values.stonks}
 
-        stonk_history = u_stonks.stonk_history()
+        stonk_history = u_stonks.stonk_history(database)
 
         for stonk in u_values.stonks:
             name = stonk.internal_name
@@ -592,7 +593,7 @@ class Stonk_cog(u_custom.CustomCog, name="Stonk", description="Commands for work
         start_tick = max(start_tick, 0)
         end_tick = min(end_tick, current_tick)
         
-        stonk_history = u_stonks.stonk_history()
+        stonk_history = u_stonks.stonk_history(database)
 
         lines = []
 
@@ -685,7 +686,7 @@ class Stonk_cog(u_custom.CustomCog, name="Stonk", description="Commands for work
         start = max(start, 0)
         end = min(end, u_stonks.current_tick_number())
 
-        stonk_history = u_stonks.stonk_history()
+        stonk_history = u_stonks.stonk_history(database)
 
         def sum_portfolio(portfolio: dict, tick: dict) -> int:
             return sum([portfolio[stonk] * tick.get(stonk.internal_name, 0) for stonk in portfolio])
@@ -973,7 +974,7 @@ class Stonk_cog(u_custom.CustomCog, name="Stonk", description="Commands for work
         start_tick = max(start_tick, 2000)
         end_tick = min(end_tick, current_tick)
 
-        stonk_history = u_stonks.stonk_history()
+        stonk_history = u_stonks.stonk_history(database)
 
         lines = []
 
