@@ -8,6 +8,7 @@ import copy
 import os
 import asyncio
 import random
+import re
 
 import sys
 
@@ -555,18 +556,21 @@ class Admin_cog(u_custom.CustomCog, name="Admin", description="Administration co
         
         permission_data = database.load("permissions")
 
-        if permission not in permission_data:
-            await ctx.reply("I don't recognize that permission.")
-            return
+        # if permission not in permission_data:
+        #     await ctx.reply("I don't recognize that permission.")
+        #     return
         
         if mode == "allow":
-            if user.id in permission_data[permission]:
+            if user.id in permission_data.get(permission, []):
                 await ctx.reply("That user already has access to that permission.")
                 return
             
+            if permission not in permission_data:
+                permission_data[permission] = []
+            
             permission_data[permission].append(user.id)
         elif mode == "disallow":
-            if user.id not in permission_data[permission]:
+            if user.id not in permission_data.get(permission, []):
                 await ctx.reply("That user didn't have access to that permission in the first place.")
                 return
             
@@ -660,6 +664,51 @@ class Admin_cog(u_custom.CustomCog, name="Admin", description="Administration co
         )
         
         await ctx.reply("Done, old count was {}.".format(u_text.smart_number(old_data.get("count", 0))))
+
+        
+            
+
+        
+    ######################################################################################################################################################
+    ##### ADMIN REMOTE SAY ###############################################################################################################################
+    ######################################################################################################################################################
+    
+    @admin.command(
+        name="remote_say",
+        brief = "Hehe",
+        description = "Hehe"
+    )
+    async def admin_remote_say(self, ctx,
+            message_link: typing.Optional[u_converters.parse_message_link] = commands.parameter(description = "Link to a message to reply to or send a message in."),
+            to_reply: typing.Optional[u_converters.extended_bool] = commands.parameter(description = "Whether to reply to the message, or just send in the channel."),
+            *, message_content: typing.Optional[str] = commands.parameter(description = "The content of the message to send.")
+        ):
+        if not u_checks.get_permission(database, ctx.author.id, "remote_say"):
+            return
+        
+        if None in [message_link, to_reply, message_content]:
+            await ctx.reply("You must provide a message link, whether to reply to the message ('yes' or 'no') and the message content.")
+            return
+        
+        if not(await self.bot.is_owner(ctx.author)) and re.search("(<@&?\d+>)|(@(here|everyone))", message_content):
+            await ctx.reply("Sorry, but I won't ping anyone in the text when remotely saying stuff.")
+            return
+        
+        channel = await self.bot.fetch_channel(message_link["channel"])
+        
+        if not to_reply:
+            sent = await channel.send(message_content)
+
+            await ctx.reply(f"Done.\n[Message link.](<{sent.jump_url}>)")
+            return
+
+        message = channel.get_partial_message(message_link["message"])
+        sent = await message.reply(message_content)
+
+        await ctx.reply(f"Done.\n[Message link.](<{sent.jump_url}>)")
+            
+        
+
 
         
 async def setup(bot: commands.Bot):
