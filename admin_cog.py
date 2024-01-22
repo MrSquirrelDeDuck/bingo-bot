@@ -630,6 +630,38 @@ class Admin_cog(u_custom.CustomCog, name="Admin", description="Administration co
         await ctx.reply("Done.")
 
         
+            
+
+        
+    ######################################################################################################################################################
+    ##### ADMIN SET COUNT ################################################################################################################################
+    ######################################################################################################################################################
+    
+    @admin.command(
+        name="set_count",
+        brief = "Sets a channel's counting progress.",
+        description = "Sets a channel's counting progress."
+    )
+    @commands.is_owner()
+    async def admin_set_count(self, ctx,
+            channel_id: typing.Optional[u_converters.parse_int] = commands.parameter(description = "The channel id of the channel."),
+            new_value: typing.Optional[u_converters.parse_int] = commands.parameter(description = "The new value for counting.")
+        ):
+        if None in [channel_id, new_value]:
+            await ctx.reply("You must provide a counter name and a new value for it.")
+            return
+        
+        old_data = database.get_counting_data(channel_id)
+        
+        database.set_counting_data(
+            channel_id = channel_id, 
+            count = new_value,
+            sender = 0
+        )
+        
+        await ctx.reply("Done, old count was {}.".format(u_text.smart_number(old_data.get("count", 0))))
+
+        
 async def setup(bot: commands.Bot):
     cog = Admin_cog()
     cog.bot = bot
