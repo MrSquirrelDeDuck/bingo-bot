@@ -16,6 +16,7 @@ import utility.custom as u_custom
 import utility.checks as u_checks
 import utility.algorithms as u_algorithms
 import utility.images as u_images
+import utility.converters as u_converters
 import utility.files as u_files
 
 database = None # type: u_files.DatabaseInterface
@@ -599,6 +600,32 @@ class Admin_cog(u_custom.CustomCog, name="Admin", description="Administration co
             return
         
         database.update_ping_list(pinglist, user.id, mode == "add")
+        
+        await ctx.reply("Done.")
+
+        
+            
+
+        
+    ######################################################################################################################################################
+    ##### ADMIN SET COUNTER ##############################################################################################################################
+    ######################################################################################################################################################
+    
+    @admin.command(
+        name="set_counter",
+        brief = "Sets a counter to a specific value.",
+        description = "Sets a counter to a specific value."
+    )
+    @commands.is_owner()
+    async def admin_set_counter(self, ctx,
+            counter_name: typing.Optional[str] = commands.parameter(description = "The counter name to set."),
+            new_value: typing.Optional[u_converters.parse_int] = commands.parameter(description = "The new value for the counter.")
+        ):
+        if None in [counter_name, new_value]:
+            await ctx.reply("You must provide a counter name and a new value for it.")
+            return
+        
+        database.set_daily_counter(counter_name, new_value)
         
         await ctx.reply("Done.")
 

@@ -16,10 +16,17 @@ class DatabaseInterface:
     database = {}
 
     def __init__(self) -> None:
+        """Interface that deals with the database.
+    
+        An instance of this class should be set to an attribute of the bot so the cogs can use it."""
         self.load_database()
     
     def save_database(self, make_backup: bool = False) -> None:
-        """Saves the database to file."""
+        """Saves the database to database.json.
+
+        Args:
+            make_backup (bool, optional): Whether to make a backup of the database. Defaults to False.
+        """
         print("Saving database.")
         self.save_json_file("database.json", self.database)
 
@@ -27,7 +34,7 @@ class DatabaseInterface:
             self.make_backup()
     
     def make_backup(self) -> None:
-        """Creates a backup in the backup folder."""
+        """Creates a backup of the database in the backup folder."""
         print("Making backup.")
         folder_path = "backups/"
         if not os.path.exists(folder_path):
@@ -49,21 +56,33 @@ class DatabaseInterface:
     ##### Getting and saving data ########################################################################################################################
     ######################################################################################################################################################
         
-    def load(self: typing.Self, *keys: str, default = None) -> dict | list:
+    def load(self: typing.Self, *keys: str, default: typing.Any = None) -> dict | list:
         """Returns a value from the database.
-        
-        Provide multiple keys to get nested values. Example: `database.load('key', 'nested-key', 'nested-nested-key')`"""
+
+        Args:
+            *keys (str): The key(s) to fetch. Provide multiple keys to get nested values. Example: `database.load('key', 'nested_key', 'double_nested_key')`
+            default (typing.Any, optional): What to return if any key does not exist. Defaults to None.
+
+        Returns:
+            dict | list: The value from the database.
+        """
         val = self.database.get(keys[0], default)
 
-        for key in keys[1:]:
-            val = val.get(key, default)
+        try:
+            for key in keys[1:]:
+                val = val.get(key, default)
+        except AttributeError:
+            return default
         
         return copy.deepcopy(val)
     
     def save(self, *keys: str, data: dict | list) -> None:
         """Saves a dict or list to the database.
-        
-        Provide multiple keys to save nested values. Example: `database.save('key', 'nested-key', 'nested-nested-key', data=['example'])`"""
+
+        Args:
+            data (dict | list): The data to save.
+            *keys (str): The key(s) of the path to save to. Provide multiple keys to save nested values. Example: `database.save('key', 'nested_key', 'double_nested_key', data=['example'])`
+        """
         if len(keys) == 1:
             self.database[keys[0]] = data
             return
@@ -79,18 +98,45 @@ class DatabaseInterface:
     ##### Dealing with files. ############################################################################################################################
     ######################################################################################################################################################
 
-    def load_json_file(self, file_path: str, default: typing.Any = None) -> list | dict:
-        """Loads a json file and returns the contents. The provided default will be returned if the file does not exist or there is a problem loading it."""
+    def load_json_file(self,
+            file_path: str,
+            default: typing.Any = None,
+            replace_slash: bool = False
+        ) -> list | dict:
+        """Loads a json file and returns the contents.
+
+        Args:
+            file_path (str): The path to the file.
+            default (typing.Any, optional): The value to return if the file does not exist. Defaults to None.
+            replace_slash (bool, optional): Whether to replace all slashes in the given path with os.path.sep. Defaults to False.
+
+        Returns:
+            list | dict: The contents of the file.
+        """
+        if replace_slash:
+            file_path = file_path.replace("/", SLASH)
+
         try:
             with open(file_path, "r", encoding="utf8") as file_load:
                 return json.load(file_load)
         except:
             return default
     
-    def save_json_file(self, file_path: str, data: dict | list) -> None:
-        """Saves a dict or list to a file. Will create a file if it does not already exist.
-        
-        Will load the file before saving, and if there is an error while saving it will revert it."""
+    def save_json_file(self,
+            file_path: str,
+            data: dict | list,
+            replace_slash: bool = False
+        ) -> None:
+        """Saves a dict or list to a file. Will create the file if it doesn't exist.
+        Will load the file before saving, and if there is an error while saving it will revert it.        
+
+        Args:
+            file_path (str): The path to the file to save.
+            data (dict | list): The data to save.
+            replace_slash (bool, optional): Whether to replace all slashes in the given path with os.path.sep. Defaults to False.
+        """
+        if replace_slash:
+            file_path = file_path.replace("/", SLASH)
 
         backup = self.load_json_file(file_path, default=type(data)())
 
@@ -102,15 +148,77 @@ class DatabaseInterface:
                 json.dump(backup, file_write, indent=4)
 
     ######################################################################################################################################################
+    ##### Daily counters. ################################################################################################################################
+    ######################################################################################################################################################
+    
+    def get_daily_counter(self,
+            counter_name: str,
+            default: int = 0
+        ) -> int:
+        """Gets a daily counter from the daily counters section.
+
+        Args:
+            counter_name (str): The name of the counter to fetch.
+            default (int, optional): What to return if the counter does not exist. Defaults to 0.
+
+        Returns:
+            int: The counter's current value.
+        """
+        return self.load("daily_counters", default=dict()).get(counter_name, default)
+    
+    def set_daily_counter(self,
+            counter_name: str,
+            value: int
+        ) -> None:
+        """Sets a daily counter in the daily counters section.
+
+        Args:
+            counter_name (str): The name of the counter to update.
+            value (int): The value to set the counter to.
+        """
+        data = self.load("daily_counters", default=dict())
+
+        data[counter_name] = value
+
+        self.save("daily_counters", data=data)
+
+    def increment_daily_counter(self,
+            counter_name: str,
+            amount: int = 1
+        ) -> None:
+        """Increments a daily counter by a specified amount.
+
+        Args:
+            counter_name (str): The name of the counter to increment.
+            amount (int, optional): The amount to increment the counter by. Defaults to 1.
+        """
+        data = self.load("daily_counters", default=dict())
+
+        data[counter_name] += amount
+
+        self.save("daily_counters", data=data)
+
+
+    ######################################################################################################################################################
     ##### Ping lists. ####################################################################################################################################
     ######################################################################################################################################################
     
     def get_ping_list_file(self) -> dict[str, list[typing.Optional[int]]]:
+        """Returns the raw ping list data.
+
+        Returns:
+            dict[str, list[typing.Optional[int]]]: The raw ping list data.
+        """
         return self.load("ping_lists")
 
     def set_ping_list_file(self,
             data: dict[str, list[typing.Optional[int]]]
         ) -> None:
+        """Saves the raw ping list data.
+
+        Args:
+            data (dict[str, list[typing.Optional[int]]]): The full ping list data to save.
+        """
         self.save("ping_lists", data=data)
 
     def get_ping_list(self,
@@ -309,8 +417,23 @@ class DatabaseInterface:
         
 
 
-def load(path: str, default = None) -> dict | list:
-    """Loads a json file. The provided default will be returned if the file does not exist or there is a problem loading it."""
+def load(
+        path: str,
+        default: typing.Any = None,
+        replace_slash: bool = False
+    ) -> dict | list:
+    """Loads a json file.
+
+    Args:
+        path (str): The path to the file to load.
+        default (typing.Any, optional): What to return if the file does not exist. Defaults to None.
+        replace_slash (bool, optional): Whether to replace all slashes in the given path with os.path.sep. Defaults to False.
+
+    Returns:
+        dict | list: The data inside the loaded file.
+    """
+    if replace_slash:
+        path = path.replace("/", SLASH)
     
     try:
         with open(path, "r", encoding="utf8") as file_load:
@@ -318,8 +441,20 @@ def load(path: str, default = None) -> dict | list:
     except:
         return default
 
-def save(path: str, data: dict | list) -> None:
-    """Saves a dict or list to a file. Will create a file if it does not already exist."""
+def save(
+        path: str,
+        data: dict | list,
+        replace_slash: bool = False
+    ) -> None:
+    """Saves a dict or list to a file. Will create a file if it does not already exist.
+
+    Args:
+        path (str): The path to save the file to.
+        data (dict | list): The list or dict to save.
+        replace_slash (bool, optional): Whether to replace all slashes in the given path with os.path.sep. Defaults to False.
+    """
+    if replace_slash:
+        path = path.replace("/", SLASH)
 
     with open(path, "w+") as file_write:
         json.dump(data, file_write, indent=4)

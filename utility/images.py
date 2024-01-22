@@ -164,7 +164,7 @@ def render_board_5x5(database: u_files.DatabaseInterface, tile_string: str, enab
 def render_full_5x5(database: u_files.DatabaseInterface, tile_string: str, enabled: int) -> PIL_Image:
     """Renders the 5x5 board in the announcement version."""
 
-    tile_list = u_bingo.tile_list_5x5()
+    tile_list = u_bingo.tile_list_5x5(database=database)
 
     main_board = render_board(
         database = database,

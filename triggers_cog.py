@@ -152,18 +152,74 @@ class Triggers_cog(u_custom.CustomCog, name="Triggers", description="Hey there! 
     ##### VERY FEW COMMANDS ##############################################################################################################################
     ######################################################################################################################################################
         
-    @commands.command(
+    @commands.group(
         name = "pk",
         description = "Provides a more tailored PluralKit description.",
-        brief = "Provides a more tailored PluralKit description."
+        brief = "Provides a more tailored PluralKit description.",
+        invoke_without_command = True,
+        pass_context = True
     )
     async def pk_explanation_command(self, ctx):
+        if ctx.invoked_subcommand is not None:
+            return
+        
         if ctx.guild.id != 958392331671830579:
             await ctx.reply(self.get_pk_explanation(replace_pings=True, auto_trigger=False))
             return
         
         await ctx.reply(self.get_pk_explanation(auto_trigger=False))
     
+    @pk_explanation_command.group(
+        name = "counter",
+        description = "Days since the last PluralKit confusion.",
+        brief = "Days since the last PluralKit confusion.",
+        invoke_without_command = True,
+        pass_context = True
+    )
+    async def pk_explanation_counter(self, ctx):
+        if ctx.invoked_subcommand is not None:
+            return
+        
+        counter_data = database.get_daily_counter("pk_counter")
+        record = database.get_daily_counter("pk_counter_record")
+
+        embed = u_interface.embed(
+            title = "PluralKit Counter",
+            description = "Days since the last PluralKit confusion:\n# {}\nThe current record is **{}**.".format(u_text.smart_number(counter_data), u_text.smart_text(record, 'day'))
+        )
+        await ctx.reply(embed=embed)
+    
+    @pk_explanation_counter.command(
+        name = "reset",
+        description = "Resets the PluralKit counter.",
+        brief = "Resets the PluralKit counter."
+    )
+    async def pk_explanation_counter_reset(self, ctx):
+        if ctx.invoked_subcommand is not None:
+            return
+        
+        counter_data = database.get_daily_counter("pk_counter")
+        record = database.get_daily_counter("pk_counter_record")
+
+        is_record = counter_data > record
+
+        database.set_daily_counter("pk_counter", 0)
+        if is_record:
+            database.set_daily_counter("pk_counter_record", counter_data)
+
+        embed = u_interface.embed(
+            title = "PluralKit Counter",
+            description = "The counter has been reset to 0.\nIt was at **{}** before it was reset.\n\n{}".format(
+                u_text.smart_number(counter_data),
+                "This beaks the previous record of **{}**.".format(u_text.smart_number(record)) if is_record else ""
+            )
+        )
+        await ctx.reply(embed=embed)
+
+
+        
+        
+
     @commands.command(
         name = "ld",
         brief="Provides a description of Latent-Dreamer.",
@@ -172,15 +228,6 @@ class Triggers_cog(u_custom.CustomCog, name="Triggers", description="Hey there! 
     )
     async def latent_explanation_command(self, ctx):
         await ctx.reply("Latent-Dreamer is a bot that creates new responses via ChatGPT when triggered by specific phrases.\nWhen triggered she will send a message based on what the trigger was.\nThings like 'google en passant' and 'chess 2' always use the same prompt. Triggers such as 'what is ...' and 'google ...' will have ChatGPT provide an answer to the question or generate a list of search terms, depending on which was triggered.\n\nLatent-Dreamer also has a credits system to limit the amount of times people can trigger her per day.\nMore information about the credits system can be found [here](<https://discord.com/channels/958392331671830579/958392332590387262/1110078862286671962>) or by pinging Latent-Dreamer with the word 'credits'.")
-
-    @commands.command(
-        name = "test",
-        description = "testing.",
-        brief = "testing."
-    )
-    @commands.is_owner()
-    async def test(self, ctx):
-        await self.hourly_loop()
 
     
     
@@ -372,6 +419,14 @@ class Triggers_cog(u_custom.CustomCog, name="Triggers", description="Hey there! 
             )
 
             await weekly_channel.send("Weekly Bingo Board #{}!".format(live_data["weekly_board_id"]), file=discord.File(r'images/generated/bingo_board.png'))
+        
+        ##### Increment counters. #####
+        
+        counter_list = [
+            "pk_counter"
+        ]
+        for counter in counter_list:
+            database.increment_daily_counter(counter, amount=1)
 
         # Running _daily_task in other cogs.
         for cog in self.bot.cogs.values():
