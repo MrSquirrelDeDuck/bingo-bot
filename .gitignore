@@ -164,6 +164,7 @@ cython_debug/
 
 images/generated/
 data/stonks/
+data/misc/
 
 patch_notes.txt
 

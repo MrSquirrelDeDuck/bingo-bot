@@ -10,11 +10,11 @@ import math
 import utility.files as u_files
 import utility.custom as u_custom
 
-def get_permission(database: u_files.DatabaseInterface, user_id: int, permission_name: str) -> bool:
+def get_permission(user_id: int, permission_name: str) -> bool:
     """Checks a permission via permissions.json."""
 
     # Load permission data.
-    permission_data = database.load("permissions")
+    permission_data = u_files.load("data/misc/permissions.json", replace_slash=True)
 
     # Return a bool for if the user id is in the permissions.
     return user_id in permission_data.get(permission_name, [])
@@ -78,9 +78,14 @@ async def in_authority(ctx: typing.Union[commands.Context, u_custom.CustomContex
 
     return has_role(member, [970549665055522850, 1119445209923723396, 958512048306815056, 958755031820161025, 1179943096402837535])
 
-def bingo_tick_check(database: u_files.DatabaseInterface, ctx: typing.Union[commands.Context, u_custom.CustomContext]) -> bool:
+def bingo_tick_check(ctx: typing.Union[commands.Context, u_custom.CustomContext]) -> bool:
     """Checks if the user has the permission required to tick and untick tiles on the bingo boards."""
-    return get_permission(database, ctx.author.id, "bingo_tick")
+    return get_permission(ctx.author.id, "bingo_tick")
 
-def shutdown_check(database: u_files.DatabaseInterface, ctx: typing.Union[commands.Context, u_custom.CustomContext]) -> bool:
-    return get_permission(database, ctx.author.id, "shutdown")
+def shutdown_check(ctx: typing.Union[commands.Context, u_custom.CustomContext]) -> bool:
+    """Checks if the user has the 'shutdown' permission."""
+    return get_permission(ctx.author.id, "shutdown")
+
+def remote_say_check(ctx: typing.Union[commands.Context, u_custom.CustomContext]) -> bool:
+    """Checks if the user has the 'remote_say' permission."""
+    return get_permission(ctx.author.id, "remote_say")

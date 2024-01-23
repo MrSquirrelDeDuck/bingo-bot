@@ -314,14 +314,11 @@ class Bingo_cog(u_custom.CustomCog, name="Bingo", description="Commands for runn
         brief = "Tick off a tile on the bingo board.",
         description = "Tick off a tile on the bingo board."
     )
+    @commands.check(u_checks.bingo_tick_check)
     async def tick(self, ctx,
             coord_x: typing.Optional[int] = commands.parameter(description = "The X coordinate of the tile to tick."),
             coord_y: typing.Optional[int] = commands.parameter(description = "The Y coordinate of the tile to tick.")
         ):
-        if not u_checks.bingo_tick_check(database, ctx):
-            await ctx.reply("I am sorry, but you can't use this command.")
-            return
-        
         if ctx.invoked_subcommand is not None:
             return
         
@@ -378,14 +375,11 @@ class Bingo_cog(u_custom.CustomCog, name="Bingo", description="Commands for runn
         brief = "Untick a tile on the bingo board.",
         description = "Untick a tile on the bingo board."
     )
+    @commands.check(u_checks.bingo_tick_check)
     async def untick(self, ctx,
             coord_x: typing.Optional[int] = commands.parameter(description = "The X coordinate of the tile to untick."),
             coord_y: typing.Optional[int] = commands.parameter(description = "The Y coordinate of the tile to untick.")
-        ):
-        if not u_checks.bingo_tick_check(database, ctx):
-            await ctx.reply("I am sorry, but you can't use this command.")
-            return
-        
+        ):        
         # Ensure at least 1 number is provided, if just an x coordinate is provided, it is used as a tile id.
         if coord_x is None:
             await ctx.reply("You must provide a coordinate, as a single tile id or an X and Y coordinate.\nYou can use `%tick guide` to get a guide.")
@@ -433,11 +427,8 @@ class Bingo_cog(u_custom.CustomCog, name="Bingo", description="Commands for runn
         brief = "Get a handy tile id guide for ticking.",
         description = "Get a handy tile id guide for ticking."
     )
+    @commands.check(u_checks.bingo_tick_check)
     async def tick_guide(self, ctx):
-        if not u_checks.bingo_tick_check(database, ctx):
-            await ctx.reply("I am sorry, but you can't use this command.")
-            return
-        
         u_images.render_board(
             database = database,
             tile_string = "".join([f"{i:03}" for i in range(25)]),
@@ -605,17 +596,13 @@ class Bingo_cog(u_custom.CustomCog, name="Bingo", description="Commands for runn
         brief = "Tick off a tile on the weekly board.",
         description = "Tick off a tile on the weekly board."
     )
+    @commands.check(u_checks.bingo_tick_check)
     async def weekly_tick(self, ctx,
             coord_x: typing.Optional[int] = commands.parameter(description = "The X coordinate of the tile to tick."),
             coord_y: typing.Optional[int] = commands.parameter(description = "The Y coordinate of the tile to tick.")
         ):
         if ctx.invoked_subcommand is not None:
             return
-        
-        if not u_checks.bingo_tick_check(database, ctx):
-            await ctx.reply("I am sorry, but you can't use this command.")
-            return
-        
         
         # Ensure at least 1 number is provided, if just an x coordinate is provided, it is used as a tile id.
         if coord_x is None:
@@ -670,14 +657,11 @@ class Bingo_cog(u_custom.CustomCog, name="Bingo", description="Commands for runn
         brief = "Untick a tile on the weekly board.",
         description = "Untick a tile on the weekly board."
     )
+    @commands.check(u_checks.bingo_tick_check)
     async def weekly_untick(self, ctx,
             coord_x: typing.Optional[int] = commands.parameter(description = "The X coordinate of the tile to untick."),
             coord_y: typing.Optional[int] = commands.parameter(description = "The Y coordinate of the tile to untick.")
         ):
-        if not u_checks.bingo_tick_check(database, ctx):
-            await ctx.reply("I am sorry, but you can't use this command.")
-            return
-        
         # Ensure at least 1 number is provided, if just an x coordinate is provided, it is used as a tile id.
         if coord_x is None:
             await ctx.reply("You must provide a coordinate, as a single tile id or an X and Y coordinate.\nYou can use `%weekly tick guide` to get a guide.")
@@ -725,10 +709,11 @@ class Bingo_cog(u_custom.CustomCog, name="Bingo", description="Commands for runn
         brief = "Get a handy tile id guide for ticking.",
         description = "Get a handy tile id guide for ticking."
     )
+    @commands.check(u_checks.bingo_tick_check)
     async def weekly_tick_guide(self, ctx):
-        if not u_checks.bingo_tick_check(database, ctx):
-            await ctx.reply("I am sorry, but you can't use this command.")
-            return
+        # if not u_checks.bingo_tick_check(database, ctx):
+        #     await ctx.reply("I am sorry, but you can't use this command.")
+        #     return
         
         u_images.render_board(
             database = database,

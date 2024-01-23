@@ -66,6 +66,9 @@ class Admin_cog(u_custom.CustomCog, name="Admin", description="Administration co
         if ctx.author.id == self.bot.owner_id:
             return True
         
+        if u_checks.get_permission(ctx.author.id, "shutdown") or u_checks.get_permission(ctx.author.id, "remote_say"):
+            return True
+        
         if ctx.guild is None:
             return False
         
@@ -79,13 +82,24 @@ class Admin_cog(u_custom.CustomCog, name="Admin", description="Administration co
         return False
     
     # Added via bot.add_check in add_checks.
-    async def test(self, ctx):
-        print(ctx.message.content, ctx.author)
-        return True
+    async def dm_check(self, ctx):
+        if ctx.guild is not None:
+            return True
+        
+        if ctx.author.id == self.bot.owner_id:
+            return True
+        
+        if ctx.invoked_with != "admin" and not ctx.message.content.startswith(f"{self.bot.command_prefix}help admin"):
+            return False
+        
+        if u_checks.get_permission(ctx.author.id, "shutdown") or u_checks.get_permission(ctx.author.id, "remote_say"):
+            return True
+
+        return False
 
     def add_checks(self):
         """Adds a list of global checks that are in Admin_cog."""
-        self.bot.add_check(self.test, call_once = True)
+        self.bot.add_check(self.dm_check, call_once = True)
 
 
 
@@ -384,10 +398,8 @@ class Admin_cog(u_custom.CustomCog, name="Admin", description="Administration co
         brief = "Shuts the bot down.",
         description = "Shuts the bot down.\nPlease only use if it is the last option."
     )
-    async def admin_shutdown(self, ctx):
-        if not u_checks.shutdown_check(database, ctx):
-            return
-        
+    @commands.check(u_checks.shutdown_check)
+    async def admin_shutdown(self, ctx):        
         letters = list("abcdefghijklmnopqrstuvwxyABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789")
         security_code = "".join(random.choice(letters) for i in range(16))
 
@@ -556,7 +568,11 @@ class Admin_cog(u_custom.CustomCog, name="Admin", description="Administration co
             await ctx.reply("You must provide the mode to use, the permission name, and some user identifier.")
             return
         
-        permission_data = database.load("permissions")
+        if mode not in ["allow", "disallow"]:
+            await ctx.reply("The mode must be 'allow' or 'disallow'.")
+            return
+        
+        permission_data = u_files.load("data/misc/permissions.json", replace_slash=True)
         
         if mode == "allow":
             if user.id in permission_data.get(permission, []):
@@ -574,7 +590,7 @@ class Admin_cog(u_custom.CustomCog, name="Admin", description="Administration co
             
             permission_data[permission].remove(user.id)
         
-        database.save("permissions", data=permission_data)
+        u_files.save("data/misc/permissions.json", data=permission_data, replace_slash=True)
         
         await ctx.reply("Done.")
 
@@ -676,14 +692,12 @@ class Admin_cog(u_custom.CustomCog, name="Admin", description="Administration co
         brief = "Hehe",
         description = "Hehe"
     )
+    @commands.check(u_checks.remote_say_check)
     async def admin_remote_say(self, ctx,
             message_link: typing.Optional[u_converters.parse_message_link] = commands.parameter(description = "Link to a message to reply to or send a message in."),
             to_reply: typing.Optional[u_converters.extended_bool] = commands.parameter(description = "Whether to reply to the message, or just send in the channel."),
             *, message_content: typing.Optional[str] = commands.parameter(description = "The content of the message to send.")
-        ):
-        if not u_checks.get_permission(database, ctx.author.id, "remote_say"):
-            return
-        
+        ):        
         if None in [message_link, to_reply, message_content]:
             await ctx.reply("You must provide a message link, whether to reply to the message ('yes' or 'no') and the message content.")
             return
