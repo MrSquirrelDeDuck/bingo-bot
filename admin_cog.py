@@ -30,7 +30,8 @@ class Admin_cog(u_custom.CustomCog, name="Admin", description="Administration co
         "other_cog",
         "bingo_cog",
         "bread_cog",
-        "stonk_cog"
+        "stonk_cog",
+        "secret_cog"
     ]
 
 
