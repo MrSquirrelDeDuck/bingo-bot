@@ -815,6 +815,12 @@ def update_stored_data(database: u_files.DatabaseInterface, user_id: int | str, 
     return stored_data[user_id]
 
 def clear_stored_data(database: u_files.DatabaseInterface, user_id: int | str) -> None:
+    """Clears someone's stored data.
+
+    Args:
+        database (u_files.DatabaseInterface): The database.
+        user_id (int | str): The user id to clear.
+    """
     stored_data = database.load("bread", "data_storage", default={})
     
     user_id = str(user_id)
