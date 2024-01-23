@@ -28,6 +28,7 @@ import utility.text as u_text
 import utility.bread as u_bread
 import utility.bingo as u_bingo
 import utility.files as u_files
+import utility.images as u_images
 
 database = None # type: u_files.DatabaseInterface
 
@@ -1596,6 +1597,85 @@ class Other_cog(u_custom.CustomCog, name="Other", description="Commands that don
 
             if embed is not None and sent_message is not None:
                 await error_message(embed, sent_message)
+
+        
+            
+
+        
+    ######################################################################################################################################################
+    ##### D&D ######################################################################################################################################
+    ######################################################################################################################################################
+    
+    @commands.group(
+        name = "dnd",
+        aliases = ["d&d", "DnD", "D&D", "DND"],
+        brief = "A few utility commands for D&D.",
+        description = "A few utility commands for Dungeons and Dragons.",
+        invoke_without_command = True,
+        pass_context = True
+    )
+    async def dnd_command(self, ctx):
+        if ctx.invoked_subcommand is not None:
+            return
+        
+        await ctx.send_help(self.dnd_command)
+    
+    @dnd_command.command(
+        name = "roll",
+        brief = "Roll some dice.",
+        description = "Roll some dice."
+    )
+    async def dnd_roll(self, ctx,
+            dice: typing.Optional[str] = commands.parameter(description = "The number of dice and number of sides, like '2d6'.")
+        ):
+        if dice is None:
+            await ctx.reply("You must provide some dice to roll, like `2d6` or `3d4`.")
+            return
+        
+        matched = re.match(r"([\d,]+)d([\d,]+)", dice)
+
+        if matched is None:
+            await ctx.reply("You must provide some dice to roll, like `2d6` or `3d4`.")
+            return
+        
+        dice_amount = int(matched.group(1))
+        dice_sides = int(matched.group(2))
+
+        if dice_amount == 0:
+            await ctx.reply("Oddly enough, rolling 0 dice has a total of 0.")
+            return
+        
+        if dice_sides == 0:
+            await ctx.reply("How would a 0-sided die even work?")
+            return
+
+        if dice_amount > 1000:
+            await ctx.reply("That is an unreasonable amount of dice to roll.")
+            return
+        
+        if dice_sides > 100:
+            await ctx.reply("That is an unreasonable amount of sides for a die.")
+            return
+
+        rolled = []
+
+        for _ in range(dice_amount):
+            rolled.append(random.randint(1, int(dice_sides)))
+
+        roll_distribution = [(i, rolled.count(i)) for i in range(1, int(dice_sides) + 1)]
+
+        image_path = u_images.generate_bar_graph(roll_distribution, x_label="Roll result", y_label="Number of rolls")
+        
+        embed = u_interface.embed(
+            title = "{}d{}".format(dice_amount, dice_sides),
+            description = "Total: **{}**\n\n**Roll distribution:**\n{}".format(
+                u_text.smart_number(sum(rolled)),
+                " | ".join(["{}: {}".format(u_text.smart_number(i), u_text.smart_number(rolled.count(i))) for i in range(1, int(dice_sides) + 1) if i in rolled]),
+            ),
+            image_link = "attachment://graph.png"
+        )
+        await ctx.reply(embed=embed, file=discord.File(image_path, filename="graph.png"))
+
         
 
 

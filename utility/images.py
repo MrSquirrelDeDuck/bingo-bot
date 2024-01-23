@@ -208,13 +208,13 @@ def render_board_9x9(database: u_files.DatabaseInterface, tile_string: str, enab
 ######################################################################################################################################
 
 def generate_graph(
-    lines: list[dict[str, typing.Union[str, tuple[int, int, int], list[tuple[int, int]]]]], # color, label, values
-    *,
-    x_label: str = "",
-    y_label: str = "",
-    log_scale: bool = False,
-    file_name: str = f"images{SLASH}generated{SLASH}generated_graph.png"
-) -> str:
+        lines: list[dict[str, typing.Union[str, tuple[int, int, int], list[tuple[int, int]]]]], # color, label, values
+        *,
+        x_label: str = "",
+        y_label: str = "",
+        log_scale: bool = False,
+        file_name: str = f"images{SLASH}generated{SLASH}generated_graph.png"
+    ) -> str:
     """Generates a graph.
 
     Args:
@@ -258,6 +258,38 @@ def generate_graph(
     plt.legend(bbox_to_anchor=(1.04, 0.5), loc="center left", borderaxespad=0)
     plt.grid()
     
+    plt.savefig(file_name, bbox_inches='tight')
+
+    return file_name
+
+def generate_bar_graph(
+        bars: list[tuple[str, int]], # label, values
+        *,
+        x_label: str = "",
+        y_label: str = "",
+        file_name: str = f"images{SLASH}generated{SLASH}generated_graph.png"
+    ) -> str:
+    """Generates a bar graph.
+
+    Args:
+        bars (list[tuple[str, int]]): A list of tuples, each tuple should have a string and an int, the string is the label and the int is the value.
+        x_label (str, optional): The x axis label. Defaults to "".
+        y_label (str, optional): The y axis label. Defaults to "".
+        file_name (str, optional): The file path. Defaults to "images/generated/generated_graph.png".
+
+    Returns:
+        str: The file name of the generated image, this is going to be the same as the file_name argument.
+    """
+    plt.clf()
+
+    x_labels, y_values = list(zip(*bars))
+
+    plt.bar(x_labels, y_values)
+
+    plt.xlabel(x_label)
+    plt.ylabel(y_label)
+    plt.grid()
+
     plt.savefig(file_name, bbox_inches='tight')
 
     return file_name
