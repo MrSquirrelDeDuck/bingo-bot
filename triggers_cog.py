@@ -343,19 +343,15 @@ class Triggers_cog(u_custom.CustomCog, name="Triggers", description="Hey there! 
         # This just waits until it's time for the first iteration.
         print("Starting hourly loop, current time is {}.".format(datetime.datetime.now()))
 
-        # Get current time.
-        time = datetime.datetime.now()
+        minute_in_hour = 5 # 5 would be X:05, 30 would be X:30.
 
-        wait_time = 0
+        wait_time = time.time() - (minute_in_hour * 60)
+        wait_time = 3600 - (wait_time % 3600) + 2 # Artificially add 2 seconds to ensure it stops at the correct time.
 
-        if time.minute < 5:
-            wait_time = max(5 - time.minute, 0)
-
-        elif time.minute > 5:
-            wait_time = max(65 - time.minute, 0)
-
-        print("Waiting to start hourly loop for {} minutes.".format(wait_time))
-        await asyncio.sleep(60*wait_time)
+        print("Waiting to start hourly loop for {} minutes.".format(round(wait_time / 60, 2)))
+        
+        await asyncio.sleep(wait_time)
+        
         print("Finished waiting at {}.".format(datetime.datetime.now()))
 
 
