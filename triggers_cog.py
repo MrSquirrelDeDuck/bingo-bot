@@ -66,8 +66,6 @@ class Triggers_cog(u_custom.CustomCog, name="Triggers", description="Hey there! 
         super().__init__()
         self.hourly_loop.start()
         self.daily_loop.start()
-
-        # self.bingo_cache_updated()
     
     def cog_unload(self):
         self.hourly_loop.cancel()
@@ -142,6 +140,21 @@ class Triggers_cog(u_custom.CustomCog, name="Triggers", description="Hey there! 
             text = f"{text}\n\n*This was triggered automatically by something you said. If I misinterpreted the context and this relates to the bot Latent-Dreamer, run `%ld` for an explanation. If I misinterpreted the context, it was not relating to Latent-Dreamer and this makes no sense, feel free to ignore this, or ping my creator to let them know.*"
         
         return text
+    
+    async def refresh_status(self):
+        status_data = database.load("bot_status")
+            
+        status_type = status_data["status_type"]
+        status_text = status_data["status_text"]
+        status_url = status_data["status_url"]
+
+        await u_interface.change_status(
+            database = database,
+            bot = self.bot,
+            status_type = status_type,
+            status_text = status_text,
+            status_url = status_url
+        )
 
 
 
@@ -299,11 +312,11 @@ class Triggers_cog(u_custom.CustomCog, name="Triggers", description="Hey there! 
                 print("Issue with creating xkcd thread.")
                 print(traceback.format_exc())
         
-        # Update chains data and reload the bingo cache.
-        # print("Updaing data.")
-        # self.bot.save_all_data()
-        # self.bot.update_bingo_cache(u_bingo.live(database=database))
-        # print("Done.")
+        # Update the bot status.
+        try:
+            await self.refresh_status()
+        except:
+            print(traceback.format_exc())
         
         # Save and backup database.
         database.save_database(make_backup=True)
@@ -321,6 +334,12 @@ class Triggers_cog(u_custom.CustomCog, name="Triggers", description="Hey there! 
 
     @hourly_loop.before_loop
     async def hourly_setup(self):
+        # Update the bot status.
+        try:
+            await self.refresh_status()
+        except:
+            print(traceback.format_exc())
+
         # This just waits until it's time for the first iteration.
         print("Starting hourly loop, current time is {}.".format(datetime.datetime.now()))
 

@@ -10,6 +10,8 @@ import utility.values as u_values
 import utility.text as u_text
 import utility.bread as u_bread
 import utility.custom as u_custom
+import utility.files as u_files
+
 everyone_prevention = discord.AllowedMentions(everyone=False)
 
 import importlib
@@ -295,6 +297,14 @@ def resolve_conflict(message: discord.Message, stats_type: str, user_provided: l
     return user_provided
 
 def get_role_list(guild: discord.Guild) -> dict[str, list[int]]:
+    """Generates a list of member ids, each with a list of the roles they have.
+
+    Args:
+        guild (discord.Guild): The guild to get the role list for.
+
+    Returns:
+        dict[str, list[int]]: The determined data.
+    """
     out = {}
     for member in guild.members:
         data = [role.id for role in member.roles]
@@ -303,4 +313,44 @@ def get_role_list(guild: discord.Guild) -> dict[str, list[int]]:
     return out
 
 
-        
+async def change_status(
+        bot: u_custom.CustomBot | commands.Bot,
+        status_type: str,
+        status_text: str,
+        status_url: str = None,
+        *, database: u_files.DatabaseInterface = None,
+    ) -> None:
+    """Changes the bot's status based on the provided strings.
+
+    Args:
+        bot (u_custom.CustomBot | commands.Bot): The bot.
+        status_type (str): The type of status to change to: "playing", "watching", "streaming", "listening", "custom", "competing"
+        status_text (str): The text of the status.
+        status_url (str, optional): The url to use if the status type is "streaming". Defaults to None.
+        database (u_files.DatabaseInterface, optional): The database to use. If nothing is provided it won't store the status to the database. Defaults to None.
+    """
+    activity_type = None
+
+    if status_type == "playing":
+        activity = discord.Game(name=status_text)
+    elif status_type == "streaming":
+        if "youtu.be" in status_url:
+            status_url = "https://www.youtube.com/watch?v=" + status_url.split("youtu.be/")[1]
+
+        activity = discord.Streaming(name=status_text, url=status_url)
+    elif status_type == "listening":
+        activity_type = discord.ActivityType.listening
+    elif status_type == "competing":
+        activity_type = discord.ActivityType.competing
+    elif status_type == "watching":
+        activity_type = discord.ActivityType.watching
+    elif status_type == "custom":
+        activity = discord.CustomActivity(name=status_text)
+    
+    if activity_type is not None:
+        activity = discord.Activity(type=activity_type, name=status_text)
+    
+    if database is not None:
+        database.save("bot_status", data={"status_type": status_type, "status_text": status_text, "status_url": status_url})
+    
+    await bot.change_presence(activity=activity)

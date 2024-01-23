@@ -15,6 +15,7 @@ import sys
 import utility.text as u_text
 import utility.custom as u_custom
 import utility.checks as u_checks
+import utility.interface as u_interface
 import utility.algorithms as u_algorithms
 import utility.images as u_images
 import utility.converters as u_converters
@@ -556,10 +557,6 @@ class Admin_cog(u_custom.CustomCog, name="Admin", description="Administration co
             return
         
         permission_data = database.load("permissions")
-
-        # if permission not in permission_data:
-        #     await ctx.reply("I don't recognize that permission.")
-        #     return
         
         if mode == "allow":
             if user.id in permission_data.get(permission, []):
@@ -707,6 +704,48 @@ class Admin_cog(u_custom.CustomCog, name="Admin", description="Administration co
         sent = await message.reply(message_content)
 
         await ctx.reply(f"Done.\n[Message link.](<{sent.jump_url}>)")
+    
+    @admin.command(
+        name="change_status",
+        brief = "Changes the bot's status.",
+        description = "Changes the bot's status.",
+        invoke_without_command=True,
+        pass_context=True
+    )
+    async def admin_change_status(self, ctx,
+            status_type: typing.Optional[str] = commands.parameter(description = "The type of status to change to."),
+            *, text: typing.Optional[str] = commands.parameter(description = "The content of the status.")
+        ):
+        if status_type not in ["playing", "watching", "streaming", "listening", "custom", "competing"]:
+            await ctx.reply("The activity type must be one of \"playing\", \"watching\", \"streaming\", \"listening\", \"custom\" or \"competing\".")
+            return
+        
+        if text is None:
+            await ctx.reply("You must provide the text of the status.")
+            return
+        
+        url = None
+
+        if status_type == "streaming":
+            url, text = text.split(" ", 1)
+
+            matched = re.match(r"https:\/\/w{0,3}\.?(youtu|twitch).?(be|tv)(.com)?\/(watch\?v=)?([\w-]+)", url)
+            if not matched:
+                await ctx.reply("I don't recognize that url.\nPlease provide a YouTube or Twitch url.")
+                return
+            
+            if "youtu.be" in url:
+                url = f"https://www.youtube.com/watch?v={matched.group(5)}"
+                
+        await u_interface.change_status(
+            database = database,
+            bot = self.bot,
+            status_type = status_type,
+            status_text = text,
+            status_url = url
+        )
+
+        await ctx.reply("Done.\nStatus set to `{}`".format(u_text.ping_filter(text)))
             
         
 
