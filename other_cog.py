@@ -1676,9 +1676,6 @@ class Other_cog(u_custom.CustomCog, name="Other", description="Commands that don
         )
         await ctx.reply(embed=embed, file=discord.File(image_path, filename="graph.png"))
 
-        
-
-
 async def setup(bot: commands.Bot):
     cog = Other_cog()
     cog.bot = bot

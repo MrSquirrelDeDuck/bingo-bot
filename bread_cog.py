@@ -1556,19 +1556,6 @@ class Bread_cog(u_custom.CustomCog, name="Bread", description="Utility commands 
         )
         await ctx.reply(embed=embed)
 
-
-        
-
-        
-        
-        
-
-    
-        
-
-
-
-
 async def setup(bot: commands.Bot):
     cog = Bread_cog()
     cog.bot = bot
