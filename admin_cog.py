@@ -720,6 +720,7 @@ class Admin_cog(u_custom.CustomCog, name="Admin", description="Administration co
         invoke_without_command=True,
         pass_context=True
     )
+    @commands.is_owner()
     async def admin_change_status(self, ctx,
             status_type: typing.Optional[str] = commands.parameter(description = "The type of status to change to."),
             *, text: typing.Optional[str] = commands.parameter(description = "The content of the status.")
@@ -754,6 +755,41 @@ class Admin_cog(u_custom.CustomCog, name="Admin", description="Administration co
         )
 
         await ctx.reply("Done.\nStatus set to `{}`".format(u_text.ping_filter(text)))
+
+        
+            
+
+        
+    ######################################################################################################################################################
+    ##### ADMIN CHANGE NICKNAME ##########################################################################################################################
+    ######################################################################################################################################################
+        
+    @admin.command(
+        name="change_nickname",
+        brief = "Changes the bot's nickname.",
+        description = "Changes the bot's nickname in the specified server.",
+        invoke_without_command=True,
+        pass_context=True
+    )
+    @commands.is_owner()
+    async def admin_change_nickname(self, ctx,
+            guild_id: typing.Optional[u_converters.parse_int] = commands.parameter(description = "The id of the server to change the nickname in."),
+            *, text: typing.Optional[str] = commands.parameter(description = "The new nickname.")
+        ):
+        if guild_id is None:
+            await ctx.reply("You must provide the guild id.")
+            return
+        
+        try:
+            guild = await self.bot.fetch_guild(guild_id)
+            bot_member = await guild.fetch_member(self.bot.user.id)
+            
+            await bot_member.edit(nick=text)
+
+            await ctx.reply("Done.")
+            return
+        except discord.Forbidden:
+            await ctx.reply("I don't have the permissions to do that.")
             
         
 
