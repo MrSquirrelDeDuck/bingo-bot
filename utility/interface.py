@@ -4,7 +4,7 @@ import discord
 from discord.ext import commands
 import typing
 import datetime
-import re
+import asyncio
 
 import utility.values as u_values
 import utility.text as u_text
@@ -354,3 +354,48 @@ async def change_status(
         database.save("bot_status", data={"status_type": status_type, "status_text": status_text, "status_url": status_url})
     
     await bot.change_presence(activity=activity)
+
+async def await_confirmation(bot: u_custom.CustomBot | commands.Bot, ctx: typing.Union[commands.Context, u_custom.CustomContext],
+        message = "Are you sure you would like to proceed? y/n.",
+        confirm: list[str] = ["y", "yes"], 
+        cancel: list[str] = ["n", "no"],
+        lower_response: bool = True
+    ) -> bool:
+    """Prompts a confirmation.
+
+    Args:
+        ctx (typing.Union[commands.Context, u_custom.CustomContext]): The context object.
+        message (str, optional): The message to prompt with. Defaults to "Are you sure you would like to proceed? y/n.".
+        confirm (list[str], optional): A list of strings that will be accepted. Defaults to ["y", "yes"].
+        cancel (list[str], optional): A list of strings that will cancel. Defaults to ["n", "no"].
+        lower_response (bool, optional): Whether to make the response lower case before checking it against the `confirm` and `cancel` lists. Defaults to True.
+
+    Returns:
+        bool: Whether the prompt was accepted.
+    """
+
+    def check(m: discord.Message):
+        return m.author.id == ctx.author.id and m.channel.id == ctx.channel.id 
+    
+    await ctx.reply(message)
+    try:
+        msg = await bot.wait_for('message', check = check, timeout = 60.0)
+    except asyncio.TimeoutError: 
+        # No message was sent by the person running the command in a minute, so just cancel it.
+        await ctx.reply(f"Timed out.")
+        return False
+    
+    response = msg.content
+
+    if lower_response:
+        response = response.lower()
+
+    if response in confirm:
+        await ctx.reply("Proceeding.")
+        return True
+    elif response in cancel:
+        await ctx.reply("Cancelled.")
+        return False
+    else:
+        await ctx.reply("Unknown response, cancelled.")
+        return False

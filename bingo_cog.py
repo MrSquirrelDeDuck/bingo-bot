@@ -5,6 +5,7 @@ import discord
 import typing
 from fuzzywuzzy import fuzz
 import math
+import asyncio
 from os.path import sep as SLASH
 
 import sys
@@ -22,6 +23,12 @@ database = None # type: u_files.DatabaseInterface
 
 class Bingo_cog(u_custom.CustomCog, name="Bingo", description="Commands for running the bingo game!"):
     bot = None
+
+    creating_objectives = [] # List of user ids that are currently making objectives.
+
+    async def hourly_task(self):
+        """Code that runs for every hour."""
+        self.creating_objectives.clear()
     
     ######################################################################################################################################################
     ##### UTILTIY FUNCTIONS ##############################################################################################################################
@@ -239,6 +246,127 @@ class Bingo_cog(u_custom.CustomCog, name="Bingo", description="Commands for runn
         )
 
         await ctx.reply(embed=embed)
+
+    
+    
+    
+    
+    
+    
+    ######################################################################################################################################################
+    ##### OBJECTIVE ADD ##################################################################################################################################
+    ######################################################################################################################################################
+
+    @objective.command(
+        name = "add",
+        brief = "Adds an objective.",
+        description = "Adds an objective to either the 5x5 or 9x9 tile lists.\nIt will prompt you to provide the required information, so you just need to say the board type in the initial command."
+    )
+    @commands.check(u_checks.bingo_tick_check)
+    async def objective_add(self, ctx,
+            board: typing.Optional[str] = commands.parameter(description = "Which board to append to, 'daily' or 'weekly'."),
+        ):
+        if ctx.author.id in self.creating_objectives:
+            return
+        
+        if board not in ["daily", "weekly"]:
+            await ctx.reply("You must specify what set of objectives you want. `daily` and `weekly` are the current options.")
+            return
+        
+        self.creating_objectives.append(ctx.author.id)
+
+        objective_info = {
+            "name": None,
+            "description": None,
+            "center": False
+        }
+        if board == "daily":
+            objective_info["solo"] = False
+
+        def check(m: discord.Message) -> bool:
+            return m.channel.id == ctx.channel.id and m.author.id == ctx.author.id
+        
+        async def prompt(message: discord.Message, content: str) -> discord.Message | None:
+            await message.reply(content)
+            try:
+                msg = await self.bot.wait_for('message', check = check, timeout = 60.0)
+                return msg
+            except asyncio.TimeoutError:
+                await message.reply("You have taken too long to respond, please start over.")
+                return None
+        
+        name = await prompt(message = ctx.message, content = "What is the name of the objective?")
+        if name is None:
+            self.creating_objectives.remove(ctx.author.id)
+            return
+        objective_info["name"] = name.content
+        
+        description = await prompt(message = name, content = "What is the description of the objective?")
+        if description is None:
+            self.creating_objectives.remove(ctx.author.id)
+            return
+        objective_info["description"] = description.content
+        
+        center = await prompt(message = description, content = "Yes or no, should the objective be able to be in the center of the board?")
+        if center is None:
+            self.creating_objectives.remove(ctx.author.id)
+            return
+        result = False
+        try:
+            result = u_converters.extended_bool(center.content)
+        except commands.BadArgument:
+            self.creating_objectives.remove(ctx.author.id)
+            await center.reply("I don't recognize that, please start over.")
+            return
+
+        objective_info["center"] = bool(result)
+        
+        if board == "daily":
+            solo = await prompt(message = center, content = "Yes or no, can the objective be completed solo?")
+            if solo is None:
+                self.creating_objectives.remove(ctx.author.id)
+                return
+            result = False
+            try:
+                result = u_converters.extended_bool(solo.content)
+            except commands.BadArgument:
+                self.creating_objectives.remove(ctx.author.id)
+                await solo.reply("I don't recognize that, please start over.")
+                return
+
+            objective_info["solo"] = bool(result)
+        
+        if board == "daily":
+            tile_list = u_bingo.tile_list_5x5(database)
+        elif board == "weekly":
+            tile_list = u_bingo.tile_list_9x9(database)
+        
+        tile_list.append(objective_info)
+
+        if board == "daily":
+            database.save("bingo", "tile_list_5x5", data=tile_list)
+        elif board == "weekly":
+            database.save("bingo", "tile_list_9x9", data=tile_list)
+
+        emojis = ["<:x_:1189696918645907598>", "<:check:1189696905077325894>"]
+
+        embed = u_interface.embed(
+            title = "Added objective #{}".format(len(tile_list) - 1),
+            description = "Objective information:\nTitle: {}\nDescription: {}\nCenter: {}\nSolo: {}".format(
+                objective_info["name"],
+                objective_info["description"],
+                emojis[objective_info["center"]],
+                emojis[objective_info.get("solo", False)]
+            )
+        )
+
+        await ctx.reply(embed=embed)
+        
+        self.creating_objectives.remove(ctx.author.id)
+        
+        
+
+
 
     
     
@@ -747,11 +875,7 @@ class Bingo_cog(u_custom.CustomCog, name="Bingo", description="Commands for runn
         description = "Get a handy tile id guide for ticking."
     )
     @commands.check(u_checks.bingo_tick_check)
-    async def weekly_tick_guide(self, ctx):
-        # if not u_checks.bingo_tick_check(database, ctx):
-        #     await ctx.reply("I am sorry, but you can't use this command.")
-        #     return
-        
+    async def weekly_tick_guide(self, ctx):        
         u_images.render_board(
             database = database,
             tile_string = "".join([f"{i:03}" for i in range(81)]),
