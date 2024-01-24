@@ -1018,10 +1018,17 @@ class Bread_cog(u_custom.CustomCog, name="Bread", description="Utility commands 
             await ctx.reply("You must provide the percentage to use and the value to use.\nSyntax: `%bread percent <percentage> <value>`.\nFor example, `%bread percent 75% 1,738,983`")
             return
         
-        embed = u_interface.embed(
-            title = "Percentage",
-            description = "{}% of {} is **{}**".format(u_text.smart_number(percent * 100), u_text.smart_number(value), u_text.smart_number(round(value * percent, 2)))
-        )
+        try:
+            embed = u_interface.embed(
+                title = "Percentage",
+                description = "{}% of {} is:".format(u_text.smart_number(percent * 100), u_text.smart_number(value)),
+                fields = [("{:,.2f}".format(value * percent), "", False)],
+                footer_text = "On mobile, you can tap and hold on the number to copy it."
+            )
+        except OverflowError:
+            await ctx.reply("Unfortunately that is too large to calculate.")
+            return
+        
         await ctx.reply(embed=embed)
 
     
