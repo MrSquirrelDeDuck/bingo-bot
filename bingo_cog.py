@@ -336,10 +336,7 @@ class Bingo_cog(u_custom.CustomCog, name="Bingo", description="Commands for runn
 
             objective_info["solo"] = bool(result)
         
-        if board == "daily":
-            tile_list = u_bingo.tile_list_5x5(database)
-        elif board == "weekly":
-            tile_list = u_bingo.tile_list_9x9(database)
+        tile_list = self._match_tile_list(board)
         
         tile_list.append(objective_info)
 
@@ -363,6 +360,151 @@ class Bingo_cog(u_custom.CustomCog, name="Bingo", description="Commands for runn
         await ctx.reply(embed=embed)
         
         self.creating_objectives.remove(ctx.author.id)
+
+    
+    
+    
+    
+    
+    
+    ######################################################################################################################################################
+    ##### OBJECTIVE MODIFY ###############################################################################################################################
+    ######################################################################################################################################################
+
+    @objective.command(
+        name = "modify",
+        brief = "Modifies an objective.",
+        description = "Modifies an objective in either the 5x5 or 9x9 tile lists.\n\nCurrently used modification types:\n- name (text)\n- description (text)\n- center (boolean)\n- solo (boolean)\n- disabled (boolean)"
+    )
+    @commands.check(u_checks.bingo_tick_check)
+    async def objective_modify(self, ctx,
+            board: typing.Optional[str] = commands.parameter(description = "Which board to append to, 'daily' or 'weekly'."),
+            objective_id: typing.Optional[u_converters.parse_int] = commands.parameter(description = "The id of the objective to modify."),
+            modification_type: typing.Optional[str] = commands.parameter(description = "The type of data to modify. See above for list."),
+            *, new_data: typing.Optional[str] = commands.parameter(description = "The new data to use.")
+        ):
+        if None in [board, objective_id, modification_type]:
+            await ctx.reply("You must provide a board, objective id, and modification type.")
+            return
+        
+        if board not in ["daily", "weekly"]:
+            await ctx.reply("You must specify what set of objectives you want. `daily` and `weekly` are the current options.")
+            return
+        
+        tile_list = self._match_tile_list(board)
+        
+        if objective_id >= len(tile_list):
+            await ctx.reply("The objective id must be between 0 and {}.".format(len(tile_list) - 1))
+            return
+        
+        objective_info = tile_list[objective_id]
+        objective_copy = objective_info.copy()
+
+        try:
+            if modification_type == "name":
+                objective_info["name"] = new_data
+            elif modification_type == "description":
+                objective_info["description"] = new_data
+            elif modification_type == "center":
+                objective_info["center"] = u_converters.extended_bool(new_data)
+            elif modification_type == "solo":
+                objective_info["solo"] = u_converters.extended_bool(new_data)
+            elif modification_type == "disabled":
+                objective_info["disabled"] = u_converters.extended_bool(new_data)
+            else:
+                await ctx.reply("I don't recognize that modification type, please try again.")
+                return
+        except commands.BadArgument:
+            await ctx.reply("I don't recognize the new data provided, please try again.")
+            return
+
+        tile_list[objective_id] = objective_info
+
+        if board == "daily":
+            database.save("bingo", "tile_list_5x5", data=tile_list)
+        elif board == "weekly":
+            database.save("bingo", "tile_list_9x9", data=tile_list)
+
+        emojis = ["<:x_:1189696918645907598>", "<:check:1189696905077325894>"]
+
+        embed = u_interface.embed(
+            title = "Modified objective #{}".format(objective_id),
+            fields = [
+                ("Old information:", "Title: {}\nDescription: {}\nCenter: {}\nSolo: {}\nDisabled: {}".format(
+                objective_copy["name"],
+                objective_copy["description"],
+                emojis[objective_copy["center"]],
+                emojis[objective_copy.get("solo", False)],
+                emojis[objective_copy.get("disabled", False)]
+                ), False),
+                ("New information:", "Title: {}\nDescription: {}\nCenter: {}\nSolo: {}\nDisabled: {}".format(
+                objective_info["name"],
+                objective_info["description"],
+                emojis[objective_info["center"]],
+                emojis[objective_info.get("solo", False)],
+                emojis[objective_info.get("disabled", False)]
+                ), False)
+            ]
+        )
+        await ctx.reply(embed=embed)
+
+    
+    
+    
+    
+    
+    
+    ######################################################################################################################################################
+    ##### OBJECTIVE REMOVE ###############################################################################################################################
+    ######################################################################################################################################################
+
+    @objective.command(
+        name = "remove",
+        aliases = ["delete"],
+        brief = "Removes an objective.",
+        description = "Removes an objective."
+    )
+    @commands.is_owner()
+    async def objective_remove(self, ctx,
+            board: typing.Optional[str] = commands.parameter(description = "Which board to append to, 'daily' or 'weekly'."),
+            objective_id: typing.Optional[u_converters.parse_int] = commands.parameter(description = "The id of the objective to modify.")
+        ):
+        if None in [board, objective_id]:
+            await ctx.reply("You must provide a board and objective id.")
+            return
+        
+        if board not in ["daily", "weekly"]:
+            await ctx.reply("You must specify what set of objectives you want. `daily` and `weekly` are the current options.")
+            return
+        
+        tile_list = self._match_tile_list(board)
+        
+        if objective_id >= len(tile_list):
+            await ctx.reply("The objective id must be between 0 and {}.".format(len(tile_list) - 1))
+            return
+        
+        objective_data = tile_list.pop(objective_id)
+
+        if board == "daily":
+            database.save("bingo", "tile_list_5x5", data=tile_list)
+        elif board == "weekly":
+            database.save("bingo", "tile_list_9x9", data=tile_list)
+
+        emojis = ["<:x_:1189696918645907598>", "<:check:1189696905077325894>"]
+
+        embed = u_interface.embed(
+            title = "Removed objective #{}".format(objective_id),
+            fields = [
+                ("Objective information:", "Title: {}\nDescription: {}\nCenter: {}\nSolo: {}\nDisabled: {}".format(
+                objective_data["name"],
+                objective_data["description"],
+                emojis[objective_data["center"]],
+                emojis[objective_data.get("solo", False)],
+                emojis[objective_data.get("disabled", False)]
+                ), False)
+            ]
+        )
+        await ctx.reply(embed=embed)
         
         
 
