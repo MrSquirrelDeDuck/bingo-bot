@@ -165,6 +165,7 @@ cython_debug/
 images/generated/
 data/stonks/
 data/misc/
+data/role_snapshots/
 
 patch_notes.txt
 

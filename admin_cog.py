@@ -6,7 +6,7 @@ import typing
 import traceback
 import copy
 import os
-import asyncio
+from os.path import sep as SLASH
 import random
 import re
 
@@ -107,8 +107,6 @@ class Admin_cog(u_custom.CustomCog, name="Admin", description="Administration co
         parent_names = ctx.invoked_parents
 
         invoked_command = "-".join(parent_names + [command_name])
-
-        print(parent_names, command_name)
 
         toggled = database.load("command_toggle", default={})
 
@@ -697,6 +695,145 @@ class Admin_cog(u_custom.CustomCog, name="Admin", description="Administration co
 
         await ctx.reply(f"Done.\n[Message link.](<{sent.jump_url}>)")
 
+        
+            
+
+        
+    ######################################################################################################################################################
+    ##### ADMIN SNAPSHOT ROLES ###########################################################################################################################
+    ######################################################################################################################################################
+        
+    @admin.command(
+        name="snapshot_roles",
+        brief = "Creates a new snapshot of the roles.",
+        description = "Creates a new snapshot of the roles."
+    )
+    @commands.is_owner()
+    async def admin_snapshot_roles(self, ctx):
+        u_interface.snapshot_roles(
+            guild = self.bot.get_guild(1105943535804493955)
+        )
+        await ctx.reply("Done.")
+
+        
+            
+
+        
+    ######################################################################################################################################################
+    ##### ADMIN FROM SNAPSHOT ############################################################################################################################
+    ######################################################################################################################################################
+
+
+    @admin.command(
+        name="from_snapshot",
+        brief = "Restores someone's roles from a snapshot.",
+        description = "Restores someone's roles from a snapshot."
+    )
+    @commands.check(u_checks.in_authority)
+    async def from_snapshot(self, ctx,
+            member: typing.Optional[discord.Member],
+            snapshot_id: typing.Optional[str]
+        ):
+        if ctx.guild is None:
+            await ctx.reply("This can't be run in DMs.")
+            return
+        if ctx.guild.id != 1105943535804493955:
+            await ctx.reply("This isn't available in this server, sorry.")
+            return
+        
+        if member is None:
+            await ctx.reply("You must provide a member to restore the roles from.\nThis can be done via a username, id, mention, or any other identification method.")
+            return
+        
+        snapshot_list = [item.replace(".json", "") for item in os.listdir(f"data{SLASH}role_snapshots{SLASH}snapshots{SLASH}") if item.endswith(".json")]
+        snapshot_list_sorted = list(sorted(snapshot_list, reverse=True)) # Goes newest to oldest.
+
+        snapshots_containing = {}
+
+        for snapshot in snapshot_list_sorted:
+            loaded_data = u_files.load(f"data/role_snapshots/snapshots/{snapshot}.json", default={}, replace_slash=True)
+
+            if str(member.id) not in loaded_data:
+                continue
+            
+            snapshots_containing[snapshot] = loaded_data
+
+            if len(snapshots_containing) >= 10:
+                break
+        
+        async def send_list():
+            embed = u_interface.embed(
+                title = "Role restoration",
+                description = "Available snapshots:\n" + "\n".join(
+                    [f"- `{item}` (<t:{item.split('.')[0]}>)" for item in snapshots_containing.keys()]
+                ),
+            )
+            await ctx.reply(embed=embed)
+        
+        if snapshot_id == "latest":
+            snapshot_id = max(snapshots_containing.keys())
+
+        if snapshot_id not in snapshots_containing:
+            await send_list()
+            return
+        
+        filter_list = [961202779072909312, 958755031820161025, 970510247372394517, 958515508905406464, 963542265870053427, 978381737442820096, 958774733225230397, 968431452993769502, 1066596562165301248, 958512048306815056, 1119445209923723396, 970549665055522850, 958392331671830579, 958920124314816532, 959220485672026142, 958920155025539132, 958920265792892938, 958920201557119036, 959247044701216848, 980602604847501362, 958920326006308914, 959254553562349608]
+
+        if ctx.guild.id not in filter_list:
+            filter_list.append(ctx.guild.id)
+
+        roles_added = []
+        blacklisted_roles = []
+        already_has = []
+
+        member_roles = [role.id for role in member.roles]
+
+        for role_id in snapshots_containing[snapshot_id][str(member.id)]:
+            if role_id in filter_list:
+                blacklisted_roles.append(role_id)
+                continue
+
+            if role_id in member_roles:
+                already_has.append(role_id)
+                continue
+            
+            try:
+                role = ctx.guild.get_role(role_id)
+                if role is not None:
+                    roles_added.append(role_id)
+                    await member.add_roles(role)
+            except discord.Forbidden:
+                await ctx.reply("I don't have the permissions to give people roles.")
+                return
+            except discord.HTTPException:
+                pass
+        
+        embed = u_interface.embed(
+            title = "Role restoration",
+            description = "Restored from snapshot {} (<t:{}>.)\n\nNumber of added roles: {}\nNumber of roles in blacklist: {}\nNumber of roles the member already had: {}".format(
+                snapshot_id,
+                snapshot_id.split(".")[0],
+                len(roles_added),
+                len(blacklisted_roles),
+                len(already_has)
+            ),
+            fields = [
+                ("Added roles:", ", ".join(
+                    [f"<@&{item}>" for item in roles_added]
+                ), False),
+                ("Blacklisted roles:", "These are roles that are in the blacklist, but the member had them in the snapshot.\n\n" + ", ".join(
+                    [f"<@&{item}>" for item in blacklisted_roles]
+                ), False),
+                ("Already had:", "These are roles that the member had in the snapshot and already had when the command was run.\n\n" + ", ".join(
+                    [f"<@&{item}>" for item in already_has]
+                ), False)
+            ]
+        )
+        await ctx.reply(embed=embed)
+            
+
+        
+        
         
             
 

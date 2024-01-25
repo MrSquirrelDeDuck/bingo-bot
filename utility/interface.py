@@ -5,6 +5,7 @@ from discord.ext import commands
 import typing
 import datetime
 import asyncio
+import time
 
 import utility.values as u_values
 import utility.text as u_text
@@ -311,6 +312,28 @@ def get_role_list(guild: discord.Guild) -> dict[str, list[int]]:
         out[member.id] = data
     
     return out
+
+def snapshot_roles(guild: discord.Guild) -> None:
+    # """"""
+    """Loops through all the members in the given guild and writes dough the role ids for each member. It then saves all of this to a json file with the name of the current unix timestamp in 'v2_data/role_snapshots/'
+
+    Args:
+        guild (discord.Guild): Discord guild to get the role information for.
+    """
+    # Get the snapshot.
+    out = get_role_list(guild)
+    
+    # Save the snapshot to file.
+    snapshot_id = time.time()
+    u_files.save(f"data/role_snapshots/snapshots/{snapshot_id}.json", data=out, replace_slash=True)
+
+    # Updating the list of snapshots people were previously in.
+    base = u_files.load("data/role_snapshots/last_snapshot.json", default={},replace_slash=True)
+
+    for member_id in out:
+        base[str(member_id)] = str(snapshot_id)
+    
+    u_files.save("data/role_snapshots/last_snapshot.json", data=base, replace_slash=True)
 
 async def refresh_status(bot: u_custom.CustomBot | commands.Bot, database: u_files.DatabaseInterface):
     """Refreshes the status from the database.

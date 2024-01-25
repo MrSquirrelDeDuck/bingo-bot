@@ -34,6 +34,8 @@ bingo_time = datetime.time(
     tzinfo = datetime.timezone.utc
 )
 
+MAIN_GUILD = 1105943535804493955
+
 REMINDERS_CHANNEL = 1196865764511191090
 PING_LISTS_CHANNEL = 1196865786489344120
 DAILY_BOARD_CHANNEL = 1196865970355052644
@@ -435,8 +437,14 @@ class Triggers_cog(u_custom.CustomCog, name="Triggers", description="Hey there! 
         ]
         for counter in counter_list:
             database.increment_daily_counter(counter, amount=1)
+        
+        ##### Make role snapshot. #####
+            
+        u_interface.snapshot_roles(
+            guild = self.bot.get_guild(MAIN_GUILD)
+        )
 
-        # Running _daily_task in other cogs.
+        ##### Running _daily_task in other cogs. #####
         for cog in self.bot.cogs.values():
             if cog.__cog_name__ == self.__cog_name__:
                 continue
