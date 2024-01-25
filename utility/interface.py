@@ -312,6 +312,25 @@ def get_role_list(guild: discord.Guild) -> dict[str, list[int]]:
     
     return out
 
+async def refresh_status(bot: u_custom.CustomBot | commands.Bot, database: u_files.DatabaseInterface):
+    """Refreshes the status from the database.
+
+    Args:
+        database (u_files.DatabaseInterface): The database.
+    """
+    status_data = database.load("bot_status")
+        
+    status_type = status_data["status_type"]
+    status_text = status_data["status_text"]
+    status_url = status_data["status_url"]
+
+    await change_status(
+        database = database,
+        bot = bot,
+        status_type = status_type,
+        status_text = status_text,
+        status_url = status_url
+    )
 
 async def change_status(
         bot: u_custom.CustomBot | commands.Bot,

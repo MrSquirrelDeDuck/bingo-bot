@@ -142,18 +142,9 @@ class Triggers_cog(u_custom.CustomCog, name="Triggers", description="Hey there! 
         return text
     
     async def refresh_status(self):
-        status_data = database.load("bot_status")
-            
-        status_type = status_data["status_type"]
-        status_text = status_data["status_text"]
-        status_url = status_data["status_url"]
-
-        await u_interface.change_status(
-            database = database,
+        await u_interface.refresh_status(
             bot = self.bot,
-            status_type = status_type,
-            status_text = status_text,
-            status_url = status_url
+            database = database
         )
 
 
