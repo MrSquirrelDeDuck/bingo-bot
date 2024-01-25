@@ -730,7 +730,7 @@ class Admin_cog(u_custom.CustomCog, name="Admin", description="Administration co
         description = "Restores someone's roles from a snapshot."
     )
     @commands.check(u_checks.in_authority)
-    async def from_snapshot(self, ctx,
+    async def admin_from_snapshot(self, ctx,
             member: typing.Optional[discord.Member],
             snapshot_id: typing.Optional[str]
         ):
