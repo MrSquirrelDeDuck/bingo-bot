@@ -1,6 +1,7 @@
 import discord
 from discord.ext import commands
 
+# pip install python-dotenv
 import dotenv
 import os
 

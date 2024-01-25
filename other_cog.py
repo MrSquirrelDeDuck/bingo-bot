@@ -16,6 +16,8 @@ import traceback
 import time
 import datetime, pytz
 import cairosvg, chess, chess.svg
+import os
+from os.path import sep as SLASH
 
 import sys
 
@@ -1229,7 +1231,55 @@ class Other_cog(u_custom.CustomCog, name="Other", description="Commands that don
 
         
     ######################################################################################################################################################
-    ##### ROLE LEADERBOARD ##########################################################################################################################################
+    ##### ROLE GRAPH #####################################################################################################################################
+    ######################################################################################################################################################
+
+    @commands.command(
+        name = "role_graph",
+        brief = "Graphs the number of people who have a role.",
+        description = "Graphs the number of people who have a role using role snapshots."
+    )
+    @commands.check(u_checks.hide_from_help)
+    async def role_graph(self, ctx,
+            role_id: typing.Optional[u_converters.parse_int] = commands.parameter(description = "The id of the role to graph.")
+        ):
+        if role_id is None:
+            await ctx.reply("You must provide a role id.")
+            return 
+        
+        snapshot_list = [item for item in os.listdir(f"data{SLASH}role_snapshots{SLASH}snapshots{SLASH}") if item.endswith(".json")]
+
+        found = False
+        tracked_data = []
+        for snapshot_id, snapshot in enumerate(snapshot_list):
+            count = 0
+            snapshot_data = u_files.load("data/role_snapshots/snapshots/{}".format(snapshot), default={}, replace_slash=True)
+            for user in snapshot_data:
+                if role_id in snapshot_data[user]:
+                    count += 1
+                    found = True
+            
+            tracked_data.append((snapshot_id, count))
+        
+        if not found:
+            await ctx.reply("I can't find a role that has that id.")
+            return
+        
+        file_path = u_images.generate_graph(
+            lines = [{
+                    "values": tracked_data
+            }],
+            x_label = "Days since September 1st.",
+            y_label = "Amount of people with that role."
+        )
+        
+        await ctx.reply("Graph of users with role id {}:".format(role_id), file=discord.File(file_path))
+        
+            
+
+        
+    ######################################################################################################################################################
+    ##### ROLE LEADERBOARD ###############################################################################################################################
     ######################################################################################################################################################
     
     @commands.command(

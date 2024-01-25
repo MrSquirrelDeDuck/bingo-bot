@@ -24,7 +24,7 @@ importlib.reload(u_custom)
 
 def embed(
         title: str, title_link: str = None,
-        color: typing.Union[str, tuple[int, int, int]] = "#e91e63",
+        color: typing.Union[str, tuple[int, int, int]] = "#e91e63", # 15277667
         description: str = None,
         author_name: str = None, author_link: str = None, author_icon: str = None,
         footer_text: str = None, footer_icon: str = None,
