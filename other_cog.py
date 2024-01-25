@@ -1241,10 +1241,10 @@ class Other_cog(u_custom.CustomCog, name="Other", description="Commands that don
     )
     @commands.check(u_checks.hide_from_help)
     async def role_graph(self, ctx,
-            role_id: typing.Optional[u_converters.parse_int] = commands.parameter(description = "The id of the role to graph.")
+            role: typing.Optional[discord.Role] = commands.parameter(description = "The id of the role to graph.")
         ):
-        if role_id is None:
-            await ctx.reply("You must provide a role id.")
+        if role is None:
+            await ctx.reply("You must provide a role.")
             return 
         
         snapshot_list = [item for item in os.listdir(f"data{SLASH}role_snapshots{SLASH}snapshots{SLASH}") if item.endswith(".json")]
@@ -1255,14 +1255,14 @@ class Other_cog(u_custom.CustomCog, name="Other", description="Commands that don
             count = 0
             snapshot_data = u_files.load("data/role_snapshots/snapshots/{}".format(snapshot), default={}, replace_slash=True)
             for user in snapshot_data:
-                if role_id in snapshot_data[user]:
+                if role.id in snapshot_data[user]:
                     count += 1
                     found = True
             
             tracked_data.append((snapshot_id, count))
         
         if not found:
-            await ctx.reply("I can't find a role that has that id.")
+            await ctx.reply("I can't find anyone ever having that role.")
             return
         
         file_path = u_images.generate_graph(
@@ -1272,8 +1272,14 @@ class Other_cog(u_custom.CustomCog, name="Other", description="Commands that don
             x_label = "Days since September 1st.",
             y_label = "Amount of people with that role."
         )
+
+        embed = u_interface.embed(
+            title = "Role graph",
+            description = "Graph of users with {}:".format(role.mention),
+            image_link = "attachment://graph.png"
+        )
         
-        await ctx.reply("Graph of users with role id {}:".format(role_id), file=discord.File(file_path))
+        await ctx.reply(embed=embed, file=discord.File(file_path, filename="graph.png"))
         
             
 
