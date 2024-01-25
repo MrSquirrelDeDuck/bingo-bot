@@ -82,7 +82,9 @@ class Admin_cog(u_custom.CustomCog, name="Admin", description="Administration co
         return False
     
     # Added via bot.add_check in add_checks.
-    async def dm_check(self, ctx):
+    async def dm_check(self, ctx) -> bool:
+        """Disables commands in DMs, with a few exceptions."""
+        
         if ctx.guild is not None:
             return True
         
@@ -96,10 +98,31 @@ class Admin_cog(u_custom.CustomCog, name="Admin", description="Administration co
             return True
 
         return False
+    
+    # Added via bot.add_check in add_checks.
+    async def disabled_check(self, ctx) -> bool:
+        """Bot check that returns False and sends a message if the command is disabled."""
+
+        command_name = ctx.command.name
+        parent_names = ctx.invoked_parents
+
+        invoked_command = "-".join(parent_names + [command_name])
+
+        print(parent_names, command_name)
+
+        toggled = database.load("command_toggle", default={})
+
+        if not toggled.get(invoked_command, True):
+            await ctx.reply("I am sorry, but this command has been disabled.")
+            return False
+        
+        return True
+
 
     def add_checks(self):
         """Adds a list of global checks that are in Admin_cog."""
-        self.bot.add_check(self.dm_check, call_once = True)
+        self.bot.add_check(self.dm_check)
+        self.bot.add_check(self.disabled_check)
 
 
 
@@ -685,9 +708,7 @@ class Admin_cog(u_custom.CustomCog, name="Admin", description="Administration co
     @admin.command(
         name="change_status",
         brief = "Changes the bot's status.",
-        description = "Changes the bot's status.",
-        invoke_without_command=True,
-        pass_context=True
+        description = "Changes the bot's status."
     )
     @commands.is_owner()
     async def admin_change_status(self, ctx,
@@ -736,9 +757,7 @@ class Admin_cog(u_custom.CustomCog, name="Admin", description="Administration co
     @admin.command(
         name="change_nickname",
         brief = "Changes the bot's nickname.",
-        description = "Changes the bot's nickname in the specified server.",
-        invoke_without_command=True,
-        pass_context=True
+        description = "Changes the bot's nickname in the specified server."
     )
     @commands.is_owner()
     async def admin_change_nickname(self, ctx,
@@ -759,6 +778,110 @@ class Admin_cog(u_custom.CustomCog, name="Admin", description="Administration co
             return
         except discord.Forbidden:
             await ctx.reply("I don't have the permissions to do that.")
+
+        
+            
+
+        
+    ######################################################################################################################################################
+    ##### ADMIN TOGGLE COMMAND ###########################################################################################################################
+    ######################################################################################################################################################
+        
+    @admin.command(
+        name="toggle_command",
+        brief = "Universally enables and disables commands.",
+        description = "Universally enables and disables commands.\n\nUse the 'fetch' parameter to fetch the current state of the command."
+    )
+    @commands.is_owner()
+    async def admin_toggle_command(self, ctx,
+            new_state: typing.Optional[str] = commands.parameter(description = "The new toggled state for the command or 'fetch'."),
+            *, command_name: typing.Optional[str] = commands.parameter(description = "The name of the command to toggle.")
+        ):
+        if new_state != "fetch":
+            try:
+                new_state = u_converters.extended_bool(new_state)
+            except commands.BadArgument:
+                new_state = None
+
+        if new_state is None:
+            await ctx.reply("You must provide the new state in a boolean and the command name.")
+            return
+        """
+        {
+            "command_name": {
+                "object": command_object,
+                "aliases": ["alias_1", "alias_2"],
+                "subcommands": {
+                    "subcommand_name": {
+                        "object": subcommand_object,
+                        "aliases": []
+                        "subcommands": {
+                            ...
+                        }
+                    },
+                    "subcommand_name_2": {
+                        "object": subcommand_object_2,
+                        "aliases": []
+                        "subcommands": {}
+                    }
+                }
+            }
+        }"""
+
+        def extract(input_command: commands.Command | commands.Group) -> dict:
+            """Recursivly fetch all the subcommands of a command."""
+            out = {
+                "object": input_command,
+                "aliases": input_command.aliases,
+                "subcommands": {}
+            }
+            try:
+                for cmd in input_command.commands:
+                    out["subcommands"][cmd.name] = extract(cmd)
+            except AttributeError:
+                pass
+            
+            return out
+        
+        command_dict = {c.name: extract(c) for c in self.bot.commands}
+
+        if command_name is None:
+            await ctx.reply("Commands:\n- {}".format("\n- ".join(command_dict.keys())))
+            return
+    
+        command_split = command_name.split(" ")
+
+        if command_split[0] not in command_dict:
+            await ctx.reply("Commands:\n- {}".format("\n- ".join(command_dict.keys())))
+            return
+
+        try:
+            subcommand = command_dict[command_split[0]]
+            for cmd in command_split[1:]:
+                subcommand = subcommand["subcommands"][cmd]
+        except KeyError:
+            await ctx.reply("Subcommands of {}:\n- {}".format(subcommand["object"].name, "\n- ".join(subcommand["subcommands"].keys())))
+            return
+        
+        current = database.load("command_toggle", default={})
+
+        internal_name = command_name.replace(" ", "-")
+
+        if new_state == "fetch":
+            await ctx.reply("Current status of {}:\n{}.".format(command_name, "Enabled" if current.get(internal_name, True) else "Disabled"))
+            return
+
+        if internal_name in ["admin-toggle_command", "admin"]:
+            await ctx.reply("Unfortunately, this command cannot be toggled.")
+            return
+        current[internal_name] = new_state
+
+        database.save("command_toggle", data=current)
+
+        await ctx.reply("Done, command '{}' is now {}.".format(command_name, "enabled" if new_state else "disabled"))
+
+
+
             
         
 
