@@ -1389,7 +1389,7 @@ class Bread_cog(u_custom.CustomCog, name="Bread", description="Utility commands 
         brief = "Tells how many chessatrons can be made from just pawns.",
         description = "Tells how many chessatrons can be made from just pawns.\nNote that this uses the data stored with the `%bread data` feature.\nThis is assuming pawns are the limiting factor.\nIt uses this formula:\n((bpawn - wpawn) / 3 + wpawn) / 8\n\nThis does require storing data with the `%bread data` feature."
     )
-    async def bread_chessatron_solve(self, ctx):
+    async def bread_chessatron_quick(self, ctx):
         stored_data = u_bread.get_stored_data(
             database = database,
             user_id = ctx.author.id
@@ -1435,7 +1435,7 @@ class Bread_cog(u_custom.CustomCog, name="Bread", description="Utility commands 
         brief = "Estimation of tron value and gives gifting commands.",
         description = "Estimates the value of the chess pieces and gems in your stored data and gives you commands for gifting them to someone else via stonks.\nYou can provide a percentage to multiply the total value by.\n\nThis is using the data stored with the `%bread data` feature."
     )
-    async def bread_chessatron_solve(self, ctx,
+    async def bread_chessatron_value(self, ctx,
             user: typing.Optional[discord.Member] = commands.parameter(description = "The person to gift the dough to."),
             tron_value: typing.Optional[u_converters.parse_int] = commands.parameter(description = "The amount of dough you get per tron."),
             percentage: typing.Optional[u_converters.parse_percent] = commands.parameter(description = "What percentage of the tron dough to gift."),
