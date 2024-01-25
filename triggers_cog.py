@@ -172,6 +172,7 @@ class Triggers_cog(u_custom.CustomCog, name="Triggers", description="Hey there! 
         invoke_without_command = True,
         pass_context = True
     )
+    @commands.check(u_checks.hide_from_help)
     async def pk_explanation_command(self, ctx):
         if ctx.invoked_subcommand is not None:
             return
@@ -239,6 +240,7 @@ class Triggers_cog(u_custom.CustomCog, name="Triggers", description="Hey there! 
         description="Provides a description of Latent-Dreamer.",
         aliases=["latent", "latent-dreamer"]
     )
+    @commands.check(u_checks.hide_from_help)
     async def latent_explanation_command(self, ctx):
         await ctx.reply("Latent-Dreamer is a bot that creates new responses via ChatGPT when triggered by specific phrases.\nWhen triggered she will send a message based on what the trigger was.\nThings like 'google en passant' and 'chess 2' always use the same prompt. Triggers such as 'what is ...' and 'google ...' will have ChatGPT provide an answer to the question or generate a list of search terms, depending on which was triggered.\n\nLatent-Dreamer also has a credits system to limit the amount of times people can trigger her per day.\nMore information about the credits system can be found [here](<https://discord.com/channels/958392331671830579/958392332590387262/1110078862286671962>) or by pinging Latent-Dreamer with the word 'credits'.")
 

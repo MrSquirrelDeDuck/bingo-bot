@@ -336,6 +336,7 @@ class Other_cog(u_custom.CustomCog, name="Other", description="Commands that don
         invoke_without_command = True,
         pass_context = True
     )
+    @commands.check(u_checks.hide_from_help)
     async def card_command(self, ctx,
             card: typing.Optional[str] = commands.parameter(description = "The key of the card.")
         ):
@@ -425,6 +426,7 @@ class Other_cog(u_custom.CustomCog, name="Other", description="Commands that don
         brief = "You can't just say perchance.",
         description = "You can't just say perchance."
     )
+    @commands.check(u_checks.hide_from_help)
     async def perchance(self, ctx):
         await ctx.reply("You can't just say perchance.")
 
@@ -441,6 +443,7 @@ class Other_cog(u_custom.CustomCog, name="Other", description="Commands that don
         brief = "Typing...",
         description = "Typing..."
     )
+    @commands.check(u_checks.hide_from_help)
     async def typing_command(self, ctx):
         async with ctx.typing():
             pass
@@ -458,6 +461,7 @@ class Other_cog(u_custom.CustomCog, name="Other", description="Commands that don
         brief = "Random tetromino.",
         description = "Random tetromino."
     )
+    @commands.check(u_checks.hide_from_help)
     async def tetris(self, ctx):
         await ctx.reply(random.choice(["O", "L", "The J", "S", "Z", "I", "T"]) + "-piece.")
 
@@ -476,6 +480,7 @@ class Other_cog(u_custom.CustomCog, name="Other", description="Commands that don
         invoke_without_command = True,
         pass_context = True
     )
+    @commands.check(u_checks.hide_from_help)
     async def ewr(self, ctx):
         if ctx.invoked_subcommand is not None:
             return
@@ -517,6 +522,7 @@ class Other_cog(u_custom.CustomCog, name="Other", description="Commands that don
         invoke_without_command = True,
         pass_context = True
     )
+    @commands.check(u_checks.hide_from_help)
     async def fdg(self, ctx):
         if ctx.invoked_subcommand is not None:
             return
@@ -560,6 +566,7 @@ class Other_cog(u_custom.CustomCog, name="Other", description="Commands that don
         invoke_without_command = True,
         pass_context = True
     )
+    @commands.check(u_checks.hide_from_help)
     async def r_circle_section(self, ctx):
         if ctx.invoked_subcommand is not None:
             return
@@ -615,6 +622,7 @@ class Other_cog(u_custom.CustomCog, name="Other", description="Commands that don
         brief = "Test your knowledge of π.",
         description = "Test your knowledge of π."
     )
+    @commands.check(u_checks.hide_from_help)
     async def pi(self, ctx,
             guess: typing.Optional[str] = commands.parameter(description = "Your guess as to the value of pi.")
         ):
@@ -680,6 +688,7 @@ class Other_cog(u_custom.CustomCog, name="Other", description="Commands that don
         brief = "Powering up the Grammar Cannon.",
         description = "Powering up the Grammar Cannon."
     )
+    @commands.check(u_checks.hide_from_help)
     async def prepare(self, ctx,
             *, prepare: typing.Optional[str] = commands.parameter(description = "What to prepare.")
         ):
@@ -710,6 +719,7 @@ class Other_cog(u_custom.CustomCog, name="Other", description="Commands that don
         brief = "Summoning the Grammar Cannon.",
         description = "Summoning the Grammar Cannon."
     )
+    @commands.check(u_checks.hide_from_help)
     async def summon(self, ctx,
             *, summon: typing.Optional[str] = commands.parameter(description = "What to summon.")
         ):
@@ -953,6 +963,7 @@ class Other_cog(u_custom.CustomCog, name="Other", description="Commands that don
         brief = "Ask the spirits a question.",
         description = "Ask the spirits a question."
     )
+    @commands.check(u_checks.hide_from_help)
     async def askouija(self, ctx,
             *, question: typing.Optional[str] = commands.parameter(description = "The question to ask the spirits.")
         ):
@@ -1001,6 +1012,7 @@ class Other_cog(u_custom.CustomCog, name="Other", description="Commands that don
         brief = "Retrieves the current count.",
         description = "Retrieves the current count."
     )
+    @commands.check(u_checks.hide_from_help)
     async def get_count(self, ctx):
         if u_checks.sensitive_check(ctx.channel):
             await ctx.reply("This is not the channel for that.")
@@ -1029,6 +1041,7 @@ class Other_cog(u_custom.CustomCog, name="Other", description="Commands that don
         brief = "Starts a game of Traitor.",
         description = "Starts a game of Traitor, a game where one player is the traitor and everyone else is innocent.\nThis will DM players involved whether they are the traitor or not 2 minutes after the game starts."
     )
+    @commands.check(u_checks.hide_from_help)
     async def traitor(self, ctx):
         if self.traitor_game_going:
             await ctx.reply("I am sorry, but there is already a game going.")
@@ -1157,6 +1170,7 @@ class Other_cog(u_custom.CustomCog, name="Other", description="Commands that don
         brief = "Yep, it's just a coin flip.",
         description = "Yep, it's just a coin flip."
     )
+    @commands.check(u_checks.hide_from_help)
     async def flip_coin(self, ctx):
         await ctx.reply(random.choice(["Heads.","Tails."]))
 
@@ -1170,8 +1184,8 @@ class Other_cog(u_custom.CustomCog, name="Other", description="Commands that don
     
     @commands.command(
         name = "weekday",
-        brief = "Tells you the current day of the week in EDT.",
-        description = "Tells you the current day of the week in EDT."
+        brief = "What's the current day of the week in EDT?",
+        description = "What's the current day of the week in EDT?"
     )
     async def weekday(self, ctx):
         await ctx.reply(datetime.datetime.today().astimezone(pytz.timezone("US/Eastern")).strftime('%A') + ".")
@@ -1197,6 +1211,7 @@ class Other_cog(u_custom.CustomCog, name="Other", description="Commands that don
         brief = "The truth part of Truth or Dare.",
         description = "The truth part of Truth or Dare."
     )
+    @commands.check(u_checks.hide_from_help)
     async def truth(self, ctx):
         await send_truth_or_dare(ctx, "truth")
 
@@ -1205,6 +1220,7 @@ class Other_cog(u_custom.CustomCog, name="Other", description="Commands that don
         brief = "The dare part of Truth or Dare.",
         description = "The dare part of Truth or Dare."
     )
+    @commands.check(u_checks.hide_from_help)
     async def dare(self, ctx):
         await send_truth_or_dare(ctx, "dare")
 
@@ -1221,6 +1237,7 @@ class Other_cog(u_custom.CustomCog, name="Other", description="Commands that don
         brief = "A leaderboard for roles.",
         description = "A leaderboard for roles."
     )
+    @commands.check(u_checks.hide_from_help)
     async def role_leaderboard(self, ctx,
             member: typing.Optional[discord.Member] = commands.parameter(description = "The member to view.")
         ):
@@ -1290,6 +1307,7 @@ class Other_cog(u_custom.CustomCog, name="Other", description="Commands that don
         brief = "Get information about a Lichess tournament.",
         description = "Get information about a Lichess tournament."
     )
+    @commands.check(u_checks.hide_from_help)
     async def lichess(self, ctx,
             tournament: typing.Optional[str] = commands.parameter(description = "The id of the tournament to look up.")
         ):
@@ -1476,6 +1494,7 @@ class Other_cog(u_custom.CustomCog, name="Other", description="Commands that don
         brief = "Search the Minecraft Wiki!",
         description = "Search the Minecraft Wiki."
     )
+    @commands.check(u_checks.hide_from_help)
     async def minecraft(self, ctx,
             *, search_term: typing.Optional[str] = commands.parameter(description = "The search term to search the wiki with.")
         ):
