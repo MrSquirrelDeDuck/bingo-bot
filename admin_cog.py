@@ -716,6 +716,7 @@ class Admin_cog(u_custom.CustomCog, name="Admin", description="Administration co
             bot = self.bot,
             database = database
         )
+        await ctx.reply("Done.")
 
         
             
