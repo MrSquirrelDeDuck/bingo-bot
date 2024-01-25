@@ -2,7 +2,6 @@
 
 from discord.ext import commands
 from scipy.stats import binom
-from fuzzywuzzy import fuzz
 import discord
 import typing
 import random
@@ -18,6 +17,7 @@ import datetime, pytz
 import cairosvg, chess, chess.svg
 import os
 from os.path import sep as SLASH
+import difflib
 
 import sys
 
@@ -1521,7 +1521,7 @@ class Other_cog(u_custom.CustomCog, name="Other", description="Commands that don
     async def _emoji_search(self, text: str) -> str:
         
         def score_emoji(emoji_text: str) -> float:
-            return fuzz.partial_ratio(text.lower(), u_text.return_alphanumeric(emoji_text.lower()))
+            return difflib.SequenceMatcher(None, text.lower(), emoji_text.lower()).ratio()
         
         emoji_list = [] # type: list[tuple[str, float]]
 
