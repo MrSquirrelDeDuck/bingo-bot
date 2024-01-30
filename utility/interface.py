@@ -1,4 +1,4 @@
-"""Functions for Discord related things."""
+"""Functions for interfacing with Discord and other web services, like wikis."""
 
 import discord
 from discord.ext import commands
@@ -6,6 +6,9 @@ import typing
 import datetime
 import asyncio
 import time
+import re
+import aiohttp
+import traceback
 
 import utility.values as u_values
 import utility.text as u_text
@@ -22,7 +25,7 @@ importlib.reload(u_text)
 importlib.reload(u_bread)
 importlib.reload(u_custom)
 
-def embed(
+def gen_embed(
         title: str, title_link: str = None,
         color: typing.Union[str, tuple[int, int, int]] = "#e91e63", # 15277667
         description: str = None,
@@ -120,9 +123,6 @@ def combine_args(ctx: (commands.Context | str), args: (tuple | list), keep: int,
 def get_display_name(member: discord.Member) -> str:
     return (member.global_name if (member.global_name is not None and member.name == member.display_name) else member.display_name)
 
-def is_reply(message: discord.Message) -> bool:
-    return message.reference is not None
-
 async def smart_reply(ctx, content: str = "", **kwargs) -> discord.Message:
     """Attempts to reply, if there's an error it then tries to send it normally."""
 
@@ -168,6 +168,10 @@ def is_reply(message: discord.Message) -> bool:
     Returns:
         bool: Whether the given message is a reply.
     """
+    if is_mm(message) and "<@" in message.content:
+        if re.match("<@\d+> ?\n\n", message.content):
+            return True
+        
     return message.reference is not None
 
 def is_mm(message: discord.Message) -> bool:
@@ -234,6 +238,29 @@ def replying_mm_checks(message: discord.Message, require_reply: bool = False, re
     
     # If it gets here, all the checks have passed.
     return True
+
+def is_bread_roll(message: discord.Message) -> bool:
+    """Returns a boolean for whether the given message is a bread roll.
+    
+    Args:
+        message (discord.Message): The message to check.
+    
+    Returns:
+        bool: Whether the message is a bread roll.
+    """
+    if not mm_checks(message, check_reply = True):
+        return False
+    
+    if is_gamble(message):
+        return False
+    
+    content = re.sub("^(<@\d+>\n\n)", "", message.content)
+    content = content.replace(" ", "").replace("\n", "").replace("-", "")
+    for item in u_values.rollable_items:
+        content = content.replace(item.internal_emoji, "")
+        content = content.replace(item.emoji, "")
+
+    return len(content) == 0
     
 def is_gamble(message: discord.Message) -> bool:
     """Returns a boolean for whether a message is a Bread Game gamble.
@@ -251,10 +278,25 @@ def is_gamble(message: discord.Message) -> bool:
     if any([message.content.endswith(_) for _ in ["?", "!", "."]]):
         return False
     
-    if message.content.count(" ") + message.content.count("\n") != 18:
+    content = remove_starting_ping(message.content)
+    
+    if content.count(" ") + content.count("\n") != 18:
         return False
     
     return True
+
+def remove_starting_ping(content: str) -> str:
+    """Removes a ping from the start of a message.
+
+    Args:
+        content (str): The message content.
+
+    Returns:
+        str: The message content with the ping removed.
+    """
+    if "<@" in content:
+        content = re.sub(r"^<@\d+> ?\n\n", "", content)
+    return content
 
 def resolve_conflict(message: discord.Message, stats_type: str, user_provided: list[typing.Any], stat_keys: list[u_values.Item | u_values.ChessItem | u_values.StonkItem | str]) -> typing.Union[list[typing.Any], bool]:
     """
@@ -339,6 +381,7 @@ async def refresh_status(bot: u_custom.CustomBot | commands.Bot, database: u_fil
     """Refreshes the status from the database.
 
     Args:
+        bot (u_custom.CustomBot | commands.Bot): The bot object.
         database (u_files.DatabaseInterface): The database.
     """
     status_data = database.load("bot_status")
@@ -441,3 +484,201 @@ async def await_confirmation(bot: u_custom.CustomBot | commands.Bot, ctx: typing
     else:
         await ctx.reply("Unknown response, cancelled.")
         return False
+
+def wiki_correct_length(text: str, limit: int = 300) -> str:
+    """Corrects the length of a wikitext string, while, hopefully, keeping links intact."""
+
+    period_location = text[:limit].rfind(".")
+    addition = "".join([text, " "])
+
+    if addition[period_location + 1] in [" ", "\\"]:
+        return text[:period_location + 1]
+    
+    for char_id in range(len(text) - limit):
+        if period_location + char_id >= 1000:
+            break
+        
+        if addition[period_location + char_id] != ".":
+            continue
+
+        if addition[period_location + char_id + 1] not in [" ", "\\"]:
+            continue
+        
+        return text[:period_location + char_id + 1]
+    
+    for char_id in range(limit):
+        if period_location - char_id >= 1000:
+            break
+
+        if addition[period_location - char_id] != ".":
+            continue
+
+        if addition[period_location - char_id + 1] not in [" ", "\\"]:
+            continue
+
+        return text[:period_location - char_id + 1]
+    
+    text = text[:300]
+    return text[:text.rfind(".") + 1]
+
+async def handle_wiki_search(
+        ctx: commands.Context | u_custom.CustomContext,
+        *,
+        wiki_name: str,
+        wiki_link: str,
+        wiki_main_page: str,
+        wiki_api_url: str,
+        search_term: str = None,
+        manual_replacements: typing.Callable[[str], str] = None
+    ) -> None:
+    """Handles all the logic required for searching a wiki and sending results.
+
+    Args:
+        ctx (typing.Union[commands.Context, u_custom.CustomContext]): The context object.
+        wiki_name (str): The name of the wiki, like "The Bread Game Wiki"
+        wiki_link (str): A link to the wiki without a specific page. Example: "https://bread.miraheze.org/wiki/"
+        wiki_main_page (str): The main page of the wiki, like "https://bread.miraheze.org/wiki/Main_Page"
+        wiki_api_url (str): The URL of the API for the wiki without any parameters, like "https://bread.miraheze.org/api.php"
+        search_term (str, optional): The search term to search the wiki with. Defaults to None.
+        manual_replacements (typing.Callable[[str], str], optional): A callable that will be called on the wikitext before it is parsed. It will be passed the wikitext and should return a modified copy of that text. Defaults to None.
+    """
+    if search_term is None:
+        await ctx.reply("Here's a link to {wiki_name}:\n<{main_page}>\nIf you want to search {wiki_name}, use `%{command} <search term>`.".format(
+            wiki_name=wiki_name,
+            main_page=wiki_main_page,
+            command=ctx.command.qualified_name
+        ))
+        return
+    
+    async def error_message(embed: discord.Embed, sent_message: discord.Message) -> None:
+        """Changes all 'Waiting to be loaded' messages to 'Something went wrong'"""
+        modified = 0
+
+        for field_id, field in enumerate(embed.fields):
+            if "Waiting to be loaded" not in field.value:
+                continue
+            
+            embed.set_field_at(field_id, name=field.name, value=field.value.replace("Waiting to be loaded", "Something went wrong"), inline=field.inline)
+            modified += 1
+        
+        if modified >= 1:
+            await sent_message.edit(content=sent_message.content, embed=embed)
+    
+    embed = None
+    sent_message = None
+
+    try:
+
+        async with aiohttp.ClientSession() as session:
+            json_args = {
+                "action": "query",
+                "format": "json",
+                "list": "search",
+                "srsearch": search_term
+            }
+            async with session.get(wiki_api_url, params=json_args) as resp:
+                if resp.status != 200:
+                    await ctx.reply("Something went wrong.")
+                    return
+                
+                ret_json = await resp.json()
+
+            description_prefix = f"Search results after searching for '{search_term}' on [{wiki_name}]({wiki_main_page}):"
+            
+            if ret_json["query"]["searchinfo"]["totalhits"] == 0:
+                embed = gen_embed(
+                    title = wiki_name,
+                    title_link = wiki_main_page,
+                    description = f"{description_prefix}\n\nThe search did not find any results, try different search terms."
+                )
+                await ctx.reply(embed=embed)
+                return
+            
+            search_results = []
+
+            for page_info in ret_json["query"]["search"]:                    
+                search_results.append(page_info["title"])
+
+            fields = [
+                (page_name, "[Link to wiki page.]({}{})\n\n*Waiting to be loaded.*".format(wiki_link, page_name.replace(" ", "_")), True)
+                for page_name in search_results
+            ]
+
+            embed = gen_embed(
+                title = wiki_name,
+                title_link = wiki_main_page,
+                description = f"{description_prefix}",
+                fields = fields + [("", "Not what you're looking for? Try different search terms.", False)]
+            )
+
+            sent_message = await ctx.reply(embed=embed)
+
+
+            json_args = {
+                "action": "query",
+                "prop": "revisions",
+                "titles": "|".join(search_results),
+                "rvslots": "*",
+                "rvprop": "content",
+                "formatversion": "2",
+                "format": "json",
+                "redirects": "true"
+            }
+            async with session.get(wiki_api_url, params=json_args) as resp:
+                if resp.status != 200:
+                    await ctx.reply("Something went wrong.")
+                    return
+                
+                ret_json = await resp.json()
+
+            wiki_data = {}
+            for data in ret_json["query"]["pages"]:
+                try:
+                    wiki_data[data["title"]] = data["revisions"][0]["slots"]["main"]["content"]
+                except KeyError:
+                    wiki_data[data["title"]] = data["revisions"][0]["content"]
+
+            redirect_data = {}
+            if "redirects" in ret_json["query"]:
+                for data in ret_json["query"]["redirects"]:
+                    redirect_data[data["from"]] = {"to": data["to"], "fragment": data.get("tofragment", None)}
+
+            for field_id, page in enumerate(search_results):
+                page_get = page
+                page_fragment = None
+
+                redirect_text = ""
+                
+                for redirect_count in range(50):
+                    if page_get in redirect_data:
+                        page_fragment = redirect_data[page_get]["fragment"]
+                        page_get = redirect_data[page_get]["to"]
+                        redirect_text = f"*Redirected to {page_get}*\n"
+                        continue
+                    break
+
+                if page_fragment is None:
+                    page_fragment = page_get
+                
+                sections = u_text.parse_wikitext(
+                    wikitext = wiki_data[page_get],
+                    wiki_link = wiki_link,
+                    page_title = page_get,
+                    return_sections = True,
+                    manual_replacements = manual_replacements
+                )
+                
+                summary = "[Link to wiki page.]({}{})\n{}\n{}".format(wiki_link, page.replace(" ", "_"), redirect_text, sections[page_fragment])
+
+                if len(summary) > 900:
+                    summary = wiki_correct_length(summary, 900)
+
+                embed.set_field_at(field_id, name=page, value=summary, inline=True)
+
+            await sent_message.edit(content=sent_message.content, embed=embed)
+
+    except:
+        print(traceback.format_exc())
+
+        if embed is not None and sent_message is not None:
+            await error_message(embed, sent_message)

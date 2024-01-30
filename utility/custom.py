@@ -43,6 +43,13 @@ class CustomCog(commands.Cog):
 
         # Reload the module via importlib.reload.
         importlib.reload(module)
+
+        # Run the on_reload() function if it exists.
+        try:
+            module.on_reload()
+        except AttributeError:
+            pass
+
         print("- {} has reloaded {}.".format(self.qualified_name, module_name))
 
         # Return True, since it has been reloaded in theory.

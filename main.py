@@ -29,9 +29,15 @@ bot = u_custom.CustomBot(
 @bot.event
 async def on_ready():
     print("on_ready() called.")
-    print("Setting up database.")
-    bot.database = u_files.DatabaseInterface()
-    print("Database setup complete.")
+
+    # Save the database, this is assuming on_ready() was called twice.
+    try:
+        bot.database.save_database(make_backup=True)
+        print("Database saved.")
+    except AttributeError:
+        print("Setting up database.")
+        bot.database = u_files.DatabaseInterface()
+        print("Database setup complete.")
 
 
     print("Loading admin_cog.")

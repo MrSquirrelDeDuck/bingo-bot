@@ -60,12 +60,16 @@ class Bread_cog(u_custom.CustomCog, name="Bread", description="Utility commands 
         else:
             reminder_list = "- {}\n{}".format("\n- ".join(reminder_list), footer)
         
-        embed = u_interface.embed(
+        embed = u_interface.gen_embed(
             title = "Bread Reminders",
             description = reminder_list
         )
         
         return await ctx.reply(embed=embed)
+
+    def hourly_task(self: typing.Self):
+        """Code that runs for every hour."""
+        self.bread_wiki_searching = False
 
     ######################################################################################################################################################
     ##### CHECKS #########################################################################################################################################
@@ -197,7 +201,7 @@ class Bread_cog(u_custom.CustomCog, name="Bread", description="Utility commands 
         
         day_text = str(days_remaining) + ["th", "st", "nd", "rd", "th", "th", "th", "th", "th", "th"][int(str(days_remaining)[-1])]
 
-        embed = u_interface.embed(
+        embed = u_interface.gen_embed(
             title = f"{hour_12}:{minutes}:{seconds} {time_suffix}",
             description = f"In Bread Standard Time is currently {hour_12}:{minutes}:{seconds} {time_suffix} ({boc_timedelta}) on the {day_text} of {names[month]}, {years} AB.\n\nThe next Bread o' clock is <t:{int((next_breadoclock - datetime.datetime(1970,1,1)).total_seconds())}:R>."
         )
@@ -282,7 +286,7 @@ class Bread_cog(u_custom.CustomCog, name="Bread", description="Utility commands 
 
         self._save_reminder_data(reminder_data)
 
-        embed = u_interface.embed(
+        embed = u_interface.gen_embed(
             title = "Reminder added!",
             description = "Added reminder for {} (<t:{}:t>) with the text:\n{}".format(hour, self.time_keys[hour], reminder_text)
         )
@@ -323,7 +327,7 @@ class Bread_cog(u_custom.CustomCog, name="Bread", description="Utility commands 
         reminder_data["reminder_list"].remove(remove_data)
         self._save_reminder_data(reminder_data)
 
-        embed = u_interface.embed(
+        embed = u_interface.gen_embed(
             title = "Reminder removed!",
             description = "Removed reminder for {} (<t:{}:t>) that had the text:\n{}".format(remove_data["hour"], self.time_keys[remove_data["hour"]], remove_data["text"])
         )
@@ -416,7 +420,7 @@ class Bread_cog(u_custom.CustomCog, name="Bread", description="Utility commands 
 
         self._save_reminder_data(reminder_data)
 
-        embed = u_interface.embed(
+        embed = u_interface.gen_embed(
             title = "Reminder modified!",
             description = "Old hour: {}\nOld text:\n{}\n\nNew hour: {}\nNew text:\n{}".format(reminder_old["hour"], reminder_old["text"], reminder_modify["hour"], reminder_modify["text"])
         )
@@ -517,7 +521,7 @@ class Bread_cog(u_custom.CustomCog, name="Bread", description="Utility commands 
 
         next_cost = (current + 1) * (256 - (self_converting_yeast * 12))
 
-        embed = u_interface.embed(
+        embed = u_interface.gen_embed(
             title = "Loaf Converters",
             description = f"With {u_text.smart_text(current, 'Loaf Converter')} and Self Converting Yeast level {u_text.smart_number(self_converting_yeast)} the next Loaf Converter will cost **{u_text.smart_number(next_cost)}** dough."
         )
@@ -566,7 +570,7 @@ class Bread_cog(u_custom.CustomCog, name="Bread", description="Utility commands 
         dough_required = equation(current, goal, self_converting_yeast)
         dough_required_no_scy = equation(current, goal, 0)
 
-        embed = u_interface.embed(
+        embed = u_interface.gen_embed(
             title = "Loaf Converter calculation",
             description = f"It would require **{u_text.smart_number(dough_required)}** dough to purchase the {u_text.smart_text(goal - current, 'Loaf Converter')} needed.\nWith {u_text.smart_text(self_converting_yeast, 'level')} of Self Converting Yeast, you would save **{u_text.smart_number(dough_required_no_scy - dough_required)} dough**."
         )
@@ -624,7 +628,7 @@ class Bread_cog(u_custom.CustomCog, name="Bread", description="Utility commands 
         purchasable = equation(dough, current, self_converting_yeast)
         purchasable_no_scy = equation(dough, current, 0)
 
-        embed = u_interface.embed(
+        embed = u_interface.gen_embed(
             title = "Loaf Converter dough calculation",
             description = f"With {u_text.smart_number(dough)} dough, it would be possible to purchase **{u_text.smart_text(purchasable, 'Loaf Converter')}**.\nYou would go from {u_text.smart_text(current, 'Loaf Converter')} to {u_text.smart_number(purchasable + current)}.\nWith {u_text.smart_text(self_converting_yeast, 'level')} of Self Converting Yeast, you are able to purchase **{u_text.smart_text(purchasable - purchasable_no_scy, 'more Loaf Converter')}**."
         )
@@ -677,7 +681,7 @@ class Bread_cog(u_custom.CustomCog, name="Bread", description="Utility commands 
             await ctx.reply("I don't have that gamble in my storage.\nI only store the last 500 gambles that occurred.")
             return
         
-        embed = u_interface.embed(
+        embed = u_interface.gen_embed(
             title = "Initial board.",
             description = "The initial board of that gamble:\n\n{}".format(gamble_messages[message_key])
         )
@@ -735,124 +739,28 @@ class Bread_cog(u_custom.CustomCog, name="Bread", description="Utility commands 
     async def bread_wiki(self, ctx,
             *, search_term: typing.Optional[str] = commands.parameter(description = "The search term to search the wiki with.")
         ):
-        if search_term is None:
-            await ctx.reply("Here's a link to the wiki:\n<https://bread.miraheze.org/wiki/The_Bread_Game_Wiki>\nIf you want to search the wiki, use `%bread wiki <search term>`.")
-            return
-        
         if self.bread_wiki_searching:
             await ctx.reply("This commmand is currently being used somewhere, please wait until it's done to try again.")
             return
         
-        async def error_message(embed: discord.Embed, sent_message: discord.Message) -> None:
-            """Changes all 'Waiting to be loaded' messages to 'Something went wrong'"""
-            modified = 0
-
-            for field_id, field in enumerate(embed.fields):
-                if "Waiting to be loaded" not in field.value:
-                    continue
-                
-                embed.set_field_at(field_id, name=field.name, value=field.value.replace("Waiting to be loaded", "Something went wrong"), inline=field.inline)
-                modified += 1
-            
-            if modified >= 1:
-                await sent_message.edit(content=sent_message.content, embed=embed)
-        
-        embed = None
-        sent_message = None
-
         try:
             self.bread_wiki_searching = True
 
-            async with aiohttp.ClientSession() as session:
-                async with session.get(f"https://bread.miraheze.org/w/api.php?format=json&action=query&list=search&srlimit=3&srsearch={search_term}&redirects=true") as resp:
-                    if resp.status != 200:
-                        self.bread_wiki_searching = False
-                        await ctx.reply("Something went wrong.")
-                        return
-                    
-                    ret_json = await resp.json()
-
-                description_prefix = f"Search results after searching for '{search_term}' on [The Bread Game Wiki](https://bread.miraheze.org/wiki/The_Bread_Game_Wiki):"
-                
-                if ret_json["query"]["searchinfo"]["totalhits"] == 0:
-                    embed = u_interface.embed(
-                        title = "Bread Wiki",
-                        description = f"{description_prefix}\n\nThe search did not find any results, try different search terms."
-                    )
-                    await ctx.reply(embed=embed)
-                    self.bread_wiki_searching = False
-                    return
-                
-                search_results = []
-
-                for page_info in ret_json["query"]["search"]:                    
-                    search_results.append(page_info["title"])
-
-                fields = [
-                    (page_name, "[Link to wiki page.](https://bread.miraheze.org/wiki/{})\n\n*Waiting to be loaded.*".format(page_name.replace(" ", "_")), True)
-                    for page_name in search_results
-                ]
-
-                embed = u_interface.embed(
-                    title = "Bread Wiki",
-                    description = f"{description_prefix}",
-                    fields = fields + [("", "Not what you're looking for? Try different search terms.", False)]
-                )
-
-                sent_message = await ctx.reply(embed=embed)
-
-                async with session.get("https://bread.miraheze.org/w/api.php?action=query&prop=revisions&titles={}&rvslots=*&rvprop=content&formatversion=2&format=json&redirects=true".format("|".join(search_results))) as resp:
-                    if resp.status != 200:
-                        self.bread_wiki_searching = False
-                        await ctx.reply("Something went wrong.")
-                        return
-                    
-                    ret_json = await resp.json()
-
-                wiki_data = {}
-                for data in ret_json["query"]["pages"]:
-                    wiki_data[data["title"]] = data["revisions"][0]["slots"]["main"]["content"]
-
-                redirect_data = {}
-                if "redirects" in ret_json["query"]:
-                    for data in ret_json["query"]["redirects"]:
-                        redirect_data[data["from"]] = {"to": data["to"], "fragment": data.get("tofragment", None)}
-
-                for field_id, page in enumerate(search_results):
-                    page_get = page
-                    page_fragment = None
-
-                    redirect_text = ""
-                    
-                    for redirect_count in range(50):
-                        if page_get in redirect_data:
-                            page_fragment = redirect_data[page_get]["fragment"]
-                            page_get = redirect_data[page_get]["to"]
-                            redirect_text = f"*Redirected to {page_get}*\n"
-                            continue
-                        break
-
-                    if page_fragment is None:
-                        page_fragment = page_get
-                    
-                    sections = u_text.parse_wikitext(wiki_data[page_get], wiki_link="https://bread.miraheze.org/wiki/", page_title=page_get, return_sections=True)
-                    
-                    summary = "[Link to wiki page.](https://bread.miraheze.org/wiki/{})\n{}\n{}".format(page.replace(" ", "_"), redirect_text, sections[page_fragment])
-
-                    if len(summary) > 900:
-                        summary = self._wiki_correct_length(summary, 900)
-
-                    embed.set_field_at(field_id, name=page, value=summary, inline=True)
-
-                await sent_message.edit(content=sent_message.content, embed=embed)
+            await u_interface.handle_wiki_search(
+                ctx = ctx,
+                wiki_link = "https://bread.miraheze.org/wiki/",
+                wiki_main_page = "https://bread.miraheze.org/wiki/The_Bread_Game_Wiki",
+                wiki_name = "The Bread Game Wiki",
+                wiki_api_url = "https://bread.miraheze.org/w/api.php",
+                search_term = search_term
+            )
 
             self.bread_wiki_searching = False
         except:
             self.bread_wiki_searching = False
-            print(traceback.format_exc())
 
-            if embed is not None and sent_message is not None:
-                await error_message(embed, sent_message)
+            # After ensuring bread_wiki_searching has been reset, reraise the exception so the "Something went wrong processing that command." message is still sent.
+            raise
 
     
 
@@ -893,7 +801,7 @@ class Bread_cog(u_custom.CustomCog, name="Bread", description="Utility commands 
 
         possible_trons = gem_sum // 32
         
-        embed = u_interface.embed(
+        embed = u_interface.gen_embed(
             title = "Gem Value",
             description = f"- {u_values.gem_red.internal_emoji}: {u_text.smart_number(red_gems)}\n- {u_values.gem_blue.internal_emoji}: {u_text.smart_number(blue_gems)}\n- {u_values.gem_purple.internal_emoji}: {u_text.smart_number(purple_gems)}\n- {u_values.gem_green.internal_emoji}: {u_text.smart_number(green_gems)}\n- {u_values.gem_gold.internal_emoji}: {u_text.smart_number(gold_gems)} -> {u_text.smart_number(gold_gems * 4)} (x4 recipe to greens)\nGem sum: {u_text.smart_number(gem_sum)}.\nPossible trons: {u_text.smart_number(possible_trons)}.\nAt a rate of {u_text.smart_number(tron_value)} per tron: **{u_text.smart_number(tron_value * possible_trons)} dough**."
         )
@@ -921,7 +829,7 @@ class Bread_cog(u_custom.CustomCog, name="Bread", description="Utility commands 
             ascension: typing.Optional[u_converters.parse_int] = commands.parameter(description = "The ascension you're on.")
         ):
         def generate_embed(omega, shadow, cc, a):
-            return u_interface.embed(
+            return u_interface.gen_embed(
                 title = "Chessatron value",
                 description = "With {}, {}, and {} of Chessatron Contraption on a{}, you would make **{} dough** from each Chessatron.".format(
                     u_text.smart_text(omega, "Omega Chessatron"),
@@ -986,7 +894,7 @@ class Bread_cog(u_custom.CustomCog, name="Bread", description="Utility commands 
             ("4th stonk tick", 1648580700)
         ]
 
-        embed = u_interface.embed(
+        embed = u_interface.gen_embed(
             title = "Timestamps",
             description = "All time are automatically converted into your time zone:\n{}".format(
                 "\n".join(
@@ -1019,7 +927,7 @@ class Bread_cog(u_custom.CustomCog, name="Bread", description="Utility commands 
             return
         
         try:
-            embed = u_interface.embed(
+            embed = u_interface.gen_embed(
                 title = "Percentage",
                 description = "{}% of {} is:".format(u_text.smart_number(percent * 100), u_text.smart_number(value)),
                 fields = [("{:,.2f}".format(value * percent), "", False)],
@@ -1112,7 +1020,7 @@ class Bread_cog(u_custom.CustomCog, name="Bread", description="Utility commands 
 
         command_list, post_alchemy, solver_result = u_solvers.solver_wrapper(items = gems, maximize = u_values.gem_gold)
         
-        embed = u_interface.embed(
+        embed = u_interface.gen_embed(
             title = "Gold gem solver",
             description = "{}\nYou should be able to make **{}**.\nDough gain: {} ({} with [Gold Ring](<https://bread.miraheze.org/wiki/Gold_Ring>).)".format(
                 "\n".join([f"{gem}: {u_text.smart_number(gems[gem])} -> {u_text.smart_number(post_alchemy[gem])}" for gem in gems]),
@@ -1158,7 +1066,7 @@ class Bread_cog(u_custom.CustomCog, name="Bread", description="Utility commands 
 
         stored_message = "You do not have any stored data." if stored is None else "You have stored data!"
 
-        embed = u_interface.embed(
+        embed = u_interface.gen_embed(
             title = "Stored data",
             description = f"{stored_message}\n\nUse `%bread data store` when replying to stats to store the data.\nUse `%bread data inventory` to view the current stored data.\nUse `%bread data clear` to clear the stored data.\n\nTo get a list of all the commands that use this feature, use `%help bread data`."
         )
@@ -1196,7 +1104,7 @@ class Bread_cog(u_custom.CustomCog, name="Bread", description="Utility commands 
             data = parsed["stats"]
         )
 
-        embed = u_interface.embed(
+        embed = u_interface.gen_embed(
             title = "Stored data",
             description = "Data stored!\n\nUse `%bread data inventory` to view the current stored data.\nUse `%bread data clear` to clear the stored data.\n\nTo get a list of all the commands that use the stored data feature, use `%help bread data`."
         )
@@ -1257,7 +1165,7 @@ class Bread_cog(u_custom.CustomCog, name="Bread", description="Utility commands 
 
             lines.append(f"{key}: {u_text.smart_number(stored[key])}")
         
-        embed = u_interface.embed(
+        embed = u_interface.gen_embed(
             title = "Stored data inventory",
             description = "Page {} of {}, showing items {} to {}.\nUse `%bread data inventory <page>` to specify a different page.".format(page + 1, max_page, start, end),
             fields = [
@@ -1285,7 +1193,7 @@ class Bread_cog(u_custom.CustomCog, name="Bread", description="Utility commands 
             user_id = ctx.author.id
         )
         
-        embed = u_interface.embed(
+        embed = u_interface.gen_embed(
             title = "Stored data cleared",
             description = "Your stored data has been cleared.\n\nUse `%bread data store` when replying to stats to store the data.\nUse `%bread data inventory` to view the current stored data.\n\nTo get a list of all the commands that use this feature, use `%help bread data`."
         )
@@ -1356,7 +1264,7 @@ class Bread_cog(u_custom.CustomCog, name="Bread", description="Utility commands 
 
         ################
         
-        embed = u_interface.embed(
+        embed = u_interface.gen_embed(
             title = "Chessatron solver",
             description = "{}\nYou should be able to make **{}** {} with an estimated gain of **{} dough**.".format(
                 "\n".join([f"{item}: {u_text.smart_number(items[item])} -> {u_text.smart_number(post_alchemy[item])}" for item in items]),
@@ -1414,7 +1322,7 @@ class Bread_cog(u_custom.CustomCog, name="Bread", description="Utility commands 
             chessatron_contraption = stored_data.get("chessatron_shadow_boost")
         )
 
-        embed = u_interface.embed(
+        embed = u_interface.gen_embed(
             title = "Quick chessatrons",
             description = f"{u_values.bpawn}: {u_text.smart_number(bpawn)}\n{u_values.wpawn}: {u_text.smart_number(wpawn)}\nResult: **{u_text.smart_text(int(final_division), 'chessatron')}**.\nAt a rate of {u_text.smart_number(tron_value)} per tron: **{u_text.smart_number(round(int(final_division) * tron_value))} dough**",
             fields = [
@@ -1490,7 +1398,7 @@ class Bread_cog(u_custom.CustomCog, name="Bread", description="Utility commands 
 
         sm = u_text.smart_number
         
-        embed = u_interface.embed(
+        embed = u_interface.gen_embed(
             title = "Chessatron value estimation",
             description = f"{u_values.bpawn}: {sm(bpawns)}, {u_values.wpawn}: {sm(wpawns)}\n{', '.join([f'{gem}: {sm(gems[gem])}' for gem in u_values.all_shiny])}",
             fields = [
@@ -1548,7 +1456,7 @@ class Bread_cog(u_custom.CustomCog, name="Bread", description="Utility commands 
         greater = 1 - less_or_equal
         greater_or_equal = 1 - less
 
-        embed = u_interface.embed(
+        embed = u_interface.gen_embed(
             title = "Probability",
             description = "With {} trials and {} successes with a {}% chance of success:".format(u_text.smart_number(trials), u_text.smart_number(successes), round(chance * 100, 2)),
             fields = [

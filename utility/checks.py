@@ -93,6 +93,10 @@ def remote_say_check(ctx: typing.Union[commands.Context, u_custom.CustomContext]
     """Checks if the user has the 'remote_say' permission."""
     return get_permission(ctx.author.id, "remote_say")
 
+def sub_admin_check(ctx: typing.Union[commands.Context, u_custom.CustomContext]) -> bool:
+    """Checks if the user has the 'sub_admin' permission."""
+    return get_permission(ctx.author.id, "sub_admin")
+
 async def hide_from_help(ctx: typing.Union[commands.Context, u_custom.CustomContext]) -> bool:
     """This returns False if the command being run is just `%help`, but returns True for command usage and if a subsection of the help command is used."""
     if ctx.invoked_with != "help":

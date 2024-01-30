@@ -95,7 +95,7 @@ class Bingo_cog(u_custom.CustomCog, name="Bingo", description="Commands for runn
 
             fields.append((objective_data["name"], "Objective #{}.\n\nDescription:\n{}".format(base_tile_list.index(objective_data), objective_data["description"]), True))
         
-        embed = u_interface.embed(
+        embed = u_interface.gen_embed(
             title = "{} page {}".format(title, page + 1),
             description = f"Page {page + 1} of {page_count}. You can get other pages via `{command} [page number]`\n\nTo get more information about an objective, use `%objective {type_text} [objective id]`\n\nObjectives {lower_bound} to {upper_bound - 1} {identifier}:",
             fields = fields
@@ -149,7 +149,7 @@ class Bingo_cog(u_custom.CustomCog, name="Bingo", description="Commands for runn
         solo = emojis[objective_data.get("solo", False)]
         disabled = emojis[objective_data.get("disabled", False)]
 
-        embed = u_interface.embed(
+        embed = u_interface.gen_embed(
             title = objective_data["name"],
             description = f"Objective {objective} on the {board} board.\n\nDescription:\n{objective_data['description']}\n\nCenter objective: {center}\nSolo objective: {solo}\nDisabled: {disabled}\n\nYou can use `%objective search [daily|weekly] [search term]` to search for an objective.\nYou can also use `%objective list [daily|weekly]` to get a list of the possible objectives.",
         )
@@ -199,7 +199,7 @@ class Bingo_cog(u_custom.CustomCog, name="Bingo", description="Commands for runn
 
         returned = fuzzy_search(search, tile_list)
 
-        embed = u_interface.embed(
+        embed = u_interface.gen_embed(
             title = "Search results:",
             description = f"You can use `%objective {board} <objective id>` to get more information about an objective.\nResult from searching the text `{u_text.ping_filter(search)}` in the {board} objective list:",
             fields = [
@@ -347,7 +347,7 @@ class Bingo_cog(u_custom.CustomCog, name="Bingo", description="Commands for runn
 
         emojis = ["<:x_:1189696918645907598>", "<:check:1189696905077325894>"]
 
-        embed = u_interface.embed(
+        embed = u_interface.gen_embed(
             title = "Added objective #{}".format(len(tile_list) - 1),
             description = "Objective information:\nTitle: {}\nDescription: {}\nCenter: {}\nSolo: {}".format(
                 objective_info["name"],
@@ -427,7 +427,7 @@ class Bingo_cog(u_custom.CustomCog, name="Bingo", description="Commands for runn
 
         emojis = ["<:x_:1189696918645907598>", "<:check:1189696905077325894>"]
 
-        embed = u_interface.embed(
+        embed = u_interface.gen_embed(
             title = "Modified objective #{}".format(objective_id),
             fields = [
                 ("Old information:", "Title: {}\nDescription: {}\nCenter: {}\nSolo: {}\nDisabled: {}".format(
@@ -492,7 +492,7 @@ class Bingo_cog(u_custom.CustomCog, name="Bingo", description="Commands for runn
 
         emojis = ["<:x_:1189696918645907598>", "<:check:1189696905077325894>"]
 
-        embed = u_interface.embed(
+        embed = u_interface.gen_embed(
             title = "Removed objective #{}".format(objective_id),
             fields = [
                 ("Objective information:", "Title: {}\nDescription: {}\nCenter: {}\nSolo: {}\nDisabled: {}".format(
@@ -801,7 +801,7 @@ class Bingo_cog(u_custom.CustomCog, name="Bingo", description="Commands for runn
             enabled = enabled_number
         )
         
-        embed = u_interface.embed(
+        embed = u_interface.gen_embed(
             title = "Rendered board",
             description = f"Using a tile string of \"{tile_string}\" and an enabled number of {u_text.smart_number(enabled_number)}:",
             image_link = "attachment://bingo_board.png"
@@ -1101,7 +1101,7 @@ class Bingo_cog(u_custom.CustomCog, name="Bingo", description="Commands for runn
             enabled = enabled_number
         )
         
-        embed = u_interface.embed(
+        embed = u_interface.gen_embed(
             title = "Rendered board",
             description = f"Using a tile string of \"{tile_string}\" and an enabled number of {u_text.smart_number(enabled_number)}:",
             image_link = "attachment://bingo_board.png"

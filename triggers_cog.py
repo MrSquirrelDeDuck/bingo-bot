@@ -13,6 +13,8 @@ import re
 import random
 import time
 import typing
+import os
+from os.path import sep as SLASH
 
 import sys
 
@@ -27,6 +29,7 @@ import utility.stonks as u_stonks
 import utility.algorithms as u_algorithms
 import utility.images as u_images
 import utility.bingo as u_bingo
+import utility.detection as u_detection
 
 bingo_time = datetime.time(
     hour = 23,
@@ -190,7 +193,7 @@ class Triggers_cog(u_custom.CustomCog, name="Triggers", description="Hey there! 
         counter_data = database.get_daily_counter("pk_counter")
         record = database.get_daily_counter("pk_counter_record")
 
-        embed = u_interface.embed(
+        embed = u_interface.gen_embed(
             title = "PluralKit Counter",
             description = "Days since the last PluralKit confusion:\n# {}\nThe current record is **{}**.".format(u_text.smart_number(counter_data), u_text.smart_text(record, 'day'))
         )
@@ -214,7 +217,7 @@ class Triggers_cog(u_custom.CustomCog, name="Triggers", description="Hey there! 
         if is_record:
             database.set_daily_counter("pk_counter_record", counter_data)
 
-        embed = u_interface.embed(
+        embed = u_interface.gen_embed(
             title = "PluralKit Counter",
             description = "The counter has been reset to 0.\nIt was at **{}** before it was reset.\n\n{}".format(
                 u_text.smart_number(counter_data),
@@ -236,6 +239,63 @@ class Triggers_cog(u_custom.CustomCog, name="Triggers", description="Hey there! 
     @commands.check(u_checks.hide_from_help)
     async def latent_explanation_command(self, ctx):
         await ctx.reply("Latent-Dreamer is a bot that creates new responses via ChatGPT when triggered by specific phrases.\nWhen triggered she will send a message based on what the trigger was.\nThings like 'google en passant' and 'chess 2' always use the same prompt. Triggers such as 'what is ...' and 'google ...' will have ChatGPT provide an answer to the question or generate a list of search terms, depending on which was triggered.\n\nLatent-Dreamer also has a credits system to limit the amount of times people can trigger her per day.\nMore information about the credits system can be found [here](<https://discord.com/channels/958392331671830579/958392332590387262/1110078862286671962>) or by pinging Latent-Dreamer with the word 'credits'.")
+
+
+        
+        
+
+    @commands.command(
+        name = "test",
+        brief="Tests code.",
+        description="Tests code."
+    )
+    @commands.check(u_checks.hide_from_help)
+    async def test_command(self, ctx,
+            # test_id: typing.Optional[u_converters.parse_int] = commands.parameter(description = "The daily objective id to test.")
+        ):
+        # if test_id is None:
+        #     await ctx.reply("You must provide a daily objective id.")
+        #     return
+        
+        if not u_interface.is_reply(ctx.message):
+            await ctx.reply("You must reply to a message.")
+            return
+        
+        msg = ctx.message.reference.resolved
+
+        # print(u_bread.parse_gamble(msg))
+        # return
+
+        results = await u_detection.run_detection_set(
+            objectives = list(), # Blank so it uses them all.
+            # objectives = u_detection.stonk_detection_dict.keys(),
+            bot = self.bot,
+            message = msg,
+            database = database,
+            bingo_data = u_bingo.live(database),
+            stonk_data = u_stonks.parse_stonk_tick(msg)
+        )
+
+        print("\nTEST RESULTS:")
+        if len(results) == 0:
+            print("Nothing.")
+            return
+
+        tile_list_5x5 = u_bingo.tile_list_5x5(database)
+        tile_list_9x9 = u_bingo.tile_list_9x9(database)
+        for objective in results:
+            if objective.startswith("d"):
+                print("- {}: {}".format(objective, tile_list_5x5[u_text.return_numeric(objective)]["name"]))
+            else:
+                print("- {}: {}".format(objective, tile_list_9x9[u_text.return_numeric(objective)]["name"]))
+
+        # print(await u_detection.run_detection(
+        #     objective_id = test_id,
+        #     bot = self.bot,
+        #     message = msg,
+        #     database = database,
+        #     bingo_data = u_bingo.live(database)
+        # ))
 
     
     
@@ -263,7 +323,7 @@ class Triggers_cog(u_custom.CustomCog, name="Triggers", description="Hey there! 
             if reminder_channel is None:
                 reminder_channel = await self.bot.fetch_channel(REMINDERS_CHANNEL)
 
-            embed = u_interface.embed(
+            embed = u_interface.gen_embed(
                 title = "You had a reminder set for now!",
                 description = reminder["text"]
             )
@@ -283,7 +343,7 @@ class Triggers_cog(u_custom.CustomCog, name="Triggers", description="Hey there! 
         if return_json["num"] > ping_list_data["xkcd_previous"]:
             ping_list_channel = await self.bot.fetch_channel(PING_LISTS_CHANNEL)
 
-            embed = u_interface.embed(
+            embed = u_interface.gen_embed(
                 title = "{}: {}".format(return_json["num"], return_json["safe_title"]),
                 title_link = "https://xkcd.com/{}/".format(return_json["num"]),
                 image_link = return_json["img"],
@@ -519,6 +579,27 @@ class Triggers_cog(u_custom.CustomCog, name="Triggers", description="Hey there! 
         # Save the database to file.
         database.save_database(make_backup=True)
 
+        # Update public/stonk_history.json.
+        file_path = os.path.join("public", "stonk_history.json")
+        database.save_json_file(file_path, u_stonks.stonk_history(database))
+
+        # Run a few git commands to update the public/ folder on GitHub.
+        try:
+            public_folder = os.listdir(f"public{SLASH}")
+
+            for file_iter in public_folder:
+                if not file_iter.endswith(".json"):
+                    continue
+
+                os.system(f"git add public{SLASH}{file_iter}")
+            
+            os.system('git commit -m "Automatic public folder data update."')
+
+            os.system("git push")
+        
+        except FileNotFoundError:
+            print(traceback.format_exc())
+
         # Running _on_stonk_tick in other cogs.
         for cog in self.bot.cogs.values():
             if cog.__cog_name__ == self.__cog_name__:
@@ -634,7 +715,7 @@ class Triggers_cog(u_custom.CustomCog, name="Triggers", description="Hey there! 
                 count = 0,
                 sender = 0
             )
-            embed = u_interface.embed(
+            embed = u_interface.gen_embed(
                 title = "You broke the counting!",
                 description = "The counting was broken at **{}** by {}!\nYou must restart at 1.\nGet ready for the brick <:trol:1015821884450947173>".format(
                     u_text.smart_number(counting_data["count"]),

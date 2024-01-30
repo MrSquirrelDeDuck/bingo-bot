@@ -97,7 +97,7 @@ async def send_truth_or_dare(ctx, type_input="truth", interaction=None):
     else:
         author = interaction.user
 
-    embed = u_interface.embed(
+    embed = u_interface.gen_embed(
         title = random.choice(options),
         footer_text = f"Type: {prompt_type}",
         author_name = f"Requested by {u_interface.get_display_name(author)}",
@@ -133,6 +133,7 @@ class Other_cog(u_custom.CustomCog, name="Other", description="Commands that don
     bot = None
 
     minecraft_wiki_searching = False
+    vdc_wiki_searching = False
     lichess_cooldown = 0
 
     traitor_game_going = False
@@ -191,11 +192,16 @@ class Other_cog(u_custom.CustomCog, name="Other", description="Commands that don
         title = cipher_function(page.title)
         page_content = cipher_function(page_content)
 
-        embed = u_interface.embed(
+        embed = u_interface.gen_embed(
             title = title,
             description = page_content
         )
         await ctx.reply(embed=embed)
+
+    def hourly_task(self: typing.Self):
+        """Code that runs for every hour."""
+        self.minecraft_wiki_searching = False
+        self.vdc_wiki_searching = False
 
     ######################################################################################################################################################
     ##### AVATAR #########################################################################################################################################
@@ -376,6 +382,23 @@ class Other_cog(u_custom.CustomCog, name="Other", description="Commands that don
     )
     async def thanks(self, ctx):
         await ctx.reply("You're welcome!")
+
+        
+            
+
+        
+    ######################################################################################################################################################
+    ##### HOLY ###########################################################################################################################################
+    ######################################################################################################################################################
+    
+    @commands.command(
+        name = "holy",
+        brief = "Holy code",
+        description = "Holy code"
+    )
+    @commands.check(u_checks.hide_from_help)
+    async def holy_command(self, ctx):
+        await ctx.reply("holy code")
 
         
             
@@ -841,7 +864,7 @@ class Other_cog(u_custom.CustomCog, name="Other", description="Commands that don
             gold_brick_chance = 100 - gold_brick_chance
             half = "Top"
 
-        embed = u_interface.embed(
+        embed = u_interface.gen_embed(
             title = "Brick analysis",
             description = ":bricks:: {}\n<:brick_gold:971239215968944168>: {}\nTotal bricks: {}".format(
                         u_text.smart_number(bricks),
@@ -916,7 +939,7 @@ class Other_cog(u_custom.CustomCog, name="Other", description="Commands that don
         
         strip_id = json_data["num"]
         
-        embed = u_interface.embed(
+        embed = u_interface.gen_embed(
             title = "{}: {}".format(strip_id, json_data["safe_title"]),
             title_link = "https://xkcd.com/{}/".format(strip_id),
             image_link = json_data["img"],
@@ -944,7 +967,7 @@ class Other_cog(u_custom.CustomCog, name="Other", description="Commands that don
 
         database.update_ping_list("xkcd_strips", ctx.author.id, new_state)
 
-        embed = u_interface.embed(
+        embed = u_interface.gen_embed(
             title = "xkcd strip ping list",
             description = "You will {} be pinged for new xkcd strips.".format("now" if new_state else "no longer")
         )
@@ -1273,7 +1296,7 @@ class Other_cog(u_custom.CustomCog, name="Other", description="Commands that don
             y_label = "Amount of people with that role."
         )
 
-        embed = u_interface.embed(
+        embed = u_interface.gen_embed(
             title = "Role graph",
             description = "Graph of users with {}:".format(role.mention),
             image_link = "attachment://graph.png"
@@ -1341,7 +1364,7 @@ class Other_cog(u_custom.CustomCog, name="Other", description="Commands that don
             lines.append(f"{index + 1}. {bold}{display_name}: {data[1]}{bold}")
             last = index
         
-        embed = u_interface.embed(
+        embed = u_interface.gen_embed(
             title = "Role leaderboard",
             description = "*This is excluding reaction roles.*",
             fields = [("", "\n".join(lines), False)],
@@ -1468,7 +1491,7 @@ class Other_cog(u_custom.CustomCog, name="Other", description="Commands that don
             image_file = discord.File("images/generated/chess_position.png", filename="chess_position.png")
 
         
-        embed = u_interface.embed(
+        embed = u_interface.gen_embed(
             title = ret_json["fullName"],
             title_link = f"https://lichess.org/tournament/{tournament}",
             description = "{}\n\n{}\n\nNumber of players: **{}**\n\nTournament status:\n{}\n\nTournament length: {} {} and {}\nTournament id: {}".format(
@@ -1510,7 +1533,7 @@ class Other_cog(u_custom.CustomCog, name="Other", description="Commands that don
         emoji_id = matched.group(1)
         file_extension = "gif" if matched.group(0)[1] == "a" else "png"
 
-        embed = u_interface.embed(
+        embed = u_interface.gen_embed(
             title = "Emoji image",
             image_link = f"https://cdn.discordapp.com/emojis/{emoji_id}.{file_extension}"
         )
@@ -1546,6 +1569,57 @@ class Other_cog(u_custom.CustomCog, name="Other", description="Commands that don
     ######################################################################################################################################################
     
     @commands.command(
+        name = "vdc_wiki",
+        brief = "Search the Valve Developer Community Wiki.",
+        description = "Search the Valve Developer Community Wiki."
+    )
+    @commands.check(u_checks.hide_from_help)
+    async def vdc_wiki(self, ctx,
+            *, search_term: typing.Optional[str] = commands.parameter(description = "The search term to search the wiki with.")
+        ):
+        
+        if self.vdc_wiki_searching:
+            await ctx.reply("This commmand is currently being used somewhere, please wait until it's done to try again.")
+            return
+    
+        def manual_replacements(wikitext: str) -> str:            
+            wikitext = re.sub( # Ensure things like `hanging_walkway_...` have backslashes put before the underscores.
+                r"(.)_(.)",
+                r"\1\_\2",
+                wikitext
+            )
+
+            return wikitext
+        
+        try:
+            self.vdc_wiki_searching = True
+
+            await u_interface.handle_wiki_search(
+                ctx = ctx,
+                wiki_link = "https://developer.valvesoftware.com/wiki/",
+                wiki_main_page = "https://developer.valvesoftware.com/wiki/Main_Page",
+                wiki_name = "The Valve Developer Community Wiki",
+                wiki_api_url = "https://developer.valvesoftware.com/w/api.php",
+                search_term = search_term,
+                manual_replacements = manual_replacements
+            )
+
+            self.vdc_wiki_searching = False
+        except:
+            self.vdc_wiki_searching = False
+
+            # After ensuring vdc_wiki_searching has been reset, reraise the exception so the "Something went wrong processing that command." message is still sent.
+            raise
+
+        
+            
+
+        
+    ######################################################################################################################################################
+    ##### MINECRAFT ######################################################################################################################################
+    ######################################################################################################################################################
+    
+    @commands.command(
         name = "minecraft",
         brief = "Search the Minecraft Wiki!",
         description = "Search the Minecraft Wiki."
@@ -1554,124 +1628,43 @@ class Other_cog(u_custom.CustomCog, name="Other", description="Commands that don
     async def minecraft(self, ctx,
             *, search_term: typing.Optional[str] = commands.parameter(description = "The search term to search the wiki with.")
         ):
-        if search_term is None:
-            await ctx.reply("Here's a link to the wiki:\n<https://minecraft.wiki/>\nIf you want to search the wiki, use `%minecraft wiki <search term>`.")
-            return
         
         if self.minecraft_wiki_searching:
             await ctx.reply("This commmand is currently being used somewhere, please wait until it's done to try again.")
             return
         
-        async def error_message(embed: discord.Embed, sent_message: discord.Message) -> None:
-            """Changes all 'Waiting to be loaded' messages to 'Something went wrong'"""
-            modified = 0
-
-            for field_id, field in enumerate(embed.fields):
-                if "Waiting to be loaded" not in field.value:
-                    continue
-                
-                embed.set_field_at(field_id, name=field.name, value=field.value.replace("Waiting to be loaded", "Something went wrong"), inline=field.inline)
-                modified += 1
+        def manual_replacements(wikitext: str) -> str:
+            templates = re.finditer(r"{{\w+Link\|(.+?)}}", wikitext) # Replace BlockLink, EnvLink, and similar templates with a link to the page.
+            for template in templates:
+                wikitext = wikitext.replace(template.group(0), f"[{template.group(1)}](https://minecraft.wiki/w/{template.group(1).replace(' ', '_')})")
             
-            if modified >= 1:
-                await sent_message.edit(content=sent_message.content, embed=embed)
-        
-        embed = None
-        sent_message = None
+            wikitext = re.sub( # Filter out things like `[[es:Musgo]]` and `[[pt:Musgo]]`
+                r"\[\[.{2}:.+?]]",
+                "",
+                wikitext
+            )
 
+            return wikitext
+        
         try:
             self.minecraft_wiki_searching = True
 
-            async with aiohttp.ClientSession() as session:
-                async with session.get(f"https://minecraft.wiki/api.php?format=json&action=query&list=search&srlimit=3&srsearch={search_term}&redirects=true") as resp:
-                    if resp.status != 200:
-                        self.minecraft_wiki_searching = False
-                        await ctx.reply("Something went wrong.")
-                        return
-                    
-                    ret_json = await resp.json()
-
-                description_prefix = f"Search results after searching for '{search_term}' on [The Minecraft Wiki](https://minecraft.wiki/):"
-                
-                if ret_json["query"]["searchinfo"]["totalhits"] == 0:
-                    embed = u_interface.embed(
-                        title = "Minecraft Wiki",
-                        description = f"{description_prefix}\n\nThe search did not find any results, try different search terms."
-                    )
-                    await ctx.reply(embed=embed)
-                    self.minecraft_wiki_searching = False
-                    return
-                
-                search_results = []
-
-                for page_info in ret_json["query"]["search"]:                    
-                    search_results.append(page_info["title"])
-
-                fields = [
-                    (page_name, "[Link to wiki page.](https://minecraft.wiki/w/{})\n\n*Waiting to be loaded.*".format(page_name.replace(" ", "_")), True)
-                    for page_name in search_results
-                ]
-
-                embed = u_interface.embed(
-                    title = "Bread Wiki",
-                    description = f"{description_prefix}",
-                    fields = fields + [("", "Not what you're looking for? Try different search terms.", False)]
-                )
-
-                sent_message = await ctx.reply(embed=embed)
-
-                async with session.get("https://minecraft.wiki/api.php?action=query&prop=revisions&titles={}&rvslots=*&rvprop=content&formatversion=2&format=json&redirects=true".format("|".join(search_results))) as resp:
-                    if resp.status != 200:
-                        self.minecraft_wiki_searching = False
-                        await ctx.reply("Something went wrong.")
-                        return
-                    
-                    ret_json = await resp.json()
-
-                wiki_data = {}
-                for data in ret_json["query"]["pages"]:
-                    wiki_data[data["title"]] = data["revisions"][0]["slots"]["main"]["content"]
-
-                redirect_data = {}
-                if "redirects" in ret_json["query"]:
-                    for data in ret_json["query"]["redirects"]:
-                        redirect_data[data["from"]] = {"to": data["to"], "fragment": data.get("tofragment", None)}
-
-                for field_id, page in enumerate(search_results):
-                    page_get = page
-                    page_fragment = None
-
-                    redirect_text = ""
-                    
-                    for redirect_count in range(50):
-                        if page_get in redirect_data:
-                            page_fragment = redirect_data[page_get]["fragment"]
-                            page_get = redirect_data[page_get]["to"]
-                            redirect_text = f"*Redirected to {page_get}*\n"
-                            continue
-                        break
-
-                    if page_fragment is None:
-                        page_fragment = page_get
-                    
-                    sections = u_text.parse_wikitext(wiki_data[page_get], wiki_link="https://minecraft.wiki/w/", page_title=page_get, return_sections=True)
-                    
-                    summary = "[Link to wiki page.](https://minecraft.wiki/w/{})\n{}\n{}".format(page.replace(" ", "_"), redirect_text, sections[page_fragment])
-
-                    if len(summary) > 900:
-                        summary = self._wiki_correct_length(summary, 900)
-
-                    embed.set_field_at(field_id, name=page, value=summary, inline=True)
-
-                await sent_message.edit(content=sent_message.content, embed=embed)
+            await u_interface.handle_wiki_search(
+                ctx = ctx,
+                wiki_link = "https://minecraft.wiki/w/",
+                wiki_main_page = "https://minecraft.wiki/",
+                wiki_name = "The Minecraft Wiki",
+                wiki_api_url = "https://minecraft.wiki/api.php",
+                search_term = search_term,
+                manual_replacements = manual_replacements
+            )
 
             self.minecraft_wiki_searching = False
         except:
             self.minecraft_wiki_searching = False
-            print(traceback.format_exc())
 
-            if embed is not None and sent_message is not None:
-                await error_message(embed, sent_message)
+            # After ensuring minecraft_wiki_searching has been reset, reraise the exception so the "Something went wrong processing that command." message is still sent.
+            raise
 
         
             
@@ -1741,7 +1734,7 @@ class Other_cog(u_custom.CustomCog, name="Other", description="Commands that don
 
         image_path = u_images.generate_bar_graph(roll_distribution, x_label="Roll result", y_label="Number of rolls")
         
-        embed = u_interface.embed(
+        embed = u_interface.gen_embed(
             title = "{}d{}".format(dice_amount, dice_sides),
             description = "Total: **{}**\n\n**Roll distribution:**\n{}".format(
                 u_text.smart_number(sum(rolled)),

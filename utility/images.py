@@ -193,7 +193,7 @@ def render_board_9x9(database: u_files.DatabaseInterface, tile_string: str, enab
 
     After saving the image it will return the image object."""
 
-    tile_list = u_bingo.tile_list_9x9()
+    tile_list = u_bingo.tile_list_9x9(database=database)
 
     return render_board(
         database = database,

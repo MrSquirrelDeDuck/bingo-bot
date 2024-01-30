@@ -14,19 +14,21 @@ class Item:
                 emoji: str = None,
                 attributes: list[str] = [],
                 gambit_bonus: int = None,
-                aliases: list[str] = []
+                aliases: list[str] = [],
+                gamble_multiplier: int = None
             ) -> None:
         """Generic Bread Game item object.
 
         Args:
             self (typing.Self)
             name (str): Name of the emoji, something like "Stuffed Flatbread" or "Black Pawn"
-            internal_name (str): Internal emoji for this, like ":stuffed_flatbread:" or "<:Bpawn:961815364436635718>"
-            internal_emoji (str): Internal name for this emoji, like "stuffed_flatbread" or "bpawn"
+            internal_emoji (str): Internal emoji for this, like ":stuffed_flatbread:" or "<:Bpawn:961815364436635718>"
+            internal_name (str): Internal name for this emoji, like "stuffed_flatbread" or "bpawn"
             emoji (str, optional): Emoji symbol for this, something like "🥙". Defaults to None.
             attributes (list[str], optional): A list of attributes this has, like "['special_bread']" or "['chess_piece', 'black_chess_piece']". Defaults to [].
             gambit_bonus (int, optional): The amount of a dough bonus this item gets with the gambit shop. If this item isn't in the gambit shop, don't provide it or just provide None.. Defaults to None.
             aliases (list[str], optional): A list of aliases that can be used to refer to this item. Like "['stuffed']" or "['black_pawn']". Defaults to [].
+            gamble_multiplier (int, optional): The amount to multiply the gamble wager by if this item is won. If this item is not in gambling, don't provide it or just provide None. Defaults to None.
         """
 
         self.name = name
@@ -41,6 +43,7 @@ class Item:
         self.attributes = attributes
         self.gambit_bonus = gambit_bonus,
         self.aliases = aliases
+        self.gamble_multiplier = gamble_multiplier
     
     def __str__(self: typing.Self) -> str:
         return self.internal_emoji
@@ -70,23 +73,25 @@ class StonkItem(Item):
                 attributes: list[str] = [],
                 gambit_bonus: int = None,
                 aliases: list[str] = [],
-                graph_color: str = None
+                graph_color: str = None,
+                gamble_multiplier: int = None
             ) -> None:
         """Object specifcially for stonks.
 
         Args:
             self (typing.Self)
             name (str): Name of the emoji, something like "Stuffed Flatbread" or "Black Pawn"
-            internal_name (str): Internal emoji for this, like ":stuffed_flatbread:" or "<:Bpawn:961815364436635718>"
-            internal_emoji (str): Internal name for this emoji, like "stuffed_flatbread" or "bpawn"
+            internal_emoji (str): Internal emoji for this, like ":stuffed_flatbread:" or "<:Bpawn:961815364436635718>"
+            internal_name (str): Internal name for this emoji, like "stuffed_flatbread" or "bpawn"
             base_value (int): The starting value of this stonk.
             emoji (str, optional): Emoji symbol for this, something like "🥙". Defaults to None.
             attributes (list[str], optional): A list of attributes this has, like "['special_bread']" or "['chess_piece', 'black_chess_piece']". Defaults to [].
             gambit_bonus (int, optional): The amount of a dough bonus this item gets with the gambit shop. If this item isn't in the gambit shop, don't provide it or just provide None. Defaults to None.
-            aliases (list[str], optional): A list of aliases that can be used to refer to this item. Like "['stuffed']" or "['black_pawn']". Defaults to [].
+            aliases (list[str], optional): A list of aliases that can be used to refer to this item. Like "['stuffed']" or "['black_pawn']". Defaults to []..
+            gamble_multiplier (int, optional): The amount to multiply the gamble wager by if this item is won. If this item is not in gambling, don't provide it or just provide None. Defaults to None.
             graph_color (str, optional): The color to use for this stonk on stonk graphs. Defaults to None.
         """
-        super().__init__(name, internal_name, internal_emoji, emoji, attributes, gambit_bonus, aliases)
+        super().__init__(name, internal_name, internal_emoji, emoji, attributes, gambit_bonus, aliases, gamble_multiplier)
 
         self.base_value = base_value
         self.graph_color = graph_color
@@ -106,22 +111,24 @@ class ChessItem(Item):
                 emoji: str = None,
                 attributes: list[str] = [],
                 gambit_bonus: int = None,
-                aliases: list[str] = []
+                aliases: list[str] = [],
+                gamble_multiplier: int = None
             ) -> None:
         """Object specifically for chess pieces.
 
         Args:
             self (typing.Self)
             name (str): Name of the emoji, something like "Stuffed Flatbread" or "Black Pawn"
-            internal_name (str): Internal emoji for this, like ":stuffed_flatbread:" or "<:Bpawn:961815364436635718>"
-            internal_emoji (str): Internal name for this emoji, like "stuffed_flatbread" or "bpawn"
+            internal_emoji (str): Internal emoji for this, like ":stuffed_flatbread:" or "<:Bpawn:961815364436635718>"
+            internal_name (str): Internal name for this emoji, like "stuffed_flatbread" or "bpawn"
             is_white (bool): A boolean for whether this piece is a white chess piece.
             emoji (str, optional): Emoji symbol for this, something like "🥙". Defaults to None.
             attributes (list[str], optional): A list of attributes this has, like "['special_bread']" or "['chess_piece', 'black_chess_piece']". Defaults to [].
             gambit_bonus (int, optional): The amount of a dough bonus this item gets with the gambit shop. If this item isn't in the gambit shop, don't provide it or just provide None.. Defaults to None.
-            aliases (list[str], optional): A list of aliases that can be used to refer to this item. Like "['stuffed']" or "['black_pawn']". Defaults to [].
+            aliases (list[str], optional): A list of aliases that can be used to refer to this item. Like "['stuffed']" or "['black_pawn']". Defaults to []..
+            gamble_multiplier (int, optional): The amount to multiply the gamble wager by if this item is won. If this item is not in gambling, don't provide it or just provide None. Defaults to None.
         """
-        super().__init__(name, internal_name, internal_emoji, emoji, attributes, gambit_bonus, aliases)
+        super().__init__(name, internal_name, internal_emoji, emoji, attributes, gambit_bonus, aliases, gamble_multiplier)
 
         self.is_white = is_white
 
@@ -133,10 +140,12 @@ bread = Item(
     name = "Bread",
     internal_name = "bread",
     internal_emoji = ":bread:",
-    emoji = "🍞"
+    emoji = "🍞",
+    attributes = ["rollable", "gamble_item", "gamble_bread"],
+    gamble_multiplier = 0.5
 )
 
-#####
+##### Special bread. #####
 
 flatbread = Item(
     name = "Flatbread",
@@ -144,7 +153,8 @@ flatbread = Item(
     internal_emoji = ":flatbread:",
     emoji = "🫓",
     gambit_bonus = 2,
-    attributes = ["special_bread"]
+    attributes = ["special_bread", "rollable", "gamble_item", "gamble_special"],
+    gamble_multiplier = 2
 )
 
 stuffed_flatbread = Item(
@@ -153,8 +163,9 @@ stuffed_flatbread = Item(
     internal_emoji = ":stuffed_flatbread:",
     emoji = "🥙",
     gambit_bonus = 2,
-    attributes = ["special_bread"],
-    aliases = ["stuffed"]
+    attributes = ["special_bread", "rollable", "gamble_item", "gamble_special"],
+    aliases = ["stuffed"],
+    gamble_multiplier = 2
 )
 
 sandwich = Item(
@@ -163,7 +174,8 @@ sandwich = Item(
     internal_emoji = ":sandwich:",
     emoji = "🥪",
     gambit_bonus = 2,
-    attributes = ["special_bread"]
+    attributes = ["special_bread", "rollable", "gamble_item", "gamble_special"],
+    gamble_multiplier = 2
 )
 
 french_bread = Item(
@@ -172,7 +184,8 @@ french_bread = Item(
     internal_emoji = ":french_bread:",
     emoji = "🥖",
     gambit_bonus = 2,
-    attributes = ["special_bread"]
+    attributes = ["special_bread", "rollable", "gamble_item", "gamble_special"],
+    gamble_multiplier = 2
 )
 
 croissant = Item(
@@ -181,10 +194,11 @@ croissant = Item(
     internal_emoji = ":croissant:",
     emoji = "🥐",
     gambit_bonus = 2,
-    attributes = ["special_bread"]
+    attributes = ["special_bread", "rollable", "gamble_item", "gamble_special"],
+    gamble_multiplier = 2
 )
 
-#####
+##### Rare bread. #####
 
 bagel = Item(
     name = "Bagel",
@@ -192,7 +206,7 @@ bagel = Item(
     internal_emoji = ":bagel:",
     emoji = "🥯",
     gambit_bonus = 4,
-    attributes = ["rare_bread"]
+    attributes = ["rare_bread", "rollable"]
 )
 
 doughnut = Item(
@@ -201,7 +215,7 @@ doughnut = Item(
     internal_emoji = ":doughnut:",
     emoji = "🍩",
     gambit_bonus = 4,
-    attributes = ["rare_bread"]
+    attributes = ["rare_bread", "rollable"]
 )
 
 waffle = Item(
@@ -210,10 +224,10 @@ waffle = Item(
     internal_emoji = ":waffle:",
     emoji = "🧇",
     gambit_bonus = 4,
-    attributes = ["rare_bread"]
+    attributes = ["rare_bread", "rollable"]
 )
 
-#####
+##### Black chess pieces. #####
 
 bpawn = ChessItem(
     name = "Black Pawn",
@@ -221,8 +235,9 @@ bpawn = ChessItem(
     internal_emoji = "<:Bpawn:961815364436635718>",
     is_white = False,
     gambit_bonus = 20,
-    attributes = ["chess_piece", "black_chess_piece"],
-    aliases = ["black_pawn"]
+    attributes = ["chess_piece", "black_chess_piece", "rollable", "gamble_item", "gamble_chess_piece"],
+    aliases = ["black_pawn"],
+    gamble_multiplier = 4
 )
 
 bknight = ChessItem(
@@ -231,8 +246,9 @@ bknight = ChessItem(
     internal_emoji = "<:Bknight:961815364424048650>",
     is_white = False,
     gambit_bonus = 20,
-    attributes = ["chess_piece", "black_chess_piece"],
-    aliases = ["black_knight"]
+    attributes = ["chess_piece", "black_chess_piece", "rollable", "gamble_item", "gamble_chess_piece"],
+    aliases = ["black_knight"],
+    gamble_multiplier = 4
 )
 
 bbishop = ChessItem(
@@ -241,8 +257,9 @@ bbishop = ChessItem(
     internal_emoji = "<:Bbishop:961815364306608228>",
     is_white = False,
     gambit_bonus = 20,
-    attributes = ["chess_piece", "black_chess_piece"],
-    aliases = ["black_bishop"]
+    attributes = ["chess_piece", "black_chess_piece", "rollable", "gamble_item", "gamble_chess_piece"],
+    aliases = ["black_bishop"],
+    gamble_multiplier = 4
 )
 
 brook = ChessItem(
@@ -251,8 +268,9 @@ brook = ChessItem(
     internal_emoji = "<:Brook:961815364377919518>",
     is_white = False,
     gambit_bonus = 20,
-    attributes = ["chess_piece", "black_chess_piece"],
-    aliases = ["black_rook"]
+    attributes = ["chess_piece", "black_chess_piece", "rollable", "gamble_item", "gamble_chess_piece"],
+    aliases = ["black_rook"],
+    gamble_multiplier = 4
 )
 
 bqueen = ChessItem(
@@ -261,8 +279,9 @@ bqueen = ChessItem(
     internal_emoji = "<:Bqueen:961815364470202428>",
     is_white = False,
     gambit_bonus = 20,
-    attributes = ["chess_piece", "black_chess_piece"],
-    aliases = ["black_queen"]
+    attributes = ["chess_piece", "black_chess_piece", "rollable", "gamble_item", "gamble_chess_piece"],
+    aliases = ["black_queen"],
+    gamble_multiplier = 4
 )
 
 bking = ChessItem(
@@ -271,11 +290,12 @@ bking = ChessItem(
     internal_emoji = "<:Bking:961815364327600178>",
     is_white = False,
     gambit_bonus = 20,
-    attributes = ["chess_piece", "black_chess_piece"],
-    aliases = ["black_king"]
+    attributes = ["chess_piece", "black_chess_piece", "rollable", "gamble_item", "gamble_chess_piece"],
+    aliases = ["black_king"],
+    gamble_multiplier = 4
 )
 
-#####
+##### White chess pieces. #####
 
 wpawn = ChessItem(
     name = "White Pawn",
@@ -283,7 +303,7 @@ wpawn = ChessItem(
     internal_emoji = "<:Wpawn:961815364319207516>",
     is_white = True,
     gambit_bonus = 40,
-    attributes = ["chess_piece", "white_chess_piece"],
+    attributes = ["chess_piece", "white_chess_piece", "rollable"],
     aliases = ["white_pawn"]
 )
 
@@ -293,7 +313,7 @@ wknight = ChessItem(
     internal_emoji = "<:Wknight:958746544436310057>",
     is_white = True,
     gambit_bonus = 40,
-    attributes = ["chess_piece", "white_chess_piece"],
+    attributes = ["chess_piece", "white_chess_piece", "rollable"],
     aliases = ["white_knight"]
 )
 
@@ -303,7 +323,7 @@ wbishop = ChessItem(
     internal_emoji = "<:Wbishop:961815364428263435>",
     is_white = True,
     gambit_bonus = 40,
-    attributes = ["chess_piece", "white_chess_piece"],
+    attributes = ["chess_piece", "white_chess_piece", "rollable"],
     aliases = ["white_bishop"]
 )
 
@@ -313,7 +333,7 @@ wrook = ChessItem(
     internal_emoji = "<:Wrook:961815364482793492>",
     is_white = True,
     gambit_bonus = 40,
-    attributes = ["chess_piece", "white_chess_piece"],
+    attributes = ["chess_piece", "white_chess_piece", "rollable"],
     aliases = ["white_rook"]
 )
 
@@ -323,7 +343,7 @@ wqueen = ChessItem(
     internal_emoji = "<:Wqueen:961815364461809774>",
     is_white = True,
     gambit_bonus = 40,
-    attributes = ["chess_piece", "white_chess_piece"],
+    attributes = ["chess_piece", "white_chess_piece", "rollable"],
     aliases = ["white_queen"]
 )
 
@@ -333,18 +353,18 @@ wking = ChessItem(
     internal_emoji = "<:Wking:961815364411478016>",
     is_white = True,
     gambit_bonus = 40,
-    attributes = ["chess_piece", "white_chess_piece"],
+    attributes = ["chess_piece", "white_chess_piece", "rollable"],
     aliases = ["white_king"]
 )
 
-#####
+##### Gems. #####
 
 gem_red = Item(
     name = "Red Gem",
     internal_name = "gem_red",
     internal_emoji = "<:gem_red:1006498544892526612>",
     gambit_bonus = 150,
-    attributes = ["shiny"],
+    attributes = ["shiny", "rollable"],
     aliases = "red_gem"
 )
 
@@ -353,7 +373,7 @@ gem_blue = Item(
     internal_name = "gem_blue",
     internal_emoji = "<:gem_blue:1006498655508889671>",
     gambit_bonus = 250,
-    attributes = ["shiny"],
+    attributes = ["shiny", "rollable"],
     aliases = "blue_gem"
 )
 
@@ -362,7 +382,7 @@ gem_purple = Item(
     internal_name = "gem_purple",
     internal_emoji = "<:gem_purple:1006498607861604392>",
     gambit_bonus = 500,
-    attributes = ["shiny"],
+    attributes = ["shiny", "rollable"],
     aliases = "purple_gem"
 )
 
@@ -371,7 +391,7 @@ gem_green = Item(
     internal_name = "gem_green",
     internal_emoji = "<:gem_green:1006498803295211520>",
     gambit_bonus = 750,
-    attributes = ["shiny"],
+    attributes = ["shiny", "rollable"],
     aliases = "green_gem"
 )
 
@@ -380,17 +400,19 @@ gem_gold = Item(
     internal_name = "gem_gold",
     internal_emoji = "<:gem_gold:1006498746718244944>",
     gambit_bonus = 5000,
-    attributes = ["shiny"],
+    attributes = ["shiny", "rollable"],
     aliases = "gold_gem"
 )
 
-#####
+##### Miscellaneous items. #####
 
 anarchy_chess = Item(
     name = "MoaK",
     internal_name = "anarchy_chess",
     internal_emoji = "<:anarchy_chess:960772054746005534>",
-    aliases = ["moak"]
+    attributes = ["rollable", "gamble_item", "gamble_anarchy"],
+    aliases = ["moak"],
+    gamble_multiplier = 10
 )
 
 chessatron = Item(
@@ -412,7 +434,7 @@ ascension_token = Item(
     internal_emoji = "<:ascension_token:1023695148380602430>"
 )
 
-#####
+##### Shadow items. #####
 
 shadow_moak = Item(
     name = "Shadow MoaK",
@@ -437,30 +459,33 @@ shadowmega_chessatron = Item(
     aliases = ["shadowmega"]
 )
 
-#####
+##### One of a Kinds. #####
 
 anarchy = Item(
     name = "Anarchy",
     internal_name = "anarchy",
     internal_emoji = "<:anarchy:960771114819264533>",
-    attributes = ["one_of_a_kind"]
+    attributes = ["one_of_a_kind", "gamble_item", "gamble_anarchy"],
+    gamble_multiplier = 10
 )
 
 holy_hell = Item(
     name = "Holy Hell",
     internal_name = "holy_hell",
     internal_emoji = "<:holy_hell:961184782253948938>",
-    attributes = ["one_of_a_kind"]
+    attributes = ["one_of_a_kind", "gamble_item", "gamble_anarchy"],
+    gamble_multiplier = 10
 )
 
 horsey = Item(
     name = "Horsey",
     internal_name = "horsey",
     internal_emoji = "<:horsey:960727531592511578>",
-    attributes = ["one_of_a_kind"]
+    attributes = ["one_of_a_kind", "gamble_item", "gamble_horsey"],
+    gamble_multiplier = 0
 )
 
-#####
+##### Stonks. #####
 
 pretzel = StonkItem(
     name = "Pretzel",
@@ -503,7 +528,7 @@ pancakes = StonkItem(
     graph_color = "#d62728"
 )
 
-###
+### Shadow stonks.
 
 cake = StonkItem(
     name = "Cake",
@@ -546,9 +571,80 @@ cupcake = StonkItem(
     graph_color = "#17becf"
 )
 
+##### Exclusively gamble items. #####
+
+bricks = Item(
+    name = "Brick",
+    internal_name = "brick",
+    internal_emoji = ":brick:",
+    emoji = "🧱",
+    attributes = ["gamble_item", "gamble_brick"],
+    gamble_multiplier = 0
+)
+
+brick_fide = Item(
+    name = "Pixel Fide Brick",
+    internal_name = "brick_fide",
+    internal_emoji = "<:brick_fide:961517570396135494>",
+    attributes = ["gamble_item", "gamble_brick"],
+    gamble_multiplier = 0
+)
+
+fide_brick = Item(
+    name = "Fide Brick",
+    internal_name = "fide_brick",
+    internal_emoji = "<:fide_brick:961811237296037957>",
+    attributes = ["gamble_item", "gamble_brick"],
+    gamble_multiplier = 0
+)
+
+brick_gold = Item(
+    name = "Gold Brick",
+    internal_name = "brick_gold",
+    internal_emoji = "<:brick_gold:971239215968944168>",
+    attributes = ["gamble_item", "gamble_brick"],
+    gamble_multiplier = 10
+)
+
+cherries = Item(
+    name = "Cherries",
+    internal_name = "cherries",
+    internal_emoji = ":cherries:",
+    emoji = "🍒",
+    attributes = ["gamble_item", "gamble_fruit"],
+    gamble_multiplier = 0.25
+)
+
+grapes = Item(
+    name = "Grapes",
+    internal_name = "grapes",
+    internal_emoji = ":grapes:",
+    emoji = "🍇",
+    attributes = ["gamble_item", "gamble_fruit"],
+    gamble_multiplier = 0.25
+)
+
+lemon = Item(
+    name = "Lemon",
+    internal_name = "lemon",
+    internal_emoji = ":lemon:",
+    emoji = "🍋",
+    attributes = ["gamble_item", "gamble_fruit"],
+    gamble_multiplier = 0.25
+)
+
+bcapy = ChessItem(
+    name = "Black Capybara",
+    internal_name = "bcapy",
+    internal_emoji = "<:Bcapy:1003061938684711092>",
+    is_white = False,
+    attributes = ["gamble_item", "gamble_chess_piece"],
+    gamble_multiplier = 4
+)
+
 ### BASE LISTS ###
     
-all_items = [bread, flatbread, stuffed_flatbread, sandwich, french_bread, croissant, bagel, doughnut, waffle, bpawn, bknight, bbishop, brook, bqueen, bking, wpawn, wknight, wbishop, wrook, wqueen, wking, gem_red, gem_blue, gem_purple, gem_green, gem_gold, anarchy_chess, chessatron, omega_chessatron, ascension_token, shadow_moak, shadow_gem_gold, shadowmega_chessatron, anarchy, holy_hell, horsey, pretzel, cookie, fortune_cookie, pancakes]
+all_items = [bread, flatbread, stuffed_flatbread, sandwich, french_bread, croissant, bagel, doughnut, waffle, bpawn, bknight, bbishop, brook, bqueen, bking, wpawn, wknight, wbishop, wrook, wqueen, wking, gem_red, gem_blue, gem_purple, gem_green, gem_gold, anarchy_chess, chessatron, omega_chessatron, ascension_token, shadow_moak, shadow_gem_gold, shadowmega_chessatron, anarchy, holy_hell, horsey, pretzel, cookie, fortune_cookie, pancakes, cake, pizza, pie, cupcake, bricks, brick_fide, fide_brick, brick_gold, cherries, grapes, lemon, bcapy]
 bling_items = [gem_red, gem_blue, gem_purple, gem_green, gem_gold, anarchy_chess]
 
 #############################
@@ -587,11 +683,10 @@ def get_item(item_identifier: str, attributes: typing.Union[str, list[str]] = No
     if item_identifier[-1] == "s":
         plural_identifier = item_identifier[:-1]
     else:
-        plural_identifier = f"{item_identifier}2"
+        plural_identifier = f"{item_identifier}s"
 
     for identifier in [item_identifier, plural_identifier]:
         for item in attribute_item_list(attributes):
-            # print(item)
             if identifier == item.internal_name.lower() \
                 or identifier == item.internal_emoji.lower()\
                 or identifier == item.name.lower() \
@@ -640,6 +735,7 @@ class ItemConverter(commands.Converter):
         
         return converted
 
+RollableItemConverter = ItemConverter("rollable")
 SpecialBreadConverter = ItemConverter("special_bread")
 RareBreadConverter = ItemConverter("rare_bread")
 GemConverter = ItemConverter("shiny")
@@ -656,6 +752,8 @@ InGambitShopConverter = ItemConverter(["special_bread", "rare_bread", "chess_pie
 ###########################
 ##### ATTRIBUTE LISTS #####
 ###########################
+
+rollable_items = attribute_item_list("rollable")
 
 all_specials = attribute_item_list("special_bread")
 all_rares = attribute_item_list("rare_bread")
@@ -677,6 +775,18 @@ one_of_a_kinds = attribute_item_list("one_of_a_kind")
 stonks = attribute_item_list("stonk")
 shadows = attribute_item_list("shadow")
 
+gamble_items = attribute_item_list("gamble_item")
+
+gamble_bricks = attribute_item_list("gamble_brick")
+gamble_horsey = attribute_item_list("gamble_horsey")
+gamble_fruit = attribute_item_list("gamble_fruit")
+gamble_bread = attribute_item_list("gamble_bread")
+gamble_special = attribute_item_list("gamble_special")
+gamble_chess_piece = attribute_item_list("gamble_chess_piece")
+gamble_anarchy = attribute_item_list("gamble_anarchy")
+
+gamble_positives = gamble_special + gamble_chess_piece + gamble_anarchy + [brick_gold]
+gamble_negatives = gamble_horsey + gamble_fruit + gamble_bread + [bricks, brick_fide, fide_brick]
 
 ###############################################################
 #  █████  ██       ██████ ██   ██ ███████ ███    ███ ██    ██ #
@@ -982,6 +1092,9 @@ misc_conversions = {
     "chessatron": [
         {
             "cost": [(bpawn, 8), (bbishop, 2), (brook, 2), (bknight, 2), (bqueen, 1), (bking, 1), (wpawn, 8), (wbishop, 2), (wknight, 2), (wrook, 2), (wqueen, 1), (wking, 1)]
+        },
+        {
+            "cost": [(gem_red, 32)]
         }
     ]
 }

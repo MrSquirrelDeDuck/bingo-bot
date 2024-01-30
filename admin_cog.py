@@ -401,7 +401,7 @@ class Admin_cog(u_custom.CustomCog, name="Admin", description="Administration co
         brief = "Load a cog.",
         description = "Load a cog."
     )
-    @commands.is_owner()
+    @commands.check(u_checks.sub_admin_check)
     async def admin_load(self, ctx,
             extension_name: typing.Optional[str] = commands.parameter(description = "The name of the extension to load.")
         ):
@@ -432,7 +432,7 @@ class Admin_cog(u_custom.CustomCog, name="Admin", description="Administration co
         brief = "Unload a cog.",
         description = "Unload a cog."
     )
-    @commands.is_owner()
+    @commands.check(u_checks.sub_admin_check)
     async def admin_unload(self, ctx,
             extension_name: typing.Optional[str] = commands.parameter(description = "The name of the extension to unload.")
         ):
@@ -463,7 +463,7 @@ class Admin_cog(u_custom.CustomCog, name="Admin", description="Administration co
         brief = "Reload a cog/module.",
         description = "Reload a cog/module, note that to load a module like utility.bingo, you need to say 'utility.bingo'."
     )
-    @commands.is_owner()
+    @commands.check(u_checks.sub_admin_check)
     async def admin_reload(self, ctx,
             extension_name: typing.Optional[str] = commands.parameter(description = "The name of the extension to reload.")
         ):
@@ -480,6 +480,61 @@ class Admin_cog(u_custom.CustomCog, name="Admin", description="Administration co
         except:
             traceback.print_exc()
             await ctx.send("Failed.")
+
+        
+            
+
+        
+    ######################################################################################################################################################
+    ##### ADMIN UPDATE BOT ###############################################################################################################################
+    ######################################################################################################################################################
+    
+    @admin.command(
+        name="update_bot",
+        brief = "Pulls from Git and updates the bot.",
+        description = "Pulls from Git and updates the bot."
+    )
+    @commands.check(u_checks.sub_admin_check)
+    async def admin_update_bot(self, ctx):
+        await ctx.reply("Pulling from Git.")
+
+        os.system("git pull")
+
+        await ctx.send("Done, reloading everything.")
+
+        await self._reload_all()
+
+        # Reload everything twice, to ensure things like utility.values is reloaded fully.
+        await self._reload_all()
+
+        await ctx.reply("Done.")
+
+        
+            
+
+        
+    ######################################################################################################################################################
+    ##### ADMIN REFRESH PUBLIC ###########################################################################################################################
+    ######################################################################################################################################################
+    
+    @admin.command(
+        name="refresh_public",
+        brief = "Refreshes the public folder in the Git repository.",
+        description = "Refreshes the public folder in the Git repository."
+    )
+    @commands.check(u_checks.sub_admin_check)
+    async def admin_refresh_public(self, ctx):
+        public_folder = os.listdir(f"public{SLASH}")
+
+        for file_iter in public_folder:
+            if not file_iter.endswith(".json"):
+                continue
+
+            os.system(f"git add public{SLASH}{file_iter}")
+        
+        os.system('git commit -m "Automatic public folder data update."')
+
+        os.system("git push")
 
         
             
@@ -723,7 +778,6 @@ class Admin_cog(u_custom.CustomCog, name="Admin", description="Administration co
     ##### ADMIN FROM SNAPSHOT ############################################################################################################################
     ######################################################################################################################################################
 
-
     @admin.command(
         name="from_snapshot",
         brief = "Restores someone's roles from a snapshot.",
@@ -762,7 +816,7 @@ class Admin_cog(u_custom.CustomCog, name="Admin", description="Administration co
                 break
         
         async def send_list():
-            embed = u_interface.embed(
+            embed = u_interface.gen_embed(
                 title = "Role restoration",
                 description = "Available snapshots:\n" + "\n".join(
                     [f"- `{item}` (<t:{item.split('.')[0]}>)" for item in snapshots_containing.keys()]
@@ -813,7 +867,7 @@ class Admin_cog(u_custom.CustomCog, name="Admin", description="Administration co
             except discord.HTTPException:
                 pass
         
-        embed = u_interface.embed(
+        embed = u_interface.gen_embed(
             title = "Role restoration",
             description = "Restored from snapshot {} (<t:{}>.)\n\nNumber of added roles: {}\nNumber of roles in blacklist: {}\nNumber of roles the member already had: {}".format(
                 snapshot_id,

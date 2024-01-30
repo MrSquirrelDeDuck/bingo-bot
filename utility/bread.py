@@ -831,3 +831,19 @@ def clear_stored_data(database: u_files.DatabaseInterface, user_id: int | str) -
     stored_data.pop(user_id)
 
     database.save("bread", "data_storage", data=stored_data)
+
+def parse_gamble(message: discord.Message) -> list[u_values.Item] | None:
+    """Parses a gamble message to determine the items it contains. This will check if the message is a gamble via `utility.interface.is_gamble()`.
+
+    Args:
+        message (discord.Message): The gamble message to parse.
+
+    Returns:
+        list[u_values.Item] | None: The items in the gamble, in order from left to right, top to bottom. None will be returned if the message is not a gamble.
+    """
+    if not u_interface.is_gamble(message):
+        return None
+    
+    raw = u_interface.remove_starting_ping(message.content).replace("\n", "").split(" ")
+
+    return [u_values.get_item(item, "gamble_item") for item in raw]

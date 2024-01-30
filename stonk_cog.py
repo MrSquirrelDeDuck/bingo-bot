@@ -7,6 +7,7 @@ import discord
 import typing
 import random
 import copy
+import os
 
 import sys
 
@@ -75,7 +76,7 @@ class Stonk_cog(u_custom.CustomCog, name="Stonk", description="Commands for work
 
             description_lines.append("- {}: {}".format(stonk.internal_emoji, u_text.smart_number(tick_data[stonk.internal_name])))
         
-        embed = u_interface.embed(
+        embed = u_interface.gen_embed(
             title = "Stonk history for tick {}".format(u_text.smart_number(tick_id)),
             description = "The values on that tick:\n{}".format("\n".join(description_lines)),
             footer_text = "A missing stonk means it did not exist on that tick."
@@ -110,7 +111,7 @@ class Stonk_cog(u_custom.CustomCog, name="Stonk", description="Commands for work
 
             description_lines.append("- {}: {}".format(stonk.internal_emoji, u_text.smart_number(tick_data[stonk.internal_name])))
 
-        embed = u_interface.embed(
+        embed = u_interface.gen_embed(
             title = "Current stonk tick",
             description = "It is currently stonk tick **{}**.\nCurrent stonk values:\n{}".format(u_text.smart_number(stonk_data["tick_number"]), "\n".join(description_lines))
         )
@@ -144,7 +145,7 @@ class Stonk_cog(u_custom.CustomCog, name="Stonk", description="Commands for work
 
         database.update_ping_list("stonk_tick_pings", ctx.author.id, new_state)
 
-        embed = u_interface.embed(
+        embed = u_interface.gen_embed(
             title = "Stonk tick ping list",
             description = "You will {} be pinged for future stonk ticks.".format("now" if new_state else "no longer")
         )
@@ -245,7 +246,7 @@ class Stonk_cog(u_custom.CustomCog, name="Stonk", description="Commands for work
         
         fields = [(f"{stonk}:", value, False) for stonk, value in found_data.items()]
         
-        embed = u_interface.embed(
+        embed = u_interface.gen_embed(
             title = "Previous {} ticks".format(u_text.smart_number(ticks)),
             fields = fields
         )
@@ -288,7 +289,7 @@ class Stonk_cog(u_custom.CustomCog, name="Stonk", description="Commands for work
 
         random.shuffle(commands)
 
-        embed = u_interface.embed(
+        embed = u_interface.gen_embed(
             title = "Random stonk",
             description = "\n".join(commands),
             footer_text = "On mobile you can tap and hold on the commands to copy them."
@@ -360,7 +361,7 @@ class Stonk_cog(u_custom.CustomCog, name="Stonk", description="Commands for work
             
             previous_dough_value.append(parsed[stonk] * previous_tick_data[stonk.internal_name])
         
-        embed = u_interface.embed(
+        embed = u_interface.gen_embed(
             title = "Analyzed portfolio",
             description = "That portfolio, using the values from stonk tick {}:".format(u_text.smart_number(tick_id)),
             fields=[
@@ -385,8 +386,9 @@ class Stonk_cog(u_custom.CustomCog, name="Stonk", description="Commands for work
         brief = "Provides the entire stonk history as a json file."
     )
     async def stonk_file(self, ctx):
-        database.save_json_file("data/stonks/stonk_history.json", u_stonks.stonk_history(database))
-        await ctx.reply(file=discord.File(f"data/stonks/stonk_history.json"))
+        file_path = os.path.join("public", "stonk_history.json")
+        database.save_json_file(file_path, u_stonks.stonk_history(database))
+        await ctx.reply(file=discord.File(file_path))
     
 
 
@@ -442,7 +444,7 @@ class Stonk_cog(u_custom.CustomCog, name="Stonk", description="Commands for work
             else:
                 matched_ticks.append(tick_id)
         
-        embed = u_interface.embed(
+        embed = u_interface.gen_embed(
             title = "Stonk search",
             description = "{} found:".format("1 tick was" if len(matched_ticks) == 1 else f"{u_text.smart_number(len(matched_ticks))} ticks were"),
             fields = [
@@ -450,6 +452,79 @@ class Stonk_cog(u_custom.CustomCog, name="Stonk", description="Commands for work
                 ("", "You can use `%stonk history` to get values for a specific tick.", False)
             ]
         )
+        await ctx.reply(embed=embed)
+    
+
+
+
+
+
+    ######################################################################################################################################################
+    ##### STONK RECORDS ##################################################################################################################################
+    ######################################################################################################################################################
+    
+    @stonk.command(
+        name = "records",
+        aliases = ["record"],
+        description = "Gives the highest and lowest values of all the stonks.",
+        brief = "Gives the highest and lowest values of all the stonks."
+    )
+    async def stonk_records(self, ctx):
+        history = u_stonks.stonk_history(database)
+
+        stonks = {
+            stonk: {
+                "highest": stonk.base_value,
+                "lowest": stonk.base_value,
+                "highest_tick": [],
+                "lowest_tick": []
+            }
+            for stonk in u_values.stonks
+        }
+
+        for tick_number, tick in enumerate(history):
+            for stonk in u_values.stonks:
+                if stonk.internal_name not in tick:
+                    continue
+
+                value = tick[stonk.internal_name]
+
+                if value > stonks[stonk]["highest"]:
+                    stonks[stonk]["highest"] = value
+                    stonks[stonk]["highest_tick"] = [str(tick_number)]
+
+                elif value == stonks[stonk]["highest"]:
+                    stonks[stonk]["highest_tick"].append(str(tick_number))
+
+                elif value < stonks[stonk]["lowest"]:
+                    stonks[stonk]["lowest"] = value
+                    stonks[stonk]["lowest_tick"] = [str(tick_number)]
+
+                elif value == stonks[stonk]["lowest"]:
+                    stonks[stonk]["lowest_tick"].append(str(tick_number))
+        
+        fields = [
+            (
+                stonk.emoji,
+                "Highest value: **{highest} dough** ({high_text} {highest_ticks})\nLowest value: **{lowest} dough** ({low_text} {lowest_ticks})".format(
+                    highest = u_text.smart_number(stonks[stonk]["highest"]),
+                    high_text = u_text.word_plural("tick", len(stonks[stonk]["highest_tick"])),
+                    highest_ticks = ", ".join(stonks[stonk]["highest_tick"]),
+                    lowest = u_text.smart_number(stonks[stonk]["lowest"]),
+                    low_text = u_text.word_plural("tick", len(stonks[stonk]["lowest_tick"])),
+                    lowest_ticks = ", ".join(stonks[stonk]["lowest_tick"])
+                ),
+                False
+            )
+            for stonk in u_values.stonks
+        ]
+
+        embed = u_interface.gen_embed(
+            title = "Stonk records",
+            description = "This is the highest and lowest value of all the stonks.",
+            fields = fields
+        )
+
         await ctx.reply(embed=embed)
     
 
@@ -499,7 +574,7 @@ class Stonk_cog(u_custom.CustomCog, name="Stonk", description="Commands for work
 
                 previous_value = tick.get(name, None)
         
-        embed = u_interface.embed(
+        embed = u_interface.gen_embed(
             title = "Splits",
             description = "Number of times the stonks were split between ticks {} and {}:".format(u_text.smart_number(start), u_text.smart_number(end)),
             fields = [
@@ -766,8 +841,8 @@ class Stonk_cog(u_custom.CustomCog, name="Stonk", description="Commands for work
             algorithm_name: typing.Optional[u_algorithms.AlgorithmConverter] = commands.parameter(description = "The name of the algorithm you want to get the stats of.")
         ):
         if algorithm_name is None:
-            algorithm_list = u_algorithms.all_live_algorithms()
-            embed = u_interface.embed(
+            algorithm_list = u_algorithms.all_live_algorithms(database=database)
+            embed = u_interface.gen_embed(
                 title = "Stonk algorithm list",
                 description = "Here's a list of algorithms:\n\n" + ", ".join(algorithm_list) + "\n\nUse `%stonk algorithm stats <name>` to get a specific algorithm's portfolio."
             )
@@ -784,7 +859,7 @@ class Stonk_cog(u_custom.CustomCog, name="Stonk", description="Commands for work
 
         portfolio_section = ["{} -- {}, worth **{} dough**".format(stonk, u_text.smart_text(converted_current[stonk], 'stonk'), u_text.smart_number(converted_current[stonk] * algorithms.current[stonk.internal_name])) for stonk in u_values.stonks]
 
-        embed = u_interface.embed(
+        embed = u_interface.gen_embed(
             title = "Stonk algorithm {}:".format(title),
             description = "*Created by {}*\n\nDough -- **{} dough**\n{}\nIn total, {} has **{} dough**, and in the last tick it's portfolio changed by **{} dough**.".format(
                 algorithm_info["creator"],
@@ -817,7 +892,7 @@ class Stonk_cog(u_custom.CustomCog, name="Stonk", description="Commands for work
         brief = "Chooses a random algorithm."
     )
     async def stonk_algorithm_random(self, ctx):
-        algorithm_list = u_algorithms.all_live_algorithms()
+        algorithm_list = u_algorithms.all_live_algorithms(database=database)
         await self.stonk_algorithm_stats(ctx, algorithm_name=random.choice(algorithm_list))
     
 
@@ -874,7 +949,7 @@ class Stonk_cog(u_custom.CustomCog, name="Stonk", description="Commands for work
 
             algorithms_shown += 1
         
-        embed = u_interface.embed(
+        embed = u_interface.gen_embed(
             title = "Algorithm leaderboard",
             description = "*Showing {} of {} algorithms.*".format(algorithms_shown, len(sorted_list)),
             fields = [
@@ -904,7 +979,7 @@ class Stonk_cog(u_custom.CustomCog, name="Stonk", description="Commands for work
         ):
         current_tick = u_stonks.current_tick_number()
 
-        all_algorithms = u_algorithms.all_live_algorithms()
+        all_algorithms = u_algorithms.all_live_algorithms(database=database)
 
         log_scale = False
         start_tick = 2000
@@ -912,7 +987,7 @@ class Stonk_cog(u_custom.CustomCog, name="Stonk", description="Commands for work
         algorithms = []
         
         if parameters is None:
-            algorithms = copy.deepcopy(u_algorithms.all_live_algorithms(filter_list=["hide_graph"]))
+            algorithms = copy.deepcopy(u_algorithms.all_live_algorithms(database=database, filter_list=["hide_graph"]))
         else:
             parameters = parameters.split(" ")
 
@@ -920,7 +995,7 @@ class Stonk_cog(u_custom.CustomCog, name="Stonk", description="Commands for work
 
             for param_id, param in enumerate(parameters):
                 if param == "all":
-                    algorithms = copy.deepcopy(u_algorithms.all_live_algorithms(filter_list=["hide_graph"]))
+                    algorithms = copy.deepcopy(u_algorithms.all_live_algorithms(database=database, filter_list=["hide_graph"]))
                     continue
 
                 if param == "log":
@@ -957,7 +1032,7 @@ class Stonk_cog(u_custom.CustomCog, name="Stonk", description="Commands for work
                     continue
             
             if len(algorithms) == 0:
-                algorithms = copy.deepcopy(u_algorithms.all_live_algorithms(filter_list=["hide_graph"]))
+                algorithms = copy.deepcopy(u_algorithms.all_live_algorithms(database=database, filter_list=["hide_graph"]))
             
             for algorithm in negated:
                 if algorithms in algorithms:
@@ -979,8 +1054,8 @@ class Stonk_cog(u_custom.CustomCog, name="Stonk", description="Commands for work
         lines = []
 
         for algorithm in algorithms:
-            portfolio_history = u_algorithms.get_portfolio_history(algorithm)
-            algoirthm_function = u_algorithms.get_algorithm(algorithm)["func"]
+            portfolio_history = u_algorithms.get_portfolio_history(database=database, algorithm_name=algorithm)
+            algoirthm_function = u_algorithms.get_algorithm(database=database, algorithm_name=algorithm)["func"]
 
             values = []
             for tick, portfolio in enumerate(portfolio_history[start_tick - 2000 + 1: end_tick - 2000 + 1]):
@@ -1034,7 +1109,7 @@ class Stonk_cog(u_custom.CustomCog, name="Stonk", description="Commands for work
         if user is not None:
             gift_command = "\n$bread gift {} {} {}".format(user.id, u_text.smart_number(invest_amount), stonk.internal_emoji)
         
-        embed = u_interface.embed(
+        embed = u_interface.gen_embed(
             title = "Stonk gifting",
             description = "By investing in **{} {}** you would have {} dough remaining.".format(u_text.smart_number(invest_amount), stonk.internal_emoji, u_text.smart_number(dough - (invest_amount * stonk.value()))),
             fields = [("Commands", "$bread invest {} {} {}".format(u_text.smart_number(invest_amount), stonk.internal_emoji, gift_command), True)],
