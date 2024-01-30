@@ -527,7 +527,7 @@ class Admin_cog(u_custom.CustomCog, name="Admin", description="Administration co
         public_folder = os.listdir(f"public{SLASH}")
 
         for file_iter in public_folder:
-            if not file_iter.endswith(".json"):
+            if not os.path.isfile(f"public{SLASH}{file_iter}"):
                 continue
 
             os.system(f"git add public{SLASH}{file_iter}")
