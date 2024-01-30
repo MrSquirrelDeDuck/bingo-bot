@@ -18,13 +18,13 @@ def full_current_values(database: u_files.DatabaseInterface) -> dict[str, typing
     """Returns the raw values from current_values.json."""
     return database.load("stonks", "current_values")
 
-def current_values() -> dict[str, int]:
+def current_values(database: u_files.DatabaseInterface) -> dict[str, int]:
     """Returns just the current stonk values."""
-    return full_current_values()["values"]
+    return full_current_values(database)["values"]
 
-def current_tick_number() -> int:
+def current_tick_number(database: u_files.DatabaseInterface) -> int:
     """Returns the current stonk tick number."""
-    return full_current_values()["tick_number"]
+    return full_current_values(database)["tick_number"]
 
 def filter_splits(previous: dict[u_values.StonkItem, int], current: dict[u_values.StonkItem, int]) -> dict[str, dict[u_values.StonkItem, int]]:    
     """Filters splits and returns a corrected version. Also provides the amount of times each stonk was split."""

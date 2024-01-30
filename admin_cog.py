@@ -536,6 +536,8 @@ class Admin_cog(u_custom.CustomCog, name="Admin", description="Administration co
 
         os.system("git push")
 
+        await ctx.reply("Done.")
+
         
             
 

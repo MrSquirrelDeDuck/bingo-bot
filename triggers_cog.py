@@ -580,8 +580,10 @@ class Triggers_cog(u_custom.CustomCog, name="Triggers", description="Hey there! 
         database.save_database(make_backup=True)
 
         # Update public/stonk_history.json.
-        file_path = os.path.join("public", "stonk_history.json")
-        database.save_json_file(file_path, u_stonks.stonk_history(database))
+        database.save_json_file("public/stonk_history.json", data=u_stonks.stonk_history(database), replace_slash=True)
+
+        # Update public/stonk_current.json.
+        database.save_json_file("public/stonk_current.json", data=u_stonks.full_current_values(database), replace_slash=True)
 
         # Run a few git commands to update the public/ folder on GitHub.
         try:
