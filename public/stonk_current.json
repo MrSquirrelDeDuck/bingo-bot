@@ -1,6 +1,10 @@
 {
-    "pretzel": 133,
-    "cookie": 27,
-    "fortune_cookie": 600,
-    "pancakes": 3230
+    "message_link": "https://discord.com/channels/1105943535804493955/1192506727699071148/1201978880278143046",
+    "tick_number": 2252,
+    "values": {
+        "pretzel": 133,
+        "cookie": 27,
+        "fortune_cookie": 600,
+        "pancakes": 3230
+    }
 }
