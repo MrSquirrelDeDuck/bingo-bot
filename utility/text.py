@@ -140,6 +140,30 @@ def extract_chess_moves(text: str) -> list[tuple[str, ...]]:
     """
     return re.findall("([BNRQK]?([a-h]|[1-8])?x?[a-h][1-8](=[BNRQ])?(\+\+?|#)?)|(O-O(-O)?(\+\+?|#)?)", text)
 
+def extract_number(
+        regex_pattern: str,
+        text: str,
+        group_id: int = 1,
+        default: typing.Any = None
+    ) -> typing.Any | int:
+    """Extracts a number from a string via RegEx and returns an integer.
+
+    Args:
+        regex_pattern (str): The regex pattern to match. Make sure to put parentheses around where the number should be.
+        text (str): The text to search in.
+        group_id (int, optional): The group id that will be returned. Defaults to 1.
+
+    Returns:
+        typing.Any | int: The extracted number, or the default if no number was found.
+    """
+    match = re.search(regex_pattern, text)
+    
+    if match is None:
+        return default
+    
+    return int(match.group(group_id))
+
+
 def parse_wikitext(
         *,
         wikitext: str,

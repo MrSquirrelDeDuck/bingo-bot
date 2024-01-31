@@ -847,3 +847,39 @@ def parse_gamble(message: discord.Message) -> list[u_values.Item] | None:
     raw = u_interface.remove_starting_ping(message.content).replace("\n", "").split(" ")
 
     return [u_values.get_item(item, "gamble_item") for item in raw]
+
+def parse_roll(message: discord.Message) -> list[list[type[u_values.Item]]] | None:
+    """Parses a message to determine the items it contains.
+
+    Args:
+        message (discord.Message): The message to parse.
+
+    Returns:
+        list[list[type[u_values.Item]]] | None: A list of lists of items. Each inner list is a single roll in a compound roller message. This will return None if the message is not a bread roll. 
+    """
+    if not u_interface.is_bread_roll(message):
+        return None
+    
+    by_roll = u_interface.remove_starting_ping(message.content).replace("\n", "").split("---")
+
+    output = []
+
+    for roll in by_roll:
+        if len(roll) == 0:
+            continue
+
+        split = roll.split(" ")
+
+        add = []
+
+        for item in split:
+            if len(item) == 0:
+                continue
+            
+            add.append(u_values.get_item(item))
+        
+        output.append(add)
+    
+    return output
+
+    

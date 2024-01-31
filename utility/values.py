@@ -57,11 +57,15 @@ class Item:
         except:
             return False
     
-    def __key__(self):
+    def __key__(self: typing.Self):
         return (self.name, self.internal_name, self.internal_emoji)
 
-    def __hash__(self):
+    def __hash__(self: typing.Self):
         return hash(self.__key__())
+    
+    def has_attribute(self: typing.Self, attribute: str) -> bool:
+        """Returns a boolean for whether this item has the given attribute."""
+        return attribute in self.attributes
 
 class StonkItem(Item):
     def __init__(self: typing.Self,
@@ -97,7 +101,7 @@ class StonkItem(Item):
         self.graph_color = graph_color
 
 
-    def value(self) -> int:
+    def value(self: typing.Self) -> int:
         """Returns this stonk's current value."""
         current_values = u_stonks.current_values()
         return current_values.get(self.internal_name)
@@ -677,6 +681,9 @@ def get_item(item_identifier: str, attributes: typing.Union[str, list[str]] = No
 
     if isinstance(item_identifier, Item):
         return item_identifier
+    
+    if len(item_identifier) == 0:
+        return None
 
     item_identifier = item_identifier.lower()
     

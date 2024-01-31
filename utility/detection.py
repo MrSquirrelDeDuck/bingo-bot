@@ -17,6 +17,19 @@ import utility.text as u_text
 import importlib
 
 importlib.reload(u_values)
+
+eleven_plus_messages = {
+    11: "Eleven breads? How strange.",
+    12: "TWELVE BREADS??",
+    13: "NANI????!? THIRTEEN BUREADOS!?!?",
+    14: "Fourteen breads? That's a lot of breads. Like really a lot.",
+    15: "Woah! Fifteen breads! It really do be like that.",
+    16: "Surely that's not possible. Sixteen breads?!",
+    17: "Seventeen breads? You're a wizard, Harry.",
+    18: "A historical occurence! Eighteen breads!",
+    19: "Nineteen breads. I have no words for such a confluence of events.",
+    20: "Holy hell! 20 breads!"
+}
         
 ######################################################################################################################################################
 ##### DECORATOR ######################################################################################################################################
@@ -99,7 +112,10 @@ class StonkDetection():
 @AutoDetection(
     objectives = {
         "d0": "MoaK",
-        "d33": "Someone gets a gold gem"
+        "d32": "14+ roll",
+        "d33": "Someone gets a gold gem",
+        "d34": "3+ gems in one roll (between the dashes)",
+        "d45": "MoaK and Gold Gem in one $bread"
     }
 )
 async def item_in_roll(
@@ -110,21 +126,59 @@ async def item_in_roll(
     if not u_interface.is_bread_roll(message):
         return False
     
-    items = {
-        "d0": u_values.anarchy_chess,
-        "d33": u_values.gem_gold
-    }
+    if objective_id in ["d32", "d34"]: # These are ones that require the roll to be parsed.
+        parsed = u_bread.parse_roll(message)
+
+        if objective_id == "d32":
+            for roll in parsed:
+                if len(roll) >= 14:
+                    return True
+            
+            return False
+
+        if objective_id == "d34":
+            if not parsed:
+                return False
+
+            for roll in parsed:
+                if len(roll) < 3: # Oddly enough, if a roll has 2 items it cannot have 3 gems.
+                    continue
+
+                gem_sum = [
+                        item
+                        for item in roll
+                        if item.has_attribute("shiny")
+                    ]
+
+                if len(gem_sum) >= 3:
+                    return True
+            
+            return False
     
-    return items[objective_id].internal_emoji in message.content
+    if objective_id in ["d45"]:
+        return u_values.gem_gold.internal_emoji in message.content and u_values.anarchy_chess.internal_emoji in message.content
+    
+    if objective_id in ["d0", "d33"]:
+        items = {
+            "d0": u_values.anarchy_chess,
+            "d33": u_values.gem_gold
+        }
+        
+        return items[objective_id].internal_emoji in message.content
+    
+    # Failsafe.
+    return False
 
 ######################################################################################################################################################
 
 @AutoDetection(
     objectives = {
         "d0": "MoaK",
-        "d33": "Someone gets a gold gem",
         "d5": "Someone wins the lottery",
-        "d19": "Kapola gets a lottery"
+        "d19": "Kapola gets a lottery",
+        "d32": "14+ roll",
+        "d33": "Someone gets a gold gem",
+        "d45": "MoaK and Gold Gem in one $bread"
     }
 )
 async def roll_summary(
@@ -140,9 +194,28 @@ async def roll_summary(
     
     if objective_id == "d5":
         return "You won the lottery" in message.content
+    
+    if objective_id == "d32":
+        if "fourteen_or_higher: " in message.content:
+            return True
+        
+        highest_roll = u_text.extract_number("The highest roll was ([\d,]+)", message.content, default=0)
+
+        if highest_roll >= 14:
+            return True
+        
+        if any([eleven_plus_messages[text] in message.content for text in range(14, 21)]):
+            return True
+        
+        if re.match("Holy hell! [\d,]+ breads!", message.content):
+            return True
+        
+        return False
+
+    if objective_id == "d45":
+        return u_text.extract_number(f"{re.escape(u_values.gem_gold.internal_emoji)}: ([\d,]+)", message.content, default=0) >= 1 and u_text.extract_number(f"{re.escape(u_values.anarchy_chess.internal_emoji)}: ([\d,]+)", message.content, default=0) >= 1
 
     if objective_id == "d19":
-        print(message.reference)
         return "You won the lottery" in message.content and message.reference.resolved.author.id == 713053430075097119
     
     summary_items = {
@@ -151,7 +224,7 @@ async def roll_summary(
     }
 
     if objective_id in summary_items:
-        pattern = "{}: (\d+)".format(re.escape(summary_items[objective_id].internal_emoji))
+        pattern = "{}: ([\d,]+)".format(re.escape(summary_items[objective_id].internal_emoji))
         matched = re.search(pattern, message.content)
 
         if matched is not None and int(matched.group(1)) >= 1:
