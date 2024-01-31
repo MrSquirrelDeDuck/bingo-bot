@@ -12,6 +12,7 @@ import utility.interface as u_interface
 import utility.values as u_values
 import utility.bread as u_bread
 import utility.stonks as u_stonks
+import utility.text as u_text
 
 import importlib
 
@@ -122,7 +123,8 @@ async def item_in_roll(
     objectives = {
         "d0": "MoaK",
         "d33": "Someone gets a gold gem",
-        "d5": "Someone wins the lottery"
+        "d5": "Someone wins the lottery",
+        "d19": "Kapola gets a lottery"
     }
 )
 async def roll_summary(
@@ -136,8 +138,12 @@ async def roll_summary(
     if "Summary of results:" not in message.content:
         return False
     
-    if objective_id == 5:
-        return "You won the lottery" in message.content    
+    if objective_id == "d5":
+        return "You won the lottery" in message.content
+
+    if objective_id == "d19":
+        print(message.reference)
+        return "You won the lottery" in message.content and message.reference.resolved.author.id == 713053430075097119
     
     summary_items = {
         "d0": u_values.anarchy_chess,
@@ -158,7 +164,8 @@ async def roll_summary(
 
 @AutoDetection(
     objectives = {
-        "d1": "Someone gets an omega"
+        "d1": "Someone gets an omega",
+        "d33": "Someone gets a gold gem"
     }
 )
 async def alchemy_check(
@@ -178,7 +185,8 @@ async def alchemy_check(
     alchemized_item = searched.group(2)
 
     detect_items = {
-        "d1": u_values.omega_chessatron
+        "d1": u_values.omega_chessatron,
+        "d33": u_values.gem_gold
     }
 
     if objective_id in detect_items:
@@ -208,6 +216,115 @@ async def despair_spam(
 
     # Failsafe.
     return False
+
+######################################################################################################################################################
+
+@AutoDetection(
+    objectives = {
+        "d31": "Someone says 'Holy ____' and doesn't say 'holy hell'"
+    }
+)
+async def in_message(
+        message: discord.Message,
+        objective_id: int,
+        **kwargs
+    ) -> bool:
+    if objective_id == "d31":
+        match = re.search("holy(?! hell)", message.content.lower())
+        return match is not None
+            
+
+######################################################################################################################################################
+
+@AutoDetection(
+    objectives = {
+        "d7": "$brick gamble",
+        "d12": "Someone fales '$brick' message",
+        "d29": "Someone does $bread (move)"
+    }
+)
+async def message_prefix(
+        message: discord.Message,
+        objective_id: int,
+        **kwargs
+    ) -> bool:
+    mod_content = f"{message.content} " # Add a space so something like `mod_content.startswith("$brick gamble ")` works.
+
+    if objective_id == "d29":
+        if not mod_content.startswith("$bread "):
+            return False
+        
+        return len(u_text.extract_chess_moves(mod_content.split(" ")[1])) >= 1
+
+    startswith = {
+        "d7": "$brick gamble",
+        "d12": r"\$brick"
+    }
+    
+    if objective_id in startswith:
+        return mod_content.startswith(startswith[objective_id])
+    return False
+
+######################################################################################################################################################
+
+@AutoDetection(
+    objectives = {
+        "d17": "Golden brick",
+        "d26": "MM chess en passant!!",
+        "d28": "Bongcloud in an MM chess game",
+    }
+)
+async def mm_messages(
+        message: discord.Message,
+        objective_id: int,
+        **kwargs
+    ) -> bool:
+    if not u_interface.mm_checks(message, check_reply=False):
+        return False
+    
+    if objective_id == "d17":
+        return message.content == u_values.brick_gold.internal_emoji
+    
+    if message.content.startswith("```\nSend '$move ***' to make a move, such as '$move e4'."):
+        if message.content[-1] in ".?!":
+            return False
+        
+        if objective_id == "d26":
+            move_list = [item[0] for item in u_text.extract_chess_moves(message.content.split("\n")[-1])]
+
+            if len(move_list) <= 1:
+                return False
+            
+            if len(move_list[-2]) != 2 or not move_list[-2].islower(): # looking for something like `d5`
+                return False
+            
+            if len(move_list[-1]) != 4 or not (move_list[-1].islower()) or move_list[-1][1] != "x": # looking for something like `exd6`
+                return False
+            
+            move_file = move_list[-2][0]
+
+            if move_file not in "abcdefgh":
+                return False
+
+            move_rank = move_list[-2][1]
+
+            if move_rank not in "45": # Pawns moving two squares can only end up on one of these.
+                return False
+            
+            expected = "3" if move_rank == "4" else "6"
+
+            if move_list[-1][1:] != f"x{move_file}{expected}":
+                return False
+            
+            return True
+            
+
+        if objective_id == "d28":
+            return (message.content.endswith("Ke2 ```") or message.content.endswith("Ke7 ```"))
+            
+    # Failsafe.
+    return False
+
 
 ######################################################################################################################################################
 
@@ -410,8 +527,6 @@ async def initial_gamble_board(
 
     if gamble_data is None:
         return False
-    
-    gamble_data_2d = [gamble_data[i:i + 4] for i in range(0, len(gamble_data), 4)]
 
     if objective_id == "d6":
         return sum(
@@ -783,6 +898,59 @@ async def initial_gamble_board(
     
     # Failsafe.
     return False
+
+######################################################################################################################################################
+
+@AutoDetection(
+    objectives = {
+        "d9": "Someone gets an anarchy gambling"
+    }
+)
+async def gamble_result(
+        message: discord.Message,
+        objective_id: int,
+        **kwargs
+    ) -> bool:
+    if not u_interface.mm_checks(message, check_reply=True):
+        return False
+
+    if "You found a brick" in message.content:
+        if "looks like you'll" in message.content:
+            item_won = u_values.brick_gold
+
+            dough_won = re.match("Looks like you'll be able to sell this one for ([\d,]+) dough.", message.content)
+            if dough_won is None:
+                return False
+
+            dough_won = u_text.return_numeric(dough_won.group(1))
+        else:
+            item_won = u_values.bricks
+            dough_won = 0
+    elif "Sorry, you didn't win anything. Better luck next time." in message.content:
+        item_won = u_values.horsey
+        dough_won = 0
+    else:
+        if not message.content.startswith("With a"):
+            return False
+        
+        item_regex = re.search("With a ([\w\d:<>]+), you won ([\d,]+) dough.", message.content)
+
+        if item_regex is None:
+            return False
+        
+        item_won = u_values.get_item(item_regex.group(1))
+        dough_won = u_text.return_numeric(item_regex.group(2))
+    
+    
+
+    if objective_id == "d9":
+        return item_won in [u_values.anarchy, u_values.holy_hell, u_values.anarchy_chess]
+
+
+    
+
+
+    
 
 @AutoDetection(
     objectives = {

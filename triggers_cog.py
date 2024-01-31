@@ -261,11 +261,11 @@ class Triggers_cog(u_custom.CustomCog, name="Triggers", description="Hey there! 
             await ctx.reply("You must reply to a message.")
             return
         
-        msg = ctx.message.reference.resolved
+        msg = await ctx.channel.fetch_message(ctx.message.reference.resolved.id)
 
         # print(u_bread.parse_gamble(msg))
         # return
-
+        print("\n## Running auto detection. ##")
         results = await u_detection.run_detection_set(
             objectives = list(), # Blank so it uses them all.
             # objectives = u_detection.stonk_detection_dict.keys(),
@@ -275,6 +275,7 @@ class Triggers_cog(u_custom.CustomCog, name="Triggers", description="Hey there! 
             bingo_data = u_bingo.live(database),
             stonk_data = u_stonks.parse_stonk_tick(msg)
         )
+        print("## Auto detection complete. ##\n")
 
         print("\nTEST RESULTS:")
         if len(results) == 0:

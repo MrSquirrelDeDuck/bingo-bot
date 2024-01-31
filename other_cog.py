@@ -281,7 +281,7 @@ class Other_cog(u_custom.CustomCog, name="Other", description="Commands that don
             await ctx.reply("Please have the digits in the message sum to a prime number.")
             return
         
-        if len(re.findall("([BNRQK]?([a-h]|[1-8])?x?[a-h][1-8](=[BNRQ])?(\+\+?|#)?)|(O-O(-O)?(\+\+?|#)?)", message)) == 0:
+        if len(u_text.extract_chess_moves(message)) == 0:
             await ctx.reply("Please include at least one Chess move in algebraic notation.")
             return
         

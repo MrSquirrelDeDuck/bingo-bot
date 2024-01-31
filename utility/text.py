@@ -129,6 +129,17 @@ def return_alphanumeric(text: str) -> str:
     character_filter = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLNOPQRSTUVWXYZ0123456789-_ "
     return "".join([i for i in str(text) if i in character_filter])
 
+def extract_chess_moves(text: str) -> list[tuple[str, ...]]:
+    """Uses RegEx to extract chess moves from a string.
+
+    Args:
+        text (str): The string to find chess moves in.
+
+    Returns:
+        list[tuple[str]]: The list of chess moves, this will be empty if there are none.
+    """
+    return re.findall("([BNRQK]?([a-h]|[1-8])?x?[a-h][1-8](=[BNRQ])?(\+\+?|#)?)|(O-O(-O)?(\+\+?|#)?)", text)
+
 def parse_wikitext(
         *,
         wikitext: str,
