@@ -353,7 +353,7 @@ class Bread_cog(u_custom.CustomCog, name="Bread", description="Utility commands 
         ):
         target = ctx.author
 
-        if await u_checks.in_authority(ctx):
+        if u_checks.in_authority(ctx):
             target = discord.utils.find(lambda m: m.id == reminder_hour, ctx.guild.members)
             if target is None:
                 target = ctx.author
@@ -1438,8 +1438,8 @@ class Bread_cog(u_custom.CustomCog, name="Bread", description="Utility commands 
             await ctx.reply("The number of trials must be greater than 0.")
             return
         
-        if successes < 1:
-            await ctx.reply("The number of successes must be greater than 0.")
+        if successes < 0:
+            await ctx.reply("The number of successes must be greater than or equal to  0.")
             return
         
         if trials > 1_000_000_000_000:
