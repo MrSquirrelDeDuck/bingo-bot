@@ -3,9 +3,9 @@
 from discord.ext import commands
 import typing
 import re
-import os
 
 import utility.interface as u_interface
+import utility.converters as u_converters
 
 def rreplace(string: str, old: str, new: str, amount: int = -1) -> str:
     """Replaces in a string, from right to left.
@@ -161,7 +161,7 @@ def extract_number(
     if match is None:
         return default
     
-    return int(match.group(group_id))
+    return u_converters.parse_int(match.group(group_id))
 
 
 def parse_wikitext(

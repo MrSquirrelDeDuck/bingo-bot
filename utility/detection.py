@@ -3,6 +3,7 @@
 import discord
 import typing
 import re
+import itertools
 
 import sys
 
@@ -13,6 +14,7 @@ import utility.values as u_values
 import utility.bread as u_bread
 import utility.stonks as u_stonks
 import utility.text as u_text
+import utility.checks as u_checks
 
 import importlib
 
@@ -37,7 +39,7 @@ eleven_plus_messages = {
 
 class AutoDetection():
     def __init__(self,
-            objectives: dict[int, str]
+            *, objectives: dict[int, str]
         ) -> None:
         """Decorates a function to be used for auto-detection.
 
@@ -109,52 +111,63 @@ class StonkDetection():
 ##### AUTO DETECTION FUNCTIONS #######################################################################################################################
 ######################################################################################################################################################
 
+
+
+
+    
+     
+######################################################################################################################################################
+### BREAD ROLL #######################################################################################################################################
+######################################################################################################################################################
+
 @AutoDetection(
     objectives = {
         "d0": "MoaK",
+        
         "d32": "14+ roll",
+        "w10": "16+ roll",
+
         "d33": "Someone gets a gold gem",
+
         "d34": "3+ gems in one roll (between the dashes)",
-        "d45": "MoaK and Gold Gem in one $bread"
+        "w11": "3+ gems in one roll (between the dashes)",
+        
+        "d45": "MoaK and Gold Gem in one $bread",
+
+        "d84": "Someone rolls three natural 1s in a row",
+        "w29": "Someone rolls four natural 1s in a row",
+        
+        "d85": "Someone obtains all give gems from only rolling, no alchemy",
+        "d88": "Someone rolls the same gem color three times in a row",
+        "d89": "Someone rolls a ten with at least 5 special rbeads and 3 chess pieces",
+
+        "d91": "Someone rolls four ascending numbers in a row without any breaks (like 1, 2 , 3, and 4)",
+        "w31": "Someone rolls four ascending numbers in a row without any breaks (like 1, 2 , 3, and 4)",
+        
+        "d96": "Someone rolls an 11+ outside of #bread-rolls",
+        "w33": "Someone rolls an 11+ outside of #bread-rolls",
+        
+        "d104": "5 of the same special appears in 1 roll",
+
+        "d152": "690+ rolls without an 11+ in #smap",
+        "w63": "690+ rolls without an 11+ in #smap",
+        
+        "d170": "someone rolls and it contains at least 2 gems, 2 chess pieces, and 2 special bread",
+
+        "d173": "A roll of 5+ is all the same special",
+        "w75": "A roll of 5+ is all the same special"
     }
 )
 async def item_in_roll(
         message: discord.Message,
         objective_id: int,
+        database: u_files.DatabaseInterface,
         **kwargs
     ) -> bool:
     if not u_interface.is_bread_roll(message):
         return False
     
-    if objective_id in ["d32", "d34"]: # These are ones that require the roll to be parsed.
-        parsed = u_bread.parse_roll(message)
-
-        if objective_id == "d32":
-            for roll in parsed:
-                if len(roll) >= 14:
-                    return True
-            
-            return False
-
-        if objective_id == "d34":
-            if not parsed:
-                return False
-
-            for roll in parsed:
-                if len(roll) < 3: # Oddly enough, if a roll has 2 items it cannot have 3 gems.
-                    continue
-
-                gem_sum = [
-                        item
-                        for item in roll
-                        if item.has_attribute("shiny")
-                    ]
-
-                if len(gem_sum) >= 3:
-                    return True
-            
-            return False
-    
+    # These objectives don't require the roll to be parsed.
     if objective_id in ["d45"]:
         return u_values.gem_gold.internal_emoji in message.content and u_values.anarchy_chess.internal_emoji in message.content
     
@@ -166,19 +179,310 @@ async def item_in_roll(
         
         return items[objective_id].internal_emoji in message.content
     
+    # The following objectives require the roll to be parsed.
+    parsed = u_bread.parse_roll(message)
+
+    if not parsed:
+        return False
+    
+    if objective_id == "d32":
+        for roll in parsed:
+            if len(roll) >= 14:
+                return True
+        
+        return False
+    
+    if objective_id == "w10":
+        for roll in parsed:
+            if len(roll) >= 16:
+                return True
+        
+        return False
+    
+    if objective_id in ["d96", "w33"]:
+        if message.channel.id == 967544442468843560:
+            return False
+        
+        for roll in parsed:
+            if len(roll) >= 11:
+                return True
+        
+        return False
+
+    if objective_id in ["d34", "w11"]:
+        for roll in parsed:
+            if len(roll) < 3: # Oddly enough, if a roll has 2 items it cannot have 3 gems.
+                continue
+
+            gem_sum = [
+                    item
+                    for item in roll
+                    if item.has_attribute("shiny")
+                ]
+
+            if len(gem_sum) >= 3:
+                return True
+        
+        return False
+    
+    if objective_id in ["d84", "w29"]:
+        consecutive = 0
+        search = 3 if objective_id == "d84" else 4
+
+        for roll in parsed:
+            if len(roll) == 1:
+                consecutive += 1
+
+                if consecutive >= search:
+                    return True
+            else:
+                consecutive = 0
+        
+        return False
+    
+    if objective_id == "d85":
+        gems = []
+
+        flattened = itertools.chain.from_iterable(parsed)
+        for item in flattened:
+            if item not in gems and item.has_attribute("shiny"):
+                gems.append(item)
+                if len(gems) == len(u_values.all_shiny):
+                    return True
+        
+        
+        return False
+    
+    if objective_id == "d88":
+        consecutive = 0
+        previous = None
+
+        flattened = itertools.chain.from_iterable(parsed)
+        for item in flattened:
+            if not item.has_attribute("shiny"):
+                continue
+
+            if item == previous:
+                consecutive += 1
+                if consecutive >= 3:
+                    return True
+            else:
+                previous = item
+                consecutive = 1
+        
+        
+        return False
+    
+    if objective_id == "d89":
+        for roll in parsed:
+            if len(roll) != 10:
+                continue
+
+            special_count = 0
+            chess_count = 0
+
+            for special in u_values.special_and_rare:
+                special_count += roll.count(special)
+
+            for chess in u_values.all_chess_pieces:
+                chess_count += roll.count(chess)
+
+            if special_count >= 5 and chess_count >= 3:
+                return True
+        
+        return False
+    
+    if objective_id in ["d91", "w31"]:
+        consecutive = 0
+        previous = len(parsed[0])
+
+        for roll in parsed[1:]:
+            if len(roll) == previous + 1:
+                consecutive += 1
+
+                if consecutive >= 4:
+                    return True
+            else:
+                consecutive = 1
+
+            previous = len(roll)
+        
+        return False
+    
+    if objective_id == "d104":
+        for roll in parsed:
+            for special in u_values.special_and_rare:
+                if roll.count(special) >= 5:
+                    return True
+        
+        return False
+    
+    if objective_id in ["d152", "w63"]:
+        if message.channel.id != 959229175229726760:
+            return False
+        
+        if len(parsed) != 1:
+            return False
+        
+        key = f"{objective_id}-690_smap"
+        
+        if len(parsed[0]) <= 10:
+            data = database.load("auto_detection", default={})
+
+            current = data.get(key, 0) + 1
+
+            data[key] = current
+
+            database.save("auto_detection", data=data)
+
+            if current >= 690:
+                return True
+        else:
+            data = database.load("auto_detection", default = {})
+
+            data[key] = 0
+            
+            database.save("auto_detection", data=data)
+        
+        return False
+    
+    if objective_id == "d170":
+        for roll in parsed:
+            special_count = 0
+            chess_count = 0
+            gem_count = 0
+
+            for special in u_values.special_and_rare:
+                special_count += roll.count(special)
+
+            for chess in u_values.all_chess_pieces:
+                chess_count += roll.count(chess)
+
+            for gem in u_values.all_shiny:
+                gem_count += roll.count(gem)
+
+            if special_count >= 2 and chess_count >= 2 and gem_count >= 2:
+                return True
+        
+        return False
+    
+    if objective_id in ["d173", "w75"]:
+        for roll in parsed:
+            if len(roll) < 5:
+                continue
+
+            item = roll[0]
+
+            if roll.count(item) == len(roll):
+                return True
+        
+        return False
+    
     # Failsafe.
     return False
 
+
+
+
+    
+     
 ######################################################################################################################################################
+### ROLL RESULT ######################################################################################################################################
+######################################################################################################################################################
+# This is the summary Machine-Mind sends if you do not have the Roll Summarizer.
 
 @AutoDetection(
     objectives = {
         "d0": "MoaK",
         "d5": "Someone wins the lottery",
+
         "d19": "Kapola gets a lottery",
+        "w5": "Kapola gets a lottery",
+        
         "d32": "14+ roll",
+        "w10": "16+ roll",
+
         "d33": "Someone gets a gold gem",
-        "d45": "MoaK and Gold Gem in one $bread"
+
+        "d96": "Someone rolls an 11+ outside of #bread-rolls",
+        "w33": "Someone rolls an 11+ outside of #bread-rolls"
+    }
+)
+async def roll_result(
+        message: discord.Message,
+        objective_id: int,
+        **kwargs
+    ) -> bool:
+    if not u_interface.mm_checks(message, check_reply=True):
+        return False
+    
+    if objective_id in ["d19", "w5"]:
+        return "You won the lottery" in message.content and message.reference.resolved.author.id == 713053430075097119
+    
+    if objective_id in ["d32", "w10"]:
+        low = 14 if objective_id == "d32" else 16
+
+        if any([eleven_plus_messages[text] in message.content for text in range(low, 21)]):
+            return True
+        
+        if re.match("Holy hell! [\d,]+ breads!", message.content):
+            return True
+        
+        return False
+    
+    if objective_id in ["d96", "w33"]:
+        if message.channel.id == 967544442468843560:
+            return False
+        
+        if any([text in message.content for text in eleven_plus_messages.values()]):
+            return True
+        
+        if re.match("Holy hell! [\d,]+ breads!", message.content):
+            return True
+        
+        return False
+
+    text_check = {
+        "d0": "That sure is pretty rare!",
+        "d5": "You won the lottery",
+        "d33": "The fabled gold gem!"
+    }
+    
+    if objective_id in text_check:
+        return text_check[objective_id] in message.content
+    
+    # Failsafe.
+    return False
+
+
+
+
+    
+     
+######################################################################################################################################################
+### ROLL SUMMARY #####################################################################################################################################
+######################################################################################################################################################
+# This is the summary Machine-Mind sends if you have the Roll Summarizer.
+
+@AutoDetection(
+    objectives = {
+        "d0": "MoaK",
+        "d5": "Someone wins the lottery",
+
+        "d19": "Kapola gets a lottery",
+        "w5": "Kapola gets a lottery",
+
+        "d32": "14+ roll",
+        "w10": "16+ roll",
+        
+        "d33": "Someone gets a gold gem",
+        "d45": "MoaK and Gold Gem in one $bread",
+        "d85": "Someone obtains all five gems from only rolling, no alchemy",
+
+        "d178": "Someone gets two lotteries in a single day",
+        "w79": "Someone gets two lotteries in a single day",
+        
+        "d189": "Someone makes 750k or more dough from just rolling"
     }
 )
 async def roll_summary(
@@ -192,19 +496,35 @@ async def roll_summary(
     if "Summary of results:" not in message.content:
         return False
     
-    if objective_id == "d5":
-        return "You won the lottery" in message.content
+    # These objectives involve someone winning the lottery.
+    if objective_id in ["d5", "d178", "w79", "d19", "w5"]:
+        amount = u_text.extract_number("lottery_win: ([\d,]+)", message.content, default=0)
+        if amount < 1:
+            return False
+        
+        # The person has won the lottery.
+        
+        if objective_id == "d5":
+            return True
+        
+        if objective_id in ["d178", "w79"]:
+            return amount >= 2
+        
+        if objective_id in ["d19", "w5"]:
+            return message.reference.resolved.author.id == 713053430075097119 # Whether the person bread rolling was Kapola
     
-    if objective_id == "d32":
-        if "fourteen_or_higher: " in message.content:
+    if objective_id in ["d32", "w10"]:
+        if "fourteen_or_higher: " in message.content and objective_id == "d32":
             return True
         
         highest_roll = u_text.extract_number("The highest roll was ([\d,]+)", message.content, default=0)
 
-        if highest_roll >= 14:
+        low = 14 if objective_id == "d32" else 16
+
+        if highest_roll >= low:
             return True
         
-        if any([eleven_plus_messages[text] in message.content for text in range(14, 21)]):
+        if any([eleven_plus_messages[text] in message.content for text in range(low, 21)]):
             return True
         
         if re.match("Holy hell! [\d,]+ breads!", message.content):
@@ -215,8 +535,14 @@ async def roll_summary(
     if objective_id == "d45":
         return u_text.extract_number(f"{re.escape(u_values.gem_gold.internal_emoji)}: ([\d,]+)", message.content, default=0) >= 1 and u_text.extract_number(f"{re.escape(u_values.anarchy_chess.internal_emoji)}: ([\d,]+)", message.content, default=0) >= 1
 
-    if objective_id == "d19":
-        return "You won the lottery" in message.content and message.reference.resolved.author.id == 713053430075097119
+    if objective_id == "d85":
+        return all([
+            u_text.extract_number(f"{re.escape(item.internal_emoji)}: ([\d,]+)", message.content, default=0) >= 1
+            for item in u_values.all_shiny
+        ])
+
+    if objective_id == "d189":
+        return u_text.extract_number("Total gain: \*\*([\d,]+) dough\*\*", message.content, default=0) >= 750_000
     
     summary_items = {
         "d0": u_values.anarchy_chess,
@@ -227,21 +553,153 @@ async def roll_summary(
         pattern = "{}: ([\d,]+)".format(re.escape(summary_items[objective_id].internal_emoji))
         matched = re.search(pattern, message.content)
 
-        if matched is not None and int(matched.group(1)) >= 1:
+        if matched is not None and u_text.return_numeric(matched.group(1)) >= 1:
             return True
 
     # Failsafe.
     return False
 
+
+
+
+    
+     
+######################################################################################################################################################
+### BREAD PORTFOLIO ##################################################################################################################################
+######################################################################################################################################################
+
+@AutoDetection(
+    objectives = {
+        "d79": "Someone makes over a 5m dough profit from stonks",
+        "w28": "Someone makes over a 3b dough profit from stonks",
+        
+        "d168": "Someone goes all in on one stonk and makes a profit",
+
+        "d206": "Someone invests 25k+ in stonks and their portfolio does not change on a tick",
+        "w93": "Someone invests 250k+ in stonks and their portfolio does not change on a tick"
+    }
+)
+async def portfolio(
+        message: discord.Message,
+        objective_id: int,
+        **kwargs
+    ) -> bool:
+    if not u_interface.mm_checks(message, check_reply=True):
+        return False
+    
+    if not message.content.startswith("Investment portfolio for "):
+        return False
+    
+    change_amount = u_text.extract_number(r"In the last tick, your portfolio value changed by \*\*([\d\-,]+) dough\*\*\.", message.content, default=0)
+    
+    if objective_id == "d79":
+        return change_amount >= 5_000_000
+    
+    if objective_id == "w28":
+        return change_amount >= 3_000_000_000
+    
+    if objective_id in ["d206", "w93"]:
+        lower = 25_000 if objective_id == "d206" else 250_000
+        if u_text.extract_number("Your portfolio is worth \*\*([\d,]+) dough\*\*\.", message.content, default=0) < lower:
+            return False
+
+        return change_amount == 0
+    
+    if objective_id == "d168":
+        if change_amount <= 0:
+            return False
+        
+        found = False
+
+        for stonk in u_values.stonks:
+            if stonk.internal_emoji in message.content or stonk.emoji in message.content:
+                if found:
+                    return False
+                found = True
+        
+        return found
+
+
+
+
+    
+     
+######################################################################################################################################################
+### STONK INVEST #####################################################################################################################################
+######################################################################################################################################################
+
+@AutoDetection(
+    objectives = {
+        "d188": "Someone lands on 3 or 4 dough after investing in stonks"
+    }
+)
+async def invest_confirmation(
+        message: discord.Message,
+        objective_id: int,
+        **kwargs
+    ) -> bool:
+    if not u_interface.mm_checks(message, check_reply=True):
+        return False
+    
+    if not message.content.startswith("You invested in"):
+        return False
+    
+    if objective_id == "d188":
+        return u_text.extract_number("You have \*\*([\d,]+) dough\*\* remaining\.", message.content, default=0) in [3, 4]
+
+
+
+
+    
+     
+######################################################################################################################################################
+### BRICK STATS ######################################################################################################################################
+######################################################################################################################################################
+
+@AutoDetection(
+    objectives = {
+        "d159": "Someone reaches a new hundred milestone on $brick stats"
+    }
+)
+async def brick_stats(
+        message: discord.Message,
+        objective_id: int,
+        **kwargs
+    ) -> bool:
+    if not u_interface.mm_checks(message, check_reply=False):
+        return False
+    
+    if not(message.content.startswith("Brick stats for") or message.content[-1] in ".?!"):
+        return False
+    
+    gold_brick = u_text.extract_number(f"{u_values.brick_gold.internal_emoji} - ([\d,]+)", message.content, default=0)
+    total = u_text.extract_number("Total bricks: ([\d,]+)", message.content, default=0)
+    
+    if objective_id == "d159":
+        return str(gold_brick).endswith("00") or str(total).endswith("00")
+
+
+
+
+    
+     
+######################################################################################################################################################
+### ALCHEMY COMPLETION ###############################################################################################################################
 ######################################################################################################################################################
 
 @AutoDetection(
     objectives = {
         "d1": "Someone gets an omega",
-        "d33": "Someone gets a gold gem"
+        "d33": "Someone gets a gold gem",
+        
+        "d86": "Someone alchemizes 30+ of one chess piece at the same time",
+        "w30": "Someone alchemizes 10,000+ of one chess piece at the same time",
+        
+        "d90": "Someone alchemizes 3 red gems from 3 blue gems",
+        "d92": "Someone alchemizes 1,000+ specials at once"
     }
 )
-async def alchemy_check(
+async def alchemy_completion(
         message: discord.Message,
         objective_id: int,
         **kwargs
@@ -252,23 +710,42 @@ async def alchemy_check(
     if "Well done. You have created" not in message.content:
         return False
     
-    searched = re.search(r"Well done\. You have created (\d+) (<:.+:\d+>)\. You now have", message.content)
+    searched = re.search(r"Well done\. You have created ([\d,]+) (.+)\. You now have", message.content)
 
-    alchemize_amount = int(searched.group(1))
-    alchemized_item = searched.group(2)
+    if searched is None:
+        return False
+
+    alchemize_amount = u_text.return_numeric(searched.group(1))
+    alchemized_item = u_values.get_item(searched.group(2))
 
     detect_items = {
-        "d1": u_values.omega_chessatron,
-        "d33": u_values.gem_gold
+        "d1": (u_values.omega_chessatron, 1),
+        "d33": (u_values.gem_gold, 1),
+        "d86": (u_values.all_chess_pieces, 30),
+        "w30": (u_values.all_chess_pieces, 10_000),
+        "d90": (u_values.gem_red, 3),
+        "d92": (u_values.special_and_rare, 1_000)
     }
 
     if objective_id in detect_items:
-        if alchemized_item == detect_items[objective_id].internal_emoji and alchemize_amount >= 1:
+        if isinstance(detect_items[objective_id][0], list):
+            for item in detect_items[objective_id][0]:
+                if item == alchemized_item and alchemize_amount >= detect_items[objective_id][1]:
+                    return True
+            
+        if alchemized_item == detect_items[objective_id][0] and alchemize_amount >= detect_items[objective_id][1]:
             return True
     
     # Failsafe.
     return False
 
+
+
+
+    
+     
+######################################################################################################################################################
+### DIPSAR SPAM ######################################################################################################################################
 ######################################################################################################################################################
 
 @AutoDetection(
@@ -290,30 +767,94 @@ async def despair_spam(
     # Failsafe.
     return False
 
+
+
+
+    
+     
+######################################################################################################################################################
+### GENERAL MESSAGES #################################################################################################################################
 ######################################################################################################################################################
 
 @AutoDetection(
     objectives = {
-        "d31": "Someone says 'Holy ____' and doesn't say 'holy hell'"
+        "d31": "Someone says 'Holy ____' and doesn't say 'holy hell'",
+        "d59": "Someone pings '@gets pinged too much'",
+        "d71": "An announcement is made in #announcements",
+        
+        "d77": "Savings sends a message outside of the 3 normal channels",
+        "w26": "Savings sends a message outside of the 3 normal channels",
+        
+        "d154": "The Bingo-Bot automatically ticks off a square",
+        "w65": "The Bingo-Bot automatically ticks off a square",
+
+        "d192": "Latent talks about pancakes"
     }
 )
-async def in_message(
+async def general_messages(
         message: discord.Message,
         objective_id: int,
+        bot: u_custom.CustomBot,
         **kwargs
     ) -> bool:
     if objective_id == "d31":
         match = re.search("holy(?! hell)", message.content.lower())
         return match is not None
-            
+    
+    if objective_id == "d71":
+        return message.channel.id == 958763826025742336
+    
+    if objective_id in ["d77", "w26"]:
+        if message.author.id != 718631368908734545:
+            return False
+        
+        if isinstance(message.channel, discord.Thread):
+            channel = message.channel.parent
+        else:
+            channel = message.channel
+        
+        return channel.id not in [980267115821035550, 994460122875174942, 958487694676205628]
+    
+    if objective_id in ["d154", "w65"]:
+        if message.author.id != bot.user.id:
+            return False
+        
+        if not u_interface.is_reply(message):
+            return False
+        
+        return re.search("(\d+ )?(weekly )?bingo objectives? completed!", message.content.lower()) is not None
+    
+    if objective_id == "d192":
+        if message.author.id != 973811353036927047:
+            return False
+        
+        return "pancake" in message.content.lower()
+    
+    search = {
+        "d59": "<@&967443956659019786>"
+    }
 
+    return search[objective_id] in message.content
+
+
+
+
+    
+     
+######################################################################################################################################################
+### MESSAGE PREFIX ###################################################################################################################################
 ######################################################################################################################################################
 
 @AutoDetection(
     objectives = {
         "d7": "$brick gamble",
-        "d12": "Someone fales '$brick' message",
-        "d29": "Someone does $bread (move)"
+        "d12": "Someone fakes '$brick' message",
+        "d29": "Someone does $bread (move)",
+        "d54": "Someone mispells or uses the wrong prefix for '$bread'",
+        "d57": "Someone tries to $bread outside of #bread-rolls, #bread-activities, #bread, and #smap",
+        "d62": "Someone $thanks MM",
+        "d151": "A moderator abuses their powers",
+        "d166": "Someone gets bricked by a moderator or admin"
     }
 )
 async def message_prefix(
@@ -328,23 +869,80 @@ async def message_prefix(
             return False
         
         return len(u_text.extract_chess_moves(mod_content.split(" ")[1])) >= 1
+    
+    if objective_id == "d54":
+        return any(
+            [
+                mod_content.startswith(f"{prefix} ")
+                for prefix in ["$brad", "$braed", "$brade", "$bead", "$brea", "$bred", "$berad", "$rbead", "$bredd"]
+            ]
+        )
+    
+    if objective_id == "d57":
+        if not mod_content.startswith("$bread "):
+            return False
+        
+        return message.channel.id not in [967544442468843560, 1063317762191147008, 958705808860921906, 959229175229726760]
+    
+    if objective_id in ["d151", "d166"]:
+        if not mod_content.startswith("$brick "):
+            return False
+        
+        if not u_checks.in_authority(message.author):
+            return False
+        
+        split = message.content.split(" ")
+
+        if len(split) <= 1:
+            return False
+        
+        split = split[1]
+        
+        user = discord.utils.find(lambda m: split in [m.name, m.display_name, m.global_name, m.mention, m.id, str(m)], message.guild.members)
+
+        if user is None:
+            return False
+        
+        if user == message.author:
+            return False
+        
+        return True
 
     startswith = {
         "d7": "$brick gamble",
-        "d12": r"\$brick"
+        "d12": r"\$brick",
+        "d62": "$thanks"
     }
     
     if objective_id in startswith:
-        return mod_content.startswith(startswith[objective_id])
+        return mod_content.startswith(f"{startswith[objective_id]} ")
     return False
 
+
+
+
+    
+     
+######################################################################################################################################################
+### MACHINE-MIND MESSAGES ############################################################################################################################
 ######################################################################################################################################################
 
 @AutoDetection(
     objectives = {
         "d17": "Golden brick",
+        "w3": "Golden brick",
+
         "d26": "MM chess en passant!!",
         "d28": "Bongcloud in an MM chess game",
+        "d50": "Someone attempts to gift negative dough",
+        "d51": "Someone gifts MM something",
+        "d60": "Someone draws an MM chess game", # I have no idea why, but this one needs to be 'dNaN' in order to work, it makes no sense.
+        "d118": "Someone tries to brick Melodie and gets bricked themself",
+
+        "d127": "Someone ascends",
+        "w54": "Someone ascends",
+        
+        "d167": "Someone resigns in a discord chess game"
     }
 )
 async def mm_messages(
@@ -355,9 +953,33 @@ async def mm_messages(
     if not u_interface.mm_checks(message, check_reply=False):
         return False
     
-    if objective_id == "d17":
+    # These objectives require MM's message being a reply.
+    if objective_id in ["d50", "d60", "d118", "d127", "d167"]:
+        if not u_interface.is_reply(message):
+            return False
+        
+        if objective_id == "d50":
+            return message.content == "Trying to steal bread? Mum won't be very happy about that."
+        
+        if objective_id == "d60":
+            return message.content == "The game has been drawn."
+        
+        if objective_id == "d118":
+            return message.content == "Do you really think I'd brick *my own mother?*"
+        
+        if objective_id in ["d127", "w54"]:
+            return "Congratulations! You have ascended to a higher plane of existence." in message.content
+        
+        if objective_id == "d167":
+            return message.content in ["White resigned.", "Black resigned."]
+    
+    if objective_id in ["d17", "w3"]:
         return message.content == u_values.brick_gold.internal_emoji
     
+    if objective_id == "d51":
+        return message.content.endswith("has been gifted to <@960869046323134514>.")
+    
+    # These objectives are for MM chess games.
     if message.content.startswith("```\nSend '$move ***' to make a move, such as '$move e4'."):
         if message.content[-1] in ".?!":
             return False
@@ -399,6 +1021,12 @@ async def mm_messages(
     return False
 
 
+
+
+    
+     
+######################################################################################################################################################
+### STONK TICKS ######################################################################################################################################
 ######################################################################################################################################################
 
 @StonkDetection()
@@ -548,6 +1176,13 @@ async def stonk_change(
     # Failsafe.
     return False
 
+
+
+
+    
+     
+######################################################################################################################################################
+### INITIAL GAMBLE BOARD #############################################################################################################################
 ######################################################################################################################################################
 
 @AutoDetection(
@@ -972,11 +1607,23 @@ async def initial_gamble_board(
     # Failsafe.
     return False
 
+
+
+
+    
+     
+######################################################################################################################################################
+### GAMBLE RESULT ####################################################################################################################################
 ######################################################################################################################################################
 
 @AutoDetection(
     objectives = {
-        "d9": "Someone gets an anarchy gambling"
+        "d9": "Someone gets an anarchy gambling",
+
+        "d116": "A gold brick is won while gambling",
+        "w50": "A gold brick is won while gambling",
+        
+        "d187": "Someone gambles at least 50 and gets a brick"
     }
 )
 async def gamble_result(
@@ -988,10 +1635,10 @@ async def gamble_result(
         return False
 
     if "You found a brick" in message.content:
-        if "looks like you'll" in message.content:
+        if "Looks like you'll" in message.content:
             item_won = u_values.brick_gold
 
-            dough_won = re.match("Looks like you'll be able to sell this one for ([\d,]+) dough.", message.content)
+            dough_won = re.search(r"Looks like you'll be able to sell this one for ([\d,]+) dough.", message.content)
             if dough_won is None:
                 return False
 
@@ -1018,12 +1665,23 @@ async def gamble_result(
 
     if objective_id == "d9":
         return item_won in [u_values.anarchy, u_values.holy_hell, u_values.anarchy_chess]
+    
+    if objective_id in ["d116", "w50"]:
+        return item_won == u_values.brick_gold
+    
+    if objective_id == "d187":
+        wager = u_text.extract_number("\$bread gamble ([\d,]+)", message.reference.resolved.content, default=4)
+
+        return item_won in u_values.gamble_bricks and wager >= 50
+
+
 
 
     
-
-
-    
+     
+######################################################################################################################################################
+### BUY MESSAGE ######################################################################################################################################
+######################################################################################################################################################
 
 @AutoDetection(
     objectives = {
@@ -1033,7 +1691,7 @@ async def gamble_result(
         "d121": "Duck Duck Go r/place buys extra gambles"
     }
 )
-async def purchased_item(
+async def buy_message(
         message: discord.Message,
         objective_id: int,
         **kwargs
@@ -1052,7 +1710,47 @@ async def purchased_item(
 
 
 
+
+    
+     
+######################################################################################################################################################
+### PURCHASE CONFIRMATION ############################################################################################################################
+######################################################################################################################################################
+
+@AutoDetection(
+    objectives = {
+        "d185": "Someone purchases 10+ special bread packs at once"
+    }
+)
+async def purchase_confirmation(
+        message: discord.Message,
+        objective_id: int,
+        **kwargs
+    ) -> bool:
+    if not u_interface.mm_checks(message, check_reply=True):
+        return False
+    
+    if not message.reference.resolved.content.startswith("$bread buy "):
+        return False
+    
+    if len(list(re.finditer(" : \+[\d,]+, -> [\d,]+", message.content))) >= 8:
+        # Very very likely a special bread pack.
+        individual_amount = {}
+
+        for item in u_values.special_and_rare:
+            individual_amount[item] = u_text.extract_number(f"{item.internal_emoji} : \+([\d,]+), -> [\d,]+", message.content, default=0)
+            individual_amount[item] += u_text.extract_number(f"{item.emoji} : \+([\d,]+), -> [\d,]+", message.content, default=0)
         
+        bought = sum(individual_amount.values()) // 100
+
+        if objective_id == "d185":
+            return bought >= 10
+
+
+
+
+
+
 ######################################################################################################################################################
 ##### I/O FUNCTIONS ##################################################################################################################################
 ######################################################################################################################################################

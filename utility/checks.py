@@ -67,7 +67,7 @@ def serious_channel_check(channel: typing.Union[discord.TextChannel, discord.Thr
 
 ##### COMMAND CHECKS #####
 
-async def in_authority(ctx: typing.Union[commands.Context, u_custom.CustomContext, discord.Member]) -> bool:
+def in_authority(ctx: typing.Union[commands.Context, u_custom.CustomContext, discord.Member]) -> bool:
     """Returns a boolean for whether the author of the message (or a member provided) has Trusted or higher.
     This can be used as a check in a command with `@commands.check(checks.in_authority)` or as a standalone check in an if with `if await checks.in_authority(ctx):`"""
 
