@@ -18,6 +18,7 @@ import utility.custom as u_custom
 import utility.interface as u_interface
 import utility.converters as u_converters
 import utility.files as u_files
+import utility.detection as u_detection
 
 database = None # type: u_files.DatabaseInterface
 
@@ -122,7 +123,7 @@ class Bingo_cog(u_custom.CustomCog, name="Bingo", description="Commands for runn
     )
     async def objective(self, ctx,
             board: typing.Optional[str] = commands.parameter(description = "Which board to use, 'daily' or 'weekly'."),
-            objective: typing.Optional[int] = commands.parameter(description = "The id of the objective to look up.")
+            objective: typing.Optional[u_converters.parse_int] = commands.parameter(description = "The id of the objective to look up.")
         ):
         if ctx.invoked_subcommand is not None:
             return
@@ -149,9 +150,12 @@ class Bingo_cog(u_custom.CustomCog, name="Bingo", description="Commands for runn
         solo = emojis[objective_data.get("solo", False)]
         disabled = emojis[objective_data.get("disabled", False)]
 
+        internal_id = f"{board[0]}{objective}"
+        auto_detection = emojis[internal_id in u_detection.all_detection]
+
         embed = u_interface.gen_embed(
             title = objective_data["name"],
-            description = f"Objective {objective} on the {board} board.\n\nDescription:\n{objective_data['description']}\n\nCenter objective: {center}\nSolo objective: {solo}\nDisabled: {disabled}\n\nYou can use `%objective search [daily|weekly] [search term]` to search for an objective.\nYou can also use `%objective list [daily|weekly]` to get a list of the possible objectives.",
+            description = f"Objective {objective} on the {board} board.\n\nDescription:\n{objective_data['description']}\n\nCenter objective: {center}\nSolo objective: {solo}\nDisabled: {disabled}\nHas auto detection: {auto_detection}\n\nYou can use `%objective search [daily|weekly] [search term]` to search for an objective.\nYou can also use `%objective list [daily|weekly]` to get a list of the possible objectives.",
         )
 
         await ctx.reply(embed=embed)
