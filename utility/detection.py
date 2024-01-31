@@ -358,6 +358,8 @@ async def stonk_change(
     # Failsafe.
     return False
 
+######################################################################################################################################################
+
 @AutoDetection(
     objectives = {
         "d6": "Gamble board with 1 or fewer positives",
@@ -440,26 +442,24 @@ async def initial_gamble_board(
             return False
         
         controlled_squares = [False for _ in gamble_data]
+
+        king_index = [] # more like kingdex
         
         for index, item in enumerate(gamble_data):
-            if item not in u_values.black_chess_pieces:
+            if item == u_values.bking:
+                king_index.append(index)
                 continue
 
-            if item == u_values.bking:
+            if item not in u_values.black_chess_pieces:
                 continue
 
             if item == u_values.bpawn:
                 if index < 4:
                     continue
-                print("bpawn")
                 if index % 4 != 0:
-                    print("a1")
                     controlled_squares[index - 5] = True
-                print("bpawn2")
                 if index % 4 != 3:
-                    print("a2")
                     controlled_squares[index - 3] = True
-                print("bpawn3")
                 continue
                 
             xpos = index % 4
@@ -468,39 +468,94 @@ async def initial_gamble_board(
             if item == u_values.bbishop or item == u_values.bqueen:
                 for i in range(1, min(xpos, ypos) + 1):
                     controlled_squares[index - 5 * i] = True
+                    if gamble_data[index - 5 * i] in u_values.black_chess_pieces:
+                        break
                 
                 for i in range(1, min(3 - xpos, 3 - ypos) + 1):
                     controlled_squares[index + 5 * i] = True
+                    if gamble_data[index + 5 * i] in u_values.black_chess_pieces:
+                        break
                 
                 for i in range(1, min(3 - xpos, ypos) + 1):
                     controlled_squares[index - 3 * i] = True
+                    if gamble_data[index - 3 * i] in u_values.black_chess_pieces:
+                        break
                 
                 for i in range(1, min(xpos, 3 - ypos) + 1):
                     controlled_squares[index + 3 * i] = True
+                    if gamble_data[index + 3 * i] in u_values.black_chess_pieces:
+                        break
             
             if item == u_values.brook or item == u_values.bqueen:
                 for i in range(1, xpos + 1):
                     controlled_squares[index - i] = True
+                    if gamble_data[index - i] in u_values.black_chess_pieces:
+                        break
                     
                 for i in range(1, 3 - xpos + 1):
                     controlled_squares[index + i] = True
+                    if gamble_data[index + i] in u_values.black_chess_pieces:
+                        break
 
                 for i in range(1, ypos + 1):
                     controlled_squares[index - 4 * i] = True
+                    if gamble_data[index - 4 * i] in u_values.black_chess_pieces:
+                        break
 
                 for i in range(1, 3 - ypos + 1):
                     controlled_squares[index + 4 * i] = True
+                    if gamble_data[index + 4 * i] in u_values.black_chess_pieces:
+                        break
             
             if item == u_values.bknight:
-                pass
+                positions = []
+                for pos_id in range(8):
+                    positions.append(
+                        (
+                            xpos + (((pos_id + 1) % 4 < 2) + 1) * (1 if ((pos_id + 2) % 8 < 4) else -1),
+                            ypos + (((pos_id - 1) % 4 < 2) + 1) * (-1 if pos_id > 3 else 1)
+                        )
+                    )
 
+                for pos in positions:
+                    if pos[0] < 0 or pos[0] >= 4 or pos[1] < 0 or pos[1] >= 4:
+                        continue
+
+                    controlled_squares[pos[0] + 4 * pos[1]] = True
         
-        print("\n".join([str(controlled_squares[i:i + 4]) for i in range(0, len(controlled_squares), 4)]))
-        print()
-        raise NotImplementedError("this hasnt been finished yet, im working on it")
 
+        for king_try in king_index:
+            king_try_xpos = king_try % 4
+            king_try_ypos = king_try // 4
+
+            # Now mark off the squares controlled by every other king on the board.
+            control_copy = controlled_squares.copy()
+            for king in king_index:
+                if king == king_try:
+                    continue
+
+                king_xpos = king % 4
+                king_ypos = king // 4
+                for xmod, ymod in [(-1, -1), (-1, 0), (-1, 1), (0, -1), (0, 1), (1, -1), (1, 0), (1, 1)]:
+                    if king_xpos + xmod < 0 or king_xpos + xmod >= 4 or king_ypos + ymod < 0 or king_ypos + ymod >= 4:
+                        continue
+
+                    control_copy[king_xpos + xmod + 4 * (king_ypos + ymod)] = True
             
+            for xmod, ymod in [(-1, -1), (-1, 0), (-1, 1), (0, -1), (0, 0), (0, 1), (1, -1), (1, 0), (1, 1)]:
+                if king_try_xpos + xmod < 0 or king_try_xpos + xmod >= 4 or king_try_ypos + ymod < 0 or king_try_ypos + ymod >= 4:
+                    continue
 
+                if control_copy[king_try_xpos + xmod + 4 * (king_try_ypos + ymod)]:
+                    continue
+
+                # This square is not controlled by any other pieces.
+                return False
+            
+            # If it gets here, then all the squares are controlled, and thus the objective is met.
+            return True
+        
+        # It shouldn't ever get here, but as a failsafe...
         return False
     
     elif objective_id in ["d107", "w41"]:
@@ -521,7 +576,7 @@ async def initial_gamble_board(
             xpos = index % 4
             ypos = index // 4
 
-            modifiers = [ # modification amount, number of iterations
+            modifiers = [ # modification amount, number of iterations, piece (other than queens) that this works with
                 (-5, min(xpos, ypos), u_values.bbishop), # up left
                 (-4, ypos, u_values.brook), # up
                 (-3, min(3 - xpos, ypos), u_values.bbishop), # up right
@@ -573,46 +628,28 @@ async def initial_gamble_board(
 
             king = False
             queen = False
-            
-            modifications = []
 
-            # up left
-            if index >= 8 and index % 4 != 0:
-                modifications.append(-9)
+            xpos = index % 4
+            ypos = index // 4
             
-            # up right
-            if index >= 8 and index % 4 != 3:
-                modifications.append(-7)
-            
-            # left up
-            if index % 4 >= 2 and index >= 4:
-                modifications.append(-6)
+            positions = []
+            for pos_id in range(8):
+                positions.append(
+                    (
+                        xpos + (((pos_id + 1) % 4 < 2) + 1) * (1 if ((pos_id + 2) % 8 < 4) else -1),
+                        ypos + (((pos_id - 1) % 4 < 2) + 1) * (-1 if pos_id > 3 else 1)
+                    )
+                )
 
-            # left down
-            if index % 4 >= 2 and index < 12:
-                modifications.append(2)
-            
-            # right up
-            if index % 4 < 2 and index >= 4:
-                modifications.append(-2)
+            for pos in positions:
+                if pos[0] < 0 or pos[0] >= 4 or pos[1] < 0 or pos[1] >= 4:
+                    continue
 
-            # right down
-            if index % 4 < 2 and index < 12:
-                modifications.append(6)
-
-            # down left
-            if index < 8 and index % 4 != 0:
-                modifications.append(7)
-            
-            # down right
-            if index < 8 and index % 4 != 3:
-                modifications.append(9)
-
-            
-            for mod in modifications:
-                if gamble_data[index + mod] == u_values.bqueen:
+                index = pos[0] + 4 * pos[1]
+                
+                if gamble_data[index] == u_values.bqueen:
                     queen = True
-                if gamble_data[index + mod] == u_values.bking:
+                if gamble_data[index] == u_values.bking:
                     king = True
                 
                 if queen and king:
@@ -657,7 +694,67 @@ async def initial_gamble_board(
         ) >= 8
     
     elif objective_id in ["d120", "w51"]:
-        pass # TODO
+        pairs = {}
+
+        def check(index: int, modifier: int, item: typing.Type[u_values.Item]) -> None:
+            nonlocal pairs
+
+            if gamble_data[index + modifier] != item:
+                return
+            
+            if item in pairs:
+                pairs[item].append((index, index + modifier))
+            else:
+                pairs[item] = [(index, index + modifier)]
+
+        for index, item in enumerate(gamble_data):
+            if index <= 11:
+                # down
+                check(index, 4, item)
+
+            if index % 4 != 3:
+                # right
+                check(index, 1, item)
+        
+        tetrises_found = 0
+        
+        for item in pairs:
+            if len(pairs[item]) < 3:
+                continue
+
+            covered = []
+
+            for pair1, pair2 in pairs[item]:
+                if pair1 in covered or pair2 in covered:
+                    continue
+
+                found = [pair1, pair2]
+
+                for subsearch_1, subsearch_2 in pairs[item]:
+                    if not (subsearch_1 in found or subsearch_2 in found):
+                        continue
+
+                    if subsearch_1 in found:
+                        found.append(subsearch_2)
+                    else:
+                        found.append(subsearch_1)
+
+                # Add all the items in `found` to `covered`.
+                covered[0:0] = found
+                
+                tetrises_found += len(found) // 4
+
+                if tetrises_found >= 1:
+                    if objective_id == "w51":
+                        if tetrises_found >= 2:
+                            return True
+                        continue
+
+                    # Daily objective.
+                    return True
+        
+        # If no tetrises are found.
+        return False
     
     elif objective_id in ["d122", "w52"]:
         horseys = [
