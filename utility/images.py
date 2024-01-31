@@ -151,7 +151,7 @@ def render_board_5x5(database: u_files.DatabaseInterface, tile_string: str, enab
 
     After saving the image it will return the image object."""
 
-    tile_list = u_bingo.tile_list_5x5()
+    tile_list = u_bingo.tile_list_5x5(database=database)
 
     return render_board(
         database = database,
