@@ -151,7 +151,7 @@ class Bingo_cog(u_custom.CustomCog, name="Bingo", description="Commands for runn
         disabled = emojis[objective_data.get("disabled", False)]
 
         internal_id = f"{board[0]}{objective}"
-        auto_detection = emojis[internal_id in u_detection.all_detection]
+        auto_detection = "<:check:1189696905077325894> (Note that it might not be found in every situation.)" if internal_id in u_detection.all_detection else "<:x_:1189696918645907598>"
 
         embed = u_interface.gen_embed(
             title = objective_data["name"],
