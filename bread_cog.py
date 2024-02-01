@@ -673,7 +673,7 @@ class Bread_cog(u_custom.CustomCog, name="Bread", description="Utility commands 
             await ctx.reply("You must reply to a gamble message.")
             return
         
-        gamble_messages = database.load("bread", "gamble_messages")
+        gamble_messages = database.load("bread", "gamble_messages", default={})
 
         message_key = f"{replied_to.channel.id}.{replied_to.id}"
 
@@ -683,7 +683,7 @@ class Bread_cog(u_custom.CustomCog, name="Bread", description="Utility commands 
         
         embed = u_interface.gen_embed(
             title = "Initial board.",
-            description = "The initial board of that gamble:\n\n{}".format(gamble_messages[message_key])
+            description = "The initial board of that gamble:\n\n{}".format(gamble_messages[message_key]["content"])
         )
 
         await ctx.reply(embed=embed)

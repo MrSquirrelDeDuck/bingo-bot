@@ -658,9 +658,17 @@ class Triggers_cog(u_custom.CustomCog, name="Triggers", description="Hey there! 
         
     async def on_gamble(self, message: discord.Message):
         # Gamble messages.
-        gamble_messages = database.load("bread", "gamble_messages")
 
-        gamble_messages[f"{message.channel.id}.{message.id}"] = message.content
+        command = None
+        if u_interface.is_reply(message, allow_ping=False):
+            command = message.reference.message_id
+
+        gamble_messages = database.load("bread", "gamble_messages", default={})
+
+        gamble_messages[f"{message.channel.id}.{message.id}"] = {
+            "content": message.content,
+            "command": command # Used in auto-detection for d44 and w18.
+        }
 
         if len(gamble_messages) > 500:
             gamble_messages.pop(next(iter(gamble_messages)))

@@ -165,7 +165,6 @@ async def item_in_roll(
         **kwargs
     ) -> bool:
     if not u_interface.is_bread_roll(message):
-        print("crap")
         return False
     
     # These objectives don't require the roll to be parsed.
@@ -1639,6 +1638,9 @@ async def initial_gamble_board(
     objectives = {
         "d9": "Someone gets an anarchy gambling",
 
+        "d44": "Half of gamble options are postive and one isn't picked",
+        "w18": "Half of gamble options are postive and one isn't picked",
+
         "d116": "A gold brick is won while gambling",
         "w50": "A gold brick is won while gambling",
         
@@ -1648,6 +1650,7 @@ async def initial_gamble_board(
 async def gamble_result(
         message: discord.Message,
         objective_id: int,
+        database: u_files.DatabaseInterface,
         **kwargs
     ) -> bool:
     if not u_interface.mm_checks(message, check_reply=True):
@@ -1672,7 +1675,7 @@ async def gamble_result(
         if not message.content.startswith("With a"):
             return False
         
-        item_regex = re.search("With a ([\w\d:<>]+), you won ([\d,]+) dough.", message.content)
+        item_regex = re.search("With a (.+), you won ([\d,]+) dough.", message.content)
 
         if item_regex is None:
             return False
@@ -1684,6 +1687,37 @@ async def gamble_result(
 
     if objective_id == "d9":
         return item_won in [u_values.anarchy, u_values.holy_hell, u_values.anarchy_chess]
+    
+    if objective_id in ["d44", "w18"]:
+        if item_won in u_values.gamble_positives:
+            return False
+        
+        if not u_interface.is_reply(message, allow_ping=False):
+            return False
+        
+        search_id = message.reference.resolved.id
+        gamble_data = database.load("bread", "gamble_messages", default={})
+
+        gamble_content = None
+
+        for value in gamble_data.values():
+            if value["command"] != search_id:
+                continue
+            
+            gamble_content = value["content"]
+            break
+
+        if gamble_content is None:
+            return False
+
+        parsed = u_bread.parse_gamble(gamble_content)
+
+        positives = 0
+
+        for item in u_values.gamble_positives:
+            positives += parsed.count(item)
+
+        return positives >= 8
     
     if objective_id in ["d116", "w50"]:
         return item_won == u_values.brick_gold

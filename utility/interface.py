@@ -263,7 +263,7 @@ def is_bread_roll(message: discord.Message) -> bool:
 
     return len(content) == 0
     
-def is_gamble(message: discord.Message) -> bool:
+def is_gamble(message: discord.Message | str) -> bool:
     """Returns a boolean for whether a message is a Bread Game gamble.
 
     Args:
@@ -272,14 +272,18 @@ def is_gamble(message: discord.Message) -> bool:
     Returns:
         bool: Whether the message is a gamble.
     """
-
-    if not mm_checks(message, check_reply = True):
+    try:
+        if not mm_checks(message, check_reply = True):
+            return False
+        
+        content = message.content
+    except AttributeError:
+        content = message
+    
+    if any([content.endswith(_) for _ in ["?", "!", "."]]):
         return False
     
-    if any([message.content.endswith(_) for _ in ["?", "!", "."]]):
-        return False
-    
-    content = remove_starting_ping(message.content)
+    content = remove_starting_ping(content)
 
     split = content.split("\n")
 
