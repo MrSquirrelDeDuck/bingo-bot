@@ -50,8 +50,8 @@ database = None # type: u_files.DatabaseInterface
 class Triggers_cog(u_custom.CustomCog, name="Triggers", description="Hey there! owo\n\nyou just lost the game >:3"):
     bot = None
 
-    # bingo_cache = u_bingo.live(database=database)
-    # parsed_bingo_cache = {}
+    bingo_cache = {}
+    parsed_bingo_cache = {}
 
     # chains_data = u_files.load("data/chains_data.json")
 
@@ -71,6 +71,9 @@ class Triggers_cog(u_custom.CustomCog, name="Triggers", description="Hey there! 
         super().__init__()
         self.hourly_loop.start()
         self.daily_loop.start()
+
+        self.bingo_cache = u_bingo.live(database=database)
+        self.bingo_cache_updated()
     
     def cog_unload(self):
         self.hourly_loop.cancel()
@@ -78,16 +81,16 @@ class Triggers_cog(u_custom.CustomCog, name="Triggers", description="Hey there! 
 
         # self._save_chains_data()
     
-    # def bingo_cache_updated(self: typing.Self) -> None:
-    #     """Runs whenever the bingo cache is updated."""
-    #     self.parsed_bingo_cache = {
-    #         "daily_tile_string": u_text.split_chunks(self.bingo_cache["daily_tile_string"], 3),
-    #         "daily_enabled": u_bingo.decompile_enabled(self.bingo_cache["daily_enabled"], 5),
-    #         "daily_board_id": self.bingo_cache["daily_board_id"],
-    #         "weekly_tile_string": u_text.split_chunks(self.bingo_cache["weekly_tile_string"], 3),
-    #         "weekly_enabled": u_bingo.decompile_enabled(self.bingo_cache["weekly_enabled"], 9),
-    #         "weekly_board_id": self.bingo_cache["weekly_board_id"]
-    #     }
+    def bingo_cache_updated(self: typing.Self) -> None:
+        """Runs whenever the bingo cache is updated."""
+        self.parsed_bingo_cache = {
+            "daily_tile_string": u_text.split_chunks(self.bingo_cache["daily_tile_string"], 3),
+            "daily_enabled": u_bingo.decompile_enabled(self.bingo_cache["daily_enabled"], 5),
+            "daily_board_id": self.bingo_cache["daily_board_id"],
+            "weekly_tile_string": u_text.split_chunks(self.bingo_cache["weekly_tile_string"], 3),
+            "weekly_enabled": u_bingo.decompile_enabled(self.bingo_cache["weekly_enabled"], 9),
+            "weekly_board_id": self.bingo_cache["weekly_board_id"]
+        }
 
     # def _save_chains_data(self) -> None:
     #     """Saves self.chains_data to the data file."""
@@ -246,57 +249,16 @@ class Triggers_cog(u_custom.CustomCog, name="Triggers", description="Hey there! 
 
     @commands.command(
         name = "test",
-        brief="Tests code.",
-        description="Tests code."
+        brief="Test command.",
+        description="Test command."
     )
     @commands.check(u_checks.hide_from_help)
-    async def test_command(self, ctx,
-            # test_id: typing.Optional[u_converters.parse_int] = commands.parameter(description = "The daily objective id to test.")
-        ):
-        # if test_id is None:
-        #     await ctx.reply("You must provide a daily objective id.")
-        #     return
+    async def test_command(self, ctx):
+        print(self.bingo_cache, self.parsed_bingo_cache)
+
+
         
-        if not u_interface.is_reply(ctx.message):
-            await ctx.reply("You must reply to a message.")
-            return
-        
-        msg = await ctx.channel.fetch_message(ctx.message.reference.resolved.id)
-
-        # print(u_bread.parse_gamble(msg))
-        # return
-        print("\n## Running auto detection. ##")
-        results = await u_detection.run_detection_set(
-            objectives = list(), # Blank so it uses them all.
-            # objectives = u_detection.stonk_detection_dict.keys(),
-            bot = self.bot,
-            message = msg,
-            database = database,
-            bingo_data = u_bingo.live(database),
-            stonk_data = u_stonks.parse_stonk_tick(msg)
-        )
-        print("## Auto detection complete. ##\n")
-
-        print("\nTEST RESULTS:")
-        if len(results) == 0:
-            print("Nothing.")
-            return
-
-        tile_list_5x5 = u_bingo.tile_list_5x5(database)
-        tile_list_9x9 = u_bingo.tile_list_9x9(database)
-        for objective in results:
-            if objective.startswith("d"):
-                print("- {}: {}".format(objective, tile_list_5x5[u_text.return_numeric(objective)]["name"]))
-            else:
-                print("- {}: {}".format(objective, tile_list_9x9[u_text.return_numeric(objective)]["name"]))
-
-        # print(await u_detection.run_detection(
-        #     objective_id = test_id,
-        #     bot = self.bot,
-        #     message = msg,
-        #     database = database,
-        #     bingo_data = u_bingo.live(database)
-        # ))
+    
 
     
     
@@ -467,7 +429,7 @@ class Triggers_cog(u_custom.CustomCog, name="Triggers", description="Hey there! 
             live_data["weekly_enabled"] = 0
             live_data["weekly_board_id"] += 1
         
-        u_bingo.update_live(database=database, new_data=live_data)
+        u_bingo.update_live(database=database, bot=self.bot, new_data=live_data)
         self.bot.update_bingo_cache(live_data)
 
         # Send the daily board to the daily board channel.
@@ -577,6 +539,19 @@ class Triggers_cog(u_custom.CustomCog, name="Triggers", description="Hey there! 
             file = send_file
         )
         
+        # Run the auto detection.
+        try:
+            await u_detection.on_stonk_tick_detection(
+                    stonk_data = stonk_values,
+                    bot = self.bot,
+                    message = message,
+                    database = database,
+                    bingo_data = self.parsed_bingo_cache
+                )
+        except:
+            print(traceback.format_exc())
+            await message.reply("Something went wrong with the auto detection.\nPlease ping Duck Duck.")    
+        
         # Save the database to file.
         database.save_database(make_backup=True)
 
@@ -642,15 +617,28 @@ class Triggers_cog(u_custom.CustomCog, name="Triggers", description="Hey there! 
         if message.author.bot:
             # Accounts with bot tags shouldn't be able to contribute to the chains, but can still break it.
             return
+        
+        new = {
+            "message": message.content,
+            "sender": message.author.id,
+            "count": channel_data["count"] + 1
+        }
 
         self._update_channel_chain(
             channel_id = message.channel.id,
-            data = {
-                "message": message.content,
-                "sender": message.author.id,
-                "count": channel_data["count"] + 1
-            }
+            data = new
         )
+
+        # Run the auto detection.
+        if new["count"] >= 10:
+            await u_detection.chains_detection(
+                bot = self.bot,
+                message = message,
+                database = database,
+                bingo_data = self.parsed_bingo_cache,
+                chain_data = new
+            )
+
         
 
 
@@ -857,6 +845,14 @@ class Triggers_cog(u_custom.CustomCog, name="Triggers", description="Hey there! 
 
         await message.reply("".join([f"<@{user_id}>" for user_id in ping_data]), mention_author=False)
         return
+    
+    async def auto_detection(self, message: discord.Message):
+        await u_detection.on_message_detection(
+            bot = self.bot,
+            message = message,
+            database = database,
+            bingo_data = self.parsed_bingo_cache
+        )
 
             
             
@@ -864,6 +860,9 @@ class Triggers_cog(u_custom.CustomCog, name="Triggers", description="Hey there! 
     
     @commands.Cog.listener()
     async def on_message(self, message):
+        # Run the auto detection. It will automatically filter out messages sent by the bot if needed.
+        await self.auto_detection(message)
+
         # Make sure the bot doesn't read it's own messages.
         if message.author.id == self.bot.user.id:
             return
@@ -987,11 +986,11 @@ class Triggers_cog(u_custom.CustomCog, name="Triggers", description="Hey there! 
 
 
 async def setup(bot: commands.Bot):
-    cog = Triggers_cog()
-    cog.bot = bot
-
     global database
     database = bot.database
+
+    cog = Triggers_cog()
+    cog.bot = bot
     
     # Add attributes for sys.modules and globals() so the _reload_module() function in utility.custom can read it and get the module objects.
     cog.modules = sys.modules

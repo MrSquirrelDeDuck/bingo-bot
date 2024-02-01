@@ -4,6 +4,7 @@ import discord
 import typing
 import re
 import itertools
+import traceback
 
 import sys
 
@@ -15,6 +16,7 @@ import utility.bread as u_bread
 import utility.stonks as u_stonks
 import utility.text as u_text
 import utility.checks as u_checks
+import utility.bingo as u_bingo
 
 import importlib
 
@@ -1813,7 +1815,8 @@ async def handle_completed(
         bot: u_custom.CustomBot,
         message: discord.Message,
         database: u_files.DatabaseInterface,
-        completed_objectives: list[str]
+        completed_objectives: list[str],
+        bingo_data: dict
     ) -> None:
     """Handles completed objectives. This will handle updating the live data and sending any messages that need to be sent.
 
@@ -1826,8 +1829,127 @@ async def handle_completed(
     if completed_objectives is None:
         completed_objectives = []
     
-    if len(completed_objectives) == 0:
+    daily_lines = []
+    weekly_lines = []
+
+    alternate = False
+
+    daily_tile_list = None
+    weekly_tile_list = None
+
+    for objective in completed_objectives:
+        tile_list = None
+        if objective.startswith("d"):
+            if daily_tile_list is None:
+                daily_tile_list = u_bingo.tile_list_5x5(database)
+                
+            tile_list = daily_tile_list.copy()
+        else:
+            if weekly_tile_list is None:
+                weekly_tile_list = u_bingo.tile_list_9x9(database)
+
+            tile_list = weekly_tile_list.copy()
+        
+        tile_data = tile_list[int(objective[1:])]
+
+        if not alternate and tile_data.get("alternate", False):
+            alternate = True
+        
+        full_id = "{:03d}".format(int(objective[1:]))
+
+        if objective.startswith("d"):
+            spot = bingo_data["daily_tile_string"].index(full_id)
+            bingo_data["daily_enabled"][spot] = True
+        else:
+            spot = bingo_data["weekly_tile_string"].index(full_id)
+            bingo_data["weekly_enabled"][spot] = True
+        
+        if tile_data.get("silent", True):
+            if objective.startswith("d"):
+                daily_lines.append(f"- {tile_data['name']} ({full_id})")
+            else:
+                weekly_lines.append(f"- {tile_data['name']} ({full_id})")
+        
+    # Update the database.
+    new = {
+        "daily_tile_string": "".join(bingo_data["daily_tile_string"]),
+        "daily_enabled": u_bingo.compile_enabled(bingo_data["daily_enabled"]),
+        "daily_board_id": bingo_data["daily_board_id"],
+        "weekly_tile_string": "".join(bingo_data["weekly_tile_string"]),
+        "weekly_enabled": u_bingo.compile_enabled(bingo_data["weekly_enabled"]),
+        "weekly_board_id": bingo_data["weekly_board_id"]
+    }
+
+    u_bingo.update_live(
+        database = database,
+        bot = bot,
+        new_data = new
+    )
+
+    # Potentially send the message.
+
+    if len(daily_lines) + len(weekly_lines) == 0:
+        # Nothing to send, the objective(s) completed were likely silent ones.
+        print("Nothing to send.")
         return
+    
+    if u_checks.sensitive_check(message.channel) or alternate:
+        if message.channel.id == 958705808860921906 or (isinstance(message.channel, discord.Thread) and message.channel.parent.id == 958705808860921906):
+            reference = await bot.fetch_channel(1138583859508813955)
+        else:
+            reference = await bot.fetch_channel(958705808860921906)
+    else:
+        reference = message
+
+    content_lines = []
+
+    if len(daily_lines) > 0:
+        if len(daily_lines) == 1:
+            content_lines.append("Bingo objective completed!")
+        else:
+            content_lines.append(f"{len(daily_lines)} bingo objectives completed!")
+        
+        content_lines += daily_lines
+    
+    if len(weekly_lines) > 0:
+        if len(daily_lines) == 1:
+            content_lines.append("Weekly bingo objective completed!")
+        else:
+            content_lines.append(f"{len(weekly_lines)} weekly bingo objectives completed!")
+        
+        content_lines += weekly_lines
+    
+    print("\n".join(content_lines))
+
+    try:
+        if isinstance(reference, discord.Message):
+            await reference.reply(
+                "\n".join(content_lines),
+                mention_author = False
+            )
+        else:
+            await reference.send(
+                "\n".join(content_lines)
+            )
+    except discord.Forbidden:
+        print(traceback.format_exc())
+
+        reference = await bot.fetch_channel(1196865970355052644)
+        await reference.send(
+            "\n".join([message.jump_url, "\n\n"] + content_lines)
+        )
+    
+    try:
+        await message.add_reaction("🎉")
+    except discord.Forbidden:
+        pass
+        
+    
+
+        
+
+        
+        
 
 async def run_detection(
         objective_id: int,
@@ -1903,40 +2025,128 @@ async def run_detection_set(
     
     return triggered
 
-# async def on_stonk_tick_detection(
-#         bot: u_custom.CustomBot,
-#         message: discord.Message,
-#         bingo_data: dict
-#     ) -> None:   
-#     """Runs the on stonk tick part of the auto detection for both the daily and weekly boards.
+async def on_stonk_tick_detection(
+        bot: u_custom.CustomBot,
+        message: discord.Message,
+        database: u_files.DatabaseInterface,
+        stonk_data: dict,
+        bingo_data: dict
+    ) -> None:   
+    """Runs the on stonk tick part of the auto detection for both the daily and weekly boards.
 
-#     Args:
-#         bot (u_custom.CustomBot): The bot object.
-#         message (discord.Message): The message that is being processed.
-#         bingo_data (dict): The current bingo data. Should include the following:
-#         - daily_board (list[str]): The daily board tile string, as a list of strings.
-#         - daily_enabled (list[bool]): List of booleans for whether each tile is completed on the daily board.
-#         - weekly_board (list[str]): The weekly board tile string, as a list of strings.
-#         - weekly_enabled (list[bool]): List of booleans for whether each tile is completed on the weekly board.
-#     """
+    Args:
+        bot (u_custom.CustomBot): The bot object.
+        message (discord.Message): The message that is being processed.
+        database (u_files.DatabaseInterface): The database.
+        stonk_data (dict): The stonk data for this tick.
+        bingo_data (dict): The current bingo data. Should include the following:
+        - daily_tile_string (list[str]): The daily board tile string, as a list of strings.
+        - daily_enabled (list[bool]): List of booleans for whether each tile is completed on the daily board.
+        - weekly_tile_string (list[str]): The weekly board tile string, as a list of strings.
+        - weekly_enabled (list[bool]): List of booleans for whether each tile is completed on the weekly board.
+    """
+    triggered = []
 
-# async def chains_detection(
-#         bot: u_custom.CustomBot,
-#         message: discord.Message,
-#         bingo_data: dict
-#     ) -> None:   
-#     """Runs the chains part of the auto detection for both the daily and weekly boards.
+    for index, objective in enumerate(bingo_data.get("daily_tile_string", list())):
+        if bingo_data.get("daily_enabled", list())[index]:
+            continue
+        key = f"d{int(objective)}"
 
-#     Args:
-#         bot (u_custom.CustomBot): The bot object.
-#         message (discord.Message): The message that is being processed.
-#         bingo_data (dict): The current bingo data. Should include the following:
-#         - daily_board (list[str]): The daily board tile string, as a list of strings.
-#         - daily_enabled (list[bool]): List of booleans for whether each tile is completed on the daily board.
-#         - weekly_board (list[str]): The weekly board tile string, as a list of strings.
-#         - weekly_enabled (list[bool]): List of booleans for whether each tile is completed on the weekly board.
-#     """
+        if key not in stonk_detection_dict:
+            continue
+        
+        try:
+            if await run_detection(
+                    stonk_data = stonk_data,
+                    objective_id = key,
+                    bot = bot,
+                    message = message,
+                    database = database,
+                    bingo_data = bingo_data
+                ):
+                triggered.append(key)
+        except:
+            print(traceback.format_exc())
+            continue
 
+    for index, objective in enumerate(bingo_data.get("weekly_board", list())):
+        if bingo_data.get("weekly_enabled", list())[index]:
+            continue
+        key = f"w{int(objective)}"
+
+        if key not in stonk_detection_dict:
+            continue
+
+        try:
+            if await run_detection(
+                    stonk_data = stonk_data,
+                    objective_id = key,
+                    bot = bot,
+                    message = message,
+                    database = database,
+                    bingo_data = bingo_data
+                ):
+                triggered.append(key)
+        except:
+            print(traceback.format_exc())
+            continue
+    
+    if len(triggered) >= 1:
+        await handle_completed(
+            bot = bot,
+            message = message,
+            database = database,
+            completed_objectives = triggered,
+            bingo_data = bingo_data
+        )
+
+async def chains_detection(
+        bot: u_custom.CustomBot,
+        message: discord.Message,
+        database: u_files.DatabaseInterface,
+        chain_data: dict,
+        bingo_data: dict
+    ) -> None:   
+    """Runs the chains part of the auto detection for both the daily and weekly boards.
+
+    Args:
+        bot (u_custom.CustomBot): The bot object.
+        message (discord.Message): The message that is being processed.
+        database (u_files.DatabaseInterface): The database.
+        chain_data (dict): The data for the chain that is being processed.
+        bingo_data (dict): The current bingo data. Should include the following:
+        - daily_tile_string (list[str]): The daily board tile string, as a list of strings.
+        - daily_enabled (list[bool]): List of booleans for whether each tile is completed on the daily board.
+        - weekly_tile_string (list[str]): The weekly board tile string, as a list of strings.
+        - weekly_enabled (list[bool]): List of booleans for whether each tile is completed on the weekly board.
+    """
+
+    triggered = []
+
+    if "105" in bingo_data.get("daily_tile_string", list()): # The same message is sent 30+ times in a row in #chains
+        if message.channel.id == 1020394850463531019 and chain_data.get("count", 0) >= 30:
+            triggered.append("d105")
+
+    if "161" in bingo_data.get("daily_tile_string", list()): # A chain of 10+ messages occurs outside of #chains
+        if message.channel.id != 1020394850463531019 and chain_data.get("count", 0) >= 10:
+            triggered.append("d161")
+
+    if "039" in bingo_data.get("weekly_tile_string", list()): # The same message is sent 60+ times in a row in #chains
+        if message.channel.id == 1020394850463531019 and chain_data.get("count", 0) >= 60:
+            triggered.append("w39")
+
+    if "071" in bingo_data.get("weekly_tile_string", list()): # A chain of 30+ messages occurs outside of #chains
+        if message.channel.id != 1020394850463531019 and chain_data.get("count", 0) >= 30:
+            triggered.append("w71")
+    
+    if len(triggered) >= 1:
+        await handle_completed(
+            bot = bot,
+            message = message,
+            database = database,
+            completed_objectives = triggered,
+            bingo_data = bingo_data
+        )
 
 async def on_message_detection(
         bot: u_custom.CustomBot,
@@ -1949,32 +2159,38 @@ async def on_message_detection(
     Args:
         bot (u_custom.CustomBot): The bot object.
         message (discord.Message): The message that is being processed.
+        database (u_files.DatabaseInterface): The database.
         bingo_data (dict): The current bingo data. Should include the following:
-        - daily_board (list[str]): The daily board tile string, as a list of strings.
+        - daily_tile_string (list[str]): The daily board tile string, as a list of strings.
         - daily_enabled (list[bool]): List of booleans for whether each tile is completed on the daily board.
-        - weekly_board (list[str]): The weekly board tile string, as a list of strings.
+        - weekly_tile_string (list[str]): The weekly board tile string, as a list of strings.
         - weekly_enabled (list[bool]): List of booleans for whether each tile is completed on the weekly board.
     """
     triggered = []
 
-    for index, objective in enumerate(bingo_data.get("daily_board", list())):
+    for index, objective in enumerate(bingo_data.get("daily_tile_string", list())):
         if bingo_data.get("daily_enabled", list())[index]:
             continue
         key = f"d{int(objective)}"
 
+
         if key not in main_detection_dict:
             continue
+        
+        try:
+            if await run_detection(
+                    objective_id = key,
+                    bot = bot,
+                    message = message,
+                    database = database,
+                    bingo_data = bingo_data
+                ):
+                triggered.append(key)
+        except:
+            print(traceback.format_exc())
+            continue
 
-        if await run_detection(
-                objective_id = key,
-                bot = bot,
-                message = message,
-                database = database,
-                bingo_data = bingo_data
-            ):
-            triggered.append(key)
-
-    for index, objective in enumerate(bingo_data.get("weekly_board", list())):
+    for index, objective in enumerate(bingo_data.get("weekly_tile_string", list())):
         if bingo_data.get("weekly_enabled", list())[index]:
             continue
         key = f"w{int(objective)}"
@@ -1982,21 +2198,27 @@ async def on_message_detection(
         if key not in main_detection_dict:
             continue
 
-        if await run_detection(
-                objective_id = key,
-                bot = bot,
-                message = message,
-                database = database,
-                bingo_data = bingo_data
-            ):
-            triggered.append(key)
+        try:
+            if await run_detection(
+                    objective_id = key,
+                    bot = bot,
+                    message = message,
+                    database = database,
+                    bingo_data = bingo_data
+                ):
+                triggered.append(key)
+        except:
+            print(traceback.format_exc())
+            continue
     
-    await handle_completed(
-        bot = bot,
-        message = message,
-        database = database,
-        completed_objectives = triggered
-    )
+    if len(triggered) >= 1:
+        await handle_completed(
+            bot = bot,
+            message = message,
+            database = database,
+            completed_objectives = triggered,
+            bingo_data = bingo_data
+        )
 
 ######################################################################################################################################################
 ##### MODULE PREP ####################################################################################################################################
