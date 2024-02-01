@@ -45,10 +45,10 @@ class DatabaseInterface:
         self.save_json_file(folder_path + file_name, self.database)
         print("Saved backup.")
 
-        # Remove files beyond the last 168 backups.
+        # Remove files beyond the last 196 backups.
         files = os.listdir(folder_path)
         files.sort(reverse=True)
-        for file_name in files[168:]:
+        for file_name in files[196:]:
             print(f"Backup clearing. Removed {folder_path + file_name}")
             os.remove(folder_path + file_name)
     
