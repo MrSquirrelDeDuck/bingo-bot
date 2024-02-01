@@ -44,6 +44,13 @@ class DatabaseInterface:
         print("Saving backup to " + folder_path + file_name)
         self.save_json_file(folder_path + file_name, self.database)
         print("Saved backup.")
+
+        # Remove files beyond the last 168 backups.
+        files = os.listdir(folder_path)
+        files.sort(reverse=True)
+        for file_name in files[168:]:
+            print(f"Backup clearing. Removed {folder_path + file_name}")
+            os.remove(folder_path + file_name)
     
     def load_database(self) -> None:
         """Loads the database from file.
