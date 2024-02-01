@@ -751,6 +751,10 @@ class Triggers_cog(u_custom.CustomCog, name="Triggers", description="Hey there! 
             # If the message is a silent message.
             return
         
+        # If the author of the message has a bot tag, we can safely ignore it.
+        if message.author.bot:
+            return
+        
         # Get the message that was replied-to.
         replied_to = message.reference.resolved
         
@@ -868,7 +872,7 @@ class Triggers_cog(u_custom.CustomCog, name="Triggers", description="Hey there! 
             await self.on_stonk_tick(message)
 
         # PluralKit replies.
-        if u_interface.is_reply(message):
+        if u_interface.is_reply(message, allow_ping=False):
             await self.pk_reply(message)
         
         # PluralKit explanation.

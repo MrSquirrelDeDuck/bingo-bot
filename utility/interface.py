@@ -159,16 +159,17 @@ async def safe_send(ctx, content: str = "", **kwargs) -> discord.Message:
         raise
 
 
-def is_reply(message: discord.Message) -> bool:
+def is_reply(message: discord.Message, *, allow_ping: bool = True) -> bool:
     """Returns a boolean for whether the message provided is a reply.
 
     Args:
         message (discord.Message): The message to check.
+        allow_ping (bool, optional): Whether to allow a ping at the start of an MM message to count. Defaults to True.
 
     Returns:
         bool: Whether the given message is a reply.
     """
-    if is_mm(message) and "<@" in message.content:
+    if is_mm(message) and "<@" in message.content and allow_ping:
         if re.match("<@\d+> ?\n\n", message.content):
             return True
         
@@ -254,7 +255,7 @@ def is_bread_roll(message: discord.Message) -> bool:
     if is_gamble(message):
         return False
     
-    content = re.sub("^(<@\d+>\n\n)", "", message.content)
+    content = remove_starting_ping(message.content)
     content = content.replace(" ", "").replace("\n", "").replace("-", "")
     for item in u_values.rollable_items:
         content = content.replace(item.internal_emoji, "")
@@ -279,8 +280,17 @@ def is_gamble(message: discord.Message) -> bool:
         return False
     
     content = remove_starting_ping(message.content)
+
+    split = content.split("\n")
+
+    if len(split) != 4:
+        return False
     
-    if content.count(" ") + content.count("\n") != 18:
+    for item in split:
+        if item.strip().count(" ") != 3:
+            return False
+    
+    if content.count(" ") != 15:
         return False
     
     return True

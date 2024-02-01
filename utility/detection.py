@@ -165,6 +165,7 @@ async def item_in_roll(
         **kwargs
     ) -> bool:
     if not u_interface.is_bread_roll(message):
+        print("crap")
         return False
     
     # These objectives don't require the roll to be parsed.
@@ -373,6 +374,9 @@ async def item_in_roll(
 
             item = roll[0]
 
+            if item not in u_values.special_and_rare:
+                continue
+
             if roll.count(item) == len(roll):
                 return True
         
@@ -417,7 +421,16 @@ async def roll_result(
         return False
     
     if objective_id in ["d19", "w5"]:
-        return "You won the lottery" in message.content and message.reference.resolved.author.id == 713053430075097119
+        if "You won the lottery" not in message.content:
+            return False
+        
+        if u_interface.is_reply(message, allow_ping=False):
+            return message.reference.resolved.author.id == 713053430075097119
+        
+        # Here, the message is a reply, but done with a ping.
+        mention = u_text.extract_number("<@(\d+)>", message.content.split("\n")[0], default=None)
+
+        return mention == 713053430075097119
     
     if objective_id in ["d32", "w10"]:
         low = 14 if objective_id == "d32" else 16
@@ -511,7 +524,13 @@ async def roll_summary(
             return amount >= 2
         
         if objective_id in ["d19", "w5"]:
-            return message.reference.resolved.author.id == 713053430075097119 # Whether the person bread rolling was Kapola
+            if u_interface.is_reply(message, allow_ping=False):
+                return message.reference.resolved.author.id == 713053430075097119
+            
+            # Here, the message is a reply, but done with a ping.
+            mention = u_text.extract_number("<@(\d+)>", message.content.split("\n")[0], default=None)
+
+            return mention == 713053430075097119
     
     if objective_id in ["d32", "w10"]:
         if "fourteen_or_higher: " in message.content and objective_id == "d32":
@@ -1670,6 +1689,10 @@ async def gamble_result(
         return item_won == u_values.brick_gold
     
     if objective_id == "d187":
+        # We can't detect this one if we don't have the gamble command message, so this checks if the message has a ping at the start or not.
+        if not u_interface.is_reply(message, allow_ping=False):
+            return False
+        
         wager = u_text.extract_number("\$bread gamble ([\d,]+)", message.reference.resolved.content, default=4)
 
         return item_won in u_values.gamble_bricks and wager >= 50
@@ -1728,9 +1751,6 @@ async def purchase_confirmation(
         **kwargs
     ) -> bool:
     if not u_interface.mm_checks(message, check_reply=True):
-        return False
-    
-    if not message.reference.resolved.content.startswith("$bread buy "):
         return False
     
     if len(list(re.finditer(" : \+[\d,]+, -> [\d,]+", message.content))) >= 8:
