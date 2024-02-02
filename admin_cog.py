@@ -1011,7 +1011,7 @@ class Admin_cog(u_custom.CustomCog, name="Admin", description="Administration co
         brief = "Universally enables and disables commands.",
         description = "Universally enables and disables commands.\n\nUse the 'fetch' parameter to fetch the current state of the command."
     )
-    @commands.checks(u_checks.sub_admin_check)
+    @commands.check(u_checks.sub_admin_check)
     async def admin_toggle_command(self, ctx,
             new_state: typing.Optional[str] = commands.parameter(description = "The new toggled state for the command or 'fetch'."),
             *, command_name: typing.Optional[str] = commands.parameter(description = "The name of the command to toggle.")
