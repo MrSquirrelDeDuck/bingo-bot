@@ -1472,11 +1472,11 @@ class Bread_cog(u_custom.CustomCog, name="Bread", description="Utility commands 
         await ctx.reply(embed=embed)
 
 async def setup(bot: commands.Bot):
-    cog = Bread_cog()
-    cog.bot = bot
-
     global database
     database = bot.database
+
+    cog = Bread_cog()
+    cog.bot = bot
     
     # Add attributes for sys.modules and globals() so the _reload_module() function in utility.custom can read it and get the module objects.
     cog.modules = sys.modules

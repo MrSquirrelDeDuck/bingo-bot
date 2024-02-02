@@ -1113,11 +1113,11 @@ class Bingo_cog(u_custom.CustomCog, name="Bingo", description="Commands for runn
 
 
 async def setup(bot: commands.Bot):
-    cog = Bingo_cog()
-    cog.bot = bot
-
     global database
     database = bot.database
+
+    cog = Bingo_cog()
+    cog.bot = bot
     
     # Add attributes for sys.modules and globals() so the _reload_module() function in utility.custom can read it and get the module objects.
     cog.modules = sys.modules

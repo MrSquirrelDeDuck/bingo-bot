@@ -1121,12 +1121,12 @@ class Stonk_cog(u_custom.CustomCog, name="Stonk", description="Commands for work
 
 
 async def setup(bot: commands.Bot):
-    cog = Stonk_cog()
-    cog.bot = bot
-
     global database
     database = bot.database
     
+    cog = Stonk_cog()
+    cog.bot = bot
+
     # Add attributes for sys.modules and globals() so the _reload_module() function in utility.custom can read it and get the module objects.
     cog.modules = sys.modules
     cog.globals = globals()

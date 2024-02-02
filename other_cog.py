@@ -1745,12 +1745,12 @@ class Other_cog(u_custom.CustomCog, name="Other", description="Commands that don
         await ctx.reply(embed=embed, file=discord.File(image_path, filename="graph.png"))
 
 async def setup(bot: commands.Bot):
-    cog = Other_cog()
-    cog.bot = bot
-
     global database
     database = bot.database
     
+    cog = Other_cog()
+    cog.bot = bot
+
     # Add attributes for sys.modules and globals() so the _reload_module() function in utility.custom can read it and get the module objects.
     cog.modules = sys.modules
     cog.globals = globals()
