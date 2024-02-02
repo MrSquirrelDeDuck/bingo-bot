@@ -131,7 +131,26 @@ def count_bingos(enabled_data: list[bool] | int, board_size: int = None) -> int:
 
 def tile_list_5x5(database: u_files.DatabaseInterface) -> list[dict]:
     """Returns the 5x5 board tile list."""
-    return database.load("bingo", "tile_list_5x5")
+    get = database.load("bingo", "tile_list_5x5", default=None)
+
+    if get is None:
+        print("5x5 tile list not found, creating dummy objectives.")
+
+        get = [
+            {
+                "name": f"5x5 objective {i}",
+                "description": f"Description for 5x5 objective {i}",
+                "center": i == 0, # Ensure that at least 1 objective has "center" set to True.
+                "solo": False
+            }
+            for i in range(25) # 5 ^ 2
+        ]
+
+        database.save("bingo", "tile_list_5x5", data=get)
+    
+    return get
+
+
 
 def get_objective_5x5(database: u_files.DatabaseInterface, objective_id: int) -> dict:
     """Gets the data for an objective from the 5x5 tile list."""
@@ -139,7 +158,24 @@ def get_objective_5x5(database: u_files.DatabaseInterface, objective_id: int) ->
 
 def tile_list_9x9(database: u_files.DatabaseInterface) -> list[dict]:
     """Returns the 9x9 board tile list."""
-    return database.load("bingo", "tile_list_9x9")
+    get = database.load("bingo", "tile_list_9x9", default=None)
+
+    if get is None:
+        print("9x9 tile list not found, creating dummy objectives.")
+
+        get = [
+            {
+                "name": f"9x9 objective {i}",
+                "description": f"Description for 9x9 objective {i}",
+                "center": i == 0, # Ensure that at least 1 objective has "center" set to True.
+                "solo": False
+            }
+            for i in range(81) # 9 ^ 2
+        ]
+
+        database.save("bingo", "tile_list_9x9", data=get)
+    
+    return get
 
 def get_objective_9x9(database: u_files.DatabaseInterface, objective_id: int) -> dict:
     """Gets the data for an objective from the 9x9 tile list."""
@@ -147,7 +183,22 @@ def get_objective_9x9(database: u_files.DatabaseInterface, objective_id: int) ->
 
 def live(database: u_files.DatabaseInterface) -> dict:
     """Returns the current live data dict."""
-    return database.load("bingo", "live_data")
+    get = database.load("bingo", "live_data", default=None)
+
+    if get is None:
+        print("No live data found, making new boards.")
+        get = {
+            "daily_tile_string": generate_5x5_board(database=database),
+            "daily_enabled": 0,
+            "daily_board_id": 0,
+            "weekly_tile_string": generate_9x9_board(database=database),
+            "weekly_enabled": 0,
+            "weekly_board_id": 0
+        }
+
+        database.save("bingo", "live_data", data=get)
+    
+    return get
 
 def update_live(database: u_files.DatabaseInterface, bot: u_custom.CustomBot, new_data: dict) -> None:
     """Updates the live data with the provided dict."""

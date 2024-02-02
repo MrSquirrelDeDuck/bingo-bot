@@ -31,6 +31,17 @@ import utility.images as u_images
 import utility.bingo as u_bingo
 import utility.detection as u_detection
 
+# pip install python-dotenv
+from dotenv import load_dotenv
+from os import getenv
+
+load_dotenv()
+try:
+    UPDATE_GIT = u_converters.extended_bool(getenv('UPDATE_GIT'))
+except:
+    print(traceback.format_exc())
+    UPDATE_GIT = False
+
 bingo_time = datetime.time(
     hour = 23,
     minute = 0,
@@ -254,7 +265,7 @@ class Triggers_cog(u_custom.CustomCog, name="Triggers", description="Hey there! 
     )
     @commands.check(u_checks.hide_from_help)
     async def test_command(self, ctx):
-        print(self.bingo_cache, self.parsed_bingo_cache)
+        await self.daily_loop()
 
 
         
@@ -276,7 +287,17 @@ class Triggers_cog(u_custom.CustomCog, name="Triggers", description="Hey there! 
 
         bst_time = u_bread.bread_time().total_seconds() // 3600
 
-        reminder_data = database.load("reminders")
+        reminder_data = database.load("reminders", default=None)
+
+        if reminder_data is None:
+            data = {
+                "disallowed": [],
+                "reminder_list": []
+            }
+            database.save("reminders", data=data)
+            
+            reminder_data = data.copy()
+
         reminder_channel = None
 
         for reminder in reminder_data["reminder_list"]:
@@ -301,9 +322,9 @@ class Triggers_cog(u_custom.CustomCog, name="Triggers", description="Hey there! 
                 
                 return_json = await resp.json()
         
-        ping_list_data = database.load("ping_lists")
+        ping_list_data = database.load("ping_lists", default={})
 
-        if return_json["num"] > ping_list_data["xkcd_previous"]:
+        if return_json["num"] > ping_list_data.get("xkcd_previous", return_json["num"]):
             ping_list_channel = await self.bot.fetch_channel(PING_LISTS_CHANNEL)
 
             embed = u_interface.gen_embed(
@@ -312,7 +333,7 @@ class Triggers_cog(u_custom.CustomCog, name="Triggers", description="Hey there! 
                 image_link = return_json["img"],
                 footer_text = return_json["alt"]
             )
-            content = "New xkcd strip!!\n\nPinglist:\n{}\nUse `%xkcd ping` to add or remove yourself from the pinglist.".format("".join([f"<@{str(item)}>" for item in ping_list_data["xkcd_strips"]]))
+            content = "New xkcd strip!!\n\nPinglist:\n{}\nUse `%xkcd ping` to add or remove yourself from the pinglist.".format("".join([f"<@{str(item)}>" for item in ping_list_data.get("xkcd_strips", [])]))
 
             xkcd_message = await ping_list_channel.send(content=content, embed=embed)
 
@@ -394,7 +415,7 @@ class Triggers_cog(u_custom.CustomCog, name="Triggers", description="Hey there! 
         # Archive daily board and the weekly board if it's Monday.
         live_data = u_bingo.live(database=database)
 
-        archive_5x5 = database.load("bingo", "previous_5x5_boards")
+        archive_5x5 = database.load("bingo", "previous_5x5_boards", default={})
 
         archive_5x5[str(live_data["daily_board_id"])] = {
             "tile_string": live_data["daily_tile_string"],
@@ -405,7 +426,7 @@ class Triggers_cog(u_custom.CustomCog, name="Triggers", description="Hey there! 
 
         # If it's the day of the weekly board then archive it since we'll be making a new one.
         if weekly_board:
-            archive_9x9 = database.load("bingo", "previous_9x9_boards")
+            archive_9x9 = database.load("bingo", "previous_9x9_boards", default={})
 
             archive_9x9[str(live_data["weekly_board_id"])] = {
                 "tile_string": live_data["weekly_tile_string"],
@@ -560,23 +581,6 @@ class Triggers_cog(u_custom.CustomCog, name="Triggers", description="Hey there! 
 
         # Update public/stonk_current.json.
         database.save_json_file("public/stonk_current.json", data=u_stonks.full_current_values(database), replace_slash=True)
-
-        # Run a few git commands to update the public/ folder on GitHub.
-        try:
-            public_folder = os.listdir(f"public{SLASH}")
-
-            for file_iter in public_folder:
-                if not os.path.isfile(f"public{SLASH}{file_iter}"):
-                    continue
-
-                os.system(f"git add public{SLASH}{file_iter}")
-            
-            os.system('git commit -m "Automatic public folder data update."')
-
-            os.system("git push")
-        
-        except FileNotFoundError:
-            print(traceback.format_exc())
 
         # Running _on_stonk_tick in other cogs.
         for cog in self.bot.cogs.values():

@@ -80,7 +80,7 @@ def render_board(database: u_files.DatabaseInterface, tile_string: str, enabled:
     # Get the current data, since if the last image generated is the same as the one we're making, then we don't need to make anything new.
     if not force:
         # If force is true, then we don't do this check.
-        current_data = database.load("bingo", "last_generated")
+        current_data = database.load("bingo", "last_generated", default={})
         if all([
                 board_size == current_data.get("last_size"),
                 tile_string == current_data.get(f"board"),
@@ -178,7 +178,7 @@ def render_full_5x5(database: u_files.DatabaseInterface, tile_string: str, enabl
 
     base.paste(main_board, (0, 270))
 
-    current_data = database.load("bingo", "last_generated")
+    current_data = database.load("bingo", "last_generated", default={})
 
     current_data["last_size"] = "5x5_full"
 

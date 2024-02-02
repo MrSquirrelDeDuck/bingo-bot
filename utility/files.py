@@ -57,7 +57,36 @@ class DatabaseInterface:
         
         # This will overwrite the current stored database, so be careful."""
         print("Loading database.")
-        self.database = self.load_json_file("database.json", default={})
+        self.database = self.load_json_file("database.json", default=None)
+
+        if self.database is None:
+            print("No database file found. Looking for a backup.")
+            if os.path.exists("backups/"):
+                backup_list = os.listdir("backups/")
+
+                # Make sure there are actually backup files.
+                if len(backup_list) == 0:
+                    print("No backups found, creating new database.")
+                    self.database = {}
+
+                    self.save_database(make_backup=False)
+                else:
+                    # Sort the backups, so the newest is first.
+                    backup_list.sort(reverse=True)
+                    
+                    backup = backup_list[0]
+
+                    print(f"Found backup. Loading {backup}")
+                    self.database = self.load_json_file("backups/" + backup, default=None)
+
+                    self.save_database(make_backup=False)
+            else:
+                print("No backups found, creating new database.")
+                self.database = {}
+
+                self.save_database(make_backup=False)
+                
+
     
     ######################################################################################################################################################
     ##### Getting and saving data ########################################################################################################################
@@ -94,10 +123,11 @@ class DatabaseInterface:
             self.database[keys[0]] = data
             return
 
-        val = self.database[keys[0]]
+        val = self.database.setdefault(keys[0], {})
 
         for key in keys[1:-1]:
-            val = val[key]
+            # val = val[key]
+            val = val.setdefault(key, {})
         
         val[keys[-1]] = data
 
@@ -201,6 +231,9 @@ class DatabaseInterface:
         """
         data = self.load("daily_counters", default=dict())
 
+        if counter_name not in data:
+            data[counter_name] = 0
+            
         data[counter_name] += amount
 
         self.save("daily_counters", data=data)
@@ -216,7 +249,7 @@ class DatabaseInterface:
         Returns:
             dict[str, list[typing.Optional[int]]]: The raw ping list data.
         """
-        return self.load("ping_lists")
+        return self.load("ping_lists", default={})
 
     def set_ping_list_file(self,
             data: dict[str, list[typing.Optional[int]]]
@@ -314,7 +347,7 @@ class DatabaseInterface:
         Returns:
             dict[str, typing.Union[str, int, bool]]: The found data.
         """
-        ouija_data = self.load("askouija")
+        ouija_data = self.load("askouija", default={})
 
         return ouija_data.get(str(channel_id), {"active": False, "letters": "", "message_id": None, "author_id": None})
     
@@ -337,7 +370,7 @@ class DatabaseInterface:
         Returns:
             dict[str, typing.Union[str, int, bool]]: The updated dict for the channel.
         """
-        ouija_data = self.load("askouija")
+        ouija_data = self.load("askouija", default={})
 
         if str(channel_id) not in ouija_data:
             new = {
@@ -380,7 +413,7 @@ class DatabaseInterface:
         Returns:
             dict[str, typing.Union[str, int, bool]]: The found data.
         """
-        counting_data = self.load("counting_data")
+        counting_data = self.load("counting_data", default={})
 
         return counting_data.get(str(channel_id), {"count": 0, "sender": 0})
     
@@ -399,7 +432,7 @@ class DatabaseInterface:
         Returns:
             dict[str, typing.Union[str, int, bool]]: The updated dict for the channel.
         """
-        counting_data = self.load("counting_data")
+        counting_data = self.load("counting_data", default={})
 
         if str(channel_id) not in counting_data:
             new = {

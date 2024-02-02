@@ -5,6 +5,9 @@ This is essentially a modified copy of values.py from Machine-Mind"""
 import typing
 from discord.ext import commands
 
+# Some imports are at the bottom of the file to prevent circular imports.
+
+import utility.files as u_files
 
 class Item:
     def __init__(self: typing.Self,
@@ -101,10 +104,10 @@ class StonkItem(Item):
         self.graph_color = graph_color
 
 
-    def value(self: typing.Self) -> int:
+    def value(self: typing.Self, database: u_files.DatabaseInterface) -> int:
         """Returns this stonk's current value."""
-        current_values = u_stonks.current_values()
-        return current_values.get(self.internal_name)
+        current_values = u_stonks.current_values(database=database)
+        return current_values.get(self.internal_name, self.base_value)
 
 class ChessItem(Item):
     def __init__(self: typing.Self,
@@ -1280,3 +1283,4 @@ import utility.stonks as u_stonks
 import importlib
 
 importlib.reload(u_stonks)
+importlib.reload(u_files)

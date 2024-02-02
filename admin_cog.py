@@ -103,16 +103,23 @@ class Admin_cog(u_custom.CustomCog, name="Admin", description="Administration co
     async def disabled_check(self, ctx) -> bool:
         """Bot check that returns False and sends a message if the command is disabled."""
 
-        command_name = ctx.command.name
-        parent_names = ctx.invoked_parents
+        invoked_command = ctx.command.qualified_name
 
-        invoked_command = "-".join(parent_names + [command_name])
+        invoked_command = invoked_command.replace(" ", "-")
 
         toggled = database.load("command_toggle", default={})
 
         if not toggled.get(invoked_command, True):
             await ctx.reply("I am sorry, but this command has been disabled.")
             return False
+        
+        parents = ctx.command.parents
+
+        if len(parents) != 0:
+            for parent in parents:
+                if not toggled.get(parent.qualified_name.replace(" ", "-"), True):
+                    await ctx.reply("I am sorry, but this command has been disabled.")
+                    return False
         
         return True
 
@@ -524,19 +531,38 @@ class Admin_cog(u_custom.CustomCog, name="Admin", description="Administration co
     )
     @commands.check(u_checks.sub_admin_check)
     async def admin_refresh_public(self, ctx):
-        public_folder = os.listdir(f"public{SLASH}")
+        cogs = self.bot.cogs
 
-        for file_iter in public_folder:
-            if not os.path.isfile(f"public{SLASH}{file_iter}"):
+        done = False
+
+        for name, obj in cogs.items():
+            if name != "Secret":
                 continue
-
-            os.system(f"git add public{SLASH}{file_iter}")
+            
+            try:
+                done = obj.update_public_git()
+            except AttributeError:
+                traceback.print_exc()
         
-        os.system('git commit -m "Automatic public folder data update."')
+        if done:
+            await ctx.reply("Done.")
+        else:
+            await ctx.reply("Failed, check the log.")
+            
 
-        os.system("git push")
+        # public_folder = os.listdir(f"public{SLASH}")
 
-        await ctx.reply("Done.")
+        # for file_iter in public_folder:
+        #     if not os.path.isfile(f"public{SLASH}{file_iter}"):
+        #         continue
+
+        #     os.system(f"git add public{SLASH}{file_iter}")
+        
+        # os.system('git commit -m "Automatic public folder data update."')
+
+        # os.system("git push")
+
+        # await ctx.reply("Done.")
 
         
             

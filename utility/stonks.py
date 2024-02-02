@@ -12,11 +12,35 @@ import utility.text as u_text
 
 def stonk_history(database: u_files.DatabaseInterface) -> list[dict[str, int]]:
     """Returns the entire stonk history."""
-    return database.load("stonks", "stonk_history")
+    get = database.load("stonks", "stonk_history", default=None)
+
+    if get is None:
+        get = [
+            {
+                stonk.internal_name: stonk.base_value
+                for stonk in u_values.stonks
+            }
+        ]
+
+        database.save("stonks", "stonk_history", data=get)
+    
+    return get
 
 def full_current_values(database: u_files.DatabaseInterface) -> dict[str, typing.Union[dict[str, int], int]]:
-    """Returns the raw values from current_values.json."""
-    return database.load("stonks", "current_values")
+    """Returns the full current data from stonks/current_values in the database."""
+    get = database.load("stonks", "current_values", default=None)
+
+    if get is None:
+        history = stonk_history(database)
+        get = {
+            "message_link": "https://discord.com/channels/958392331671830579/969883131941363712/997243972072243261",
+            "tick_number": len(history) - 1,
+            "values": history[-1]
+        }
+
+        database.save("stonks", "current_values", data=get)
+
+    return get
 
 def current_values(database: u_files.DatabaseInterface) -> dict[str, int]:
     """Returns just the current stonk values."""
@@ -82,7 +106,7 @@ def parse_stonk_tick(message: discord.Message) -> dict[u_values.StonkItem, list[
     
     return out
 
-def closest_to_dough(dough_amount: int) -> u_values.StonkItem:
+def closest_to_dough(dough_amount: int, database: u_files.DatabaseInterface) -> u_values.StonkItem:
     """Returns the stonk that, if all the dough is invested in that stonk, would result in the lowest remaining dough.
 
     Args:
@@ -91,4 +115,4 @@ def closest_to_dough(dough_amount: int) -> u_values.StonkItem:
     Returns:
         u_values.StonkItem: The stonk.
     """
-    return min(u_values.stonks, key=lambda stonk: dough_amount % stonk.value())
+    return min(u_values.stonks, key=lambda stonk: dough_amount % stonk.value(database=database))

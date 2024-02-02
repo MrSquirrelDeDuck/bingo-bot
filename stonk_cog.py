@@ -314,7 +314,7 @@ class Stonk_cog(u_custom.CustomCog, name="Stonk", description="Commands for work
     async def stonk_analyze(self, ctx,
             tick_id: typing.Optional[u_converters.parse_int] = commands.parameter(description = "The tick number to use the values from.")
         ):
-        current_tick = u_stonks.current_tick_number()
+        current_tick = u_stonks.current_tick_number(database=database)
 
         if tick_id is None or not(current_tick * -1 <= tick_id <= current_tick):
             await ctx.reply("You must provide a stonk tick id between 0 and {} to get the values from.\nHowever, negative numbers can be used to go back from the end, so -1 is the most recent tick.".format(u_text.smart_number(current_tick)))
@@ -550,7 +550,7 @@ class Stonk_cog(u_custom.CustomCog, name="Stonk", description="Commands for work
             start = 0
         
         if end is None:
-            end = u_stonks.current_tick_number()
+            end = u_stonks.current_tick_number(database=database)
         
         if end <= start:
             await ctx.reply("The end must be after the start.")
@@ -600,7 +600,7 @@ class Stonk_cog(u_custom.CustomCog, name="Stonk", description="Commands for work
     async def stonk_graph(self, ctx,
             *, parameters: typing.Optional[str] = commands.parameter(description = "The parameters to use. See above for more information.")
         ):
-        current_tick = u_stonks.current_tick_number()
+        current_tick = u_stonks.current_tick_number(database=database)
 
         log_scale = False
         start_tick = 0
@@ -752,14 +752,14 @@ class Stonk_cog(u_custom.CustomCog, name="Stonk", description="Commands for work
         if start is None:
             start = 0
         if end is None:
-            end = u_stonks.current_tick_number()
+            end = u_stonks.current_tick_number(database=database)
         
         if end <= start:
             await ctx.reply("The start must be before the end.")
             return
         
         start = max(start, 0)
-        end = min(end, u_stonks.current_tick_number())
+        end = min(end, u_stonks.current_tick_number(database=database))
 
         stonk_history = u_stonks.stonk_history(database)
 
@@ -977,7 +977,7 @@ class Stonk_cog(u_custom.CustomCog, name="Stonk", description="Commands for work
     async def stonk_algorithm_graph(self, ctx,
             *, parameters: typing.Optional[str] = commands.parameter(description = "The parameters to use. See above for more information.")
         ):
-        current_tick = u_stonks.current_tick_number()
+        current_tick = u_stonks.current_tick_number(database=database)
 
         all_algorithms = u_algorithms.all_live_algorithms(database=database)
 

@@ -87,7 +87,16 @@ async def send_truth_or_dare(ctx, type_input="truth", interaction=None):
             type_input = "dare"
             prompt_type = "RANDOM: DARE"
 
-    prompts = database.load("truth_or_dare")
+    prompts = database.load("truth_or_dare", default=None)
+
+    if prompts is None:
+        prompts = {
+            "truth": ["What is a better question?"],
+            "dare": ["Come up with a better dare."]
+        }
+
+        database.save("truth_or_dare", data=prompts)
+
     options = prompts[type_input]
     if prompt_type is None:
         prompt_type = type_input.upper()

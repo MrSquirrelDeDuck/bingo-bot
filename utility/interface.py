@@ -398,7 +398,10 @@ async def refresh_status(bot: u_custom.CustomBot | commands.Bot, database: u_fil
         bot (u_custom.CustomBot | commands.Bot): The bot object.
         database (u_files.DatabaseInterface): The database.
     """
-    status_data = database.load("bot_status")
+    status_data = database.load("bot_status", default = None)
+
+    if status_data is None:
+        return
         
     status_type = status_data["status_type"]
     status_text = status_data["status_text"]
