@@ -7,6 +7,7 @@ import datetime
 import pytz
 import copy
 import math
+import re
 from scipy.stats import binom
 
 import sys
@@ -1611,7 +1612,69 @@ class Bread_cog(u_custom.CustomCog, name="Bread", description="Utility commands 
         )
 
         await ctx.reply(file=discord.File(graph))
+
+    
+
+        
+
+
+    ######################################################################################################################################################
+    ##### BREAD LEADERBOARD PARSE ######################################################################################################################################
+    ######################################################################################################################################################
+    
+    @bread.command(
+        name = "parse_leaderboard",
+        aliases = ["parse_lb", "lb_parse", "leaderboard_parse"],
+        brief = "Parses a leaderboard to provide percentages.",
+        description = "Parses a leaderboard to provide percentages.\nThis requires replying to a leaderboard message."
+    )
+    async def bread_parse_leaderboard(self, ctx):
+        replied = u_interface.replying_mm_checks(ctx.message, require_reply = False, return_replied_to = True)
+
+        if not replied or not replied.content.startswith("Leaderboard for"):
+            await ctx.reply("You must reply to a Machine-Mind leaderboard message.")
+            return
+        
+        total = u_text.extract_number(
+            r"The combined amount between all people is ([\d,]+)\.",
+            replied.content,
+            default = 0
+        )
+
+        lines = []
+
+        previous_placement = 0
+
+        for match in re.finditer(r"([\d,]+)\. (.+) ([\d,]+)(.*)", replied.content):
+            placement = u_text.return_numeric(match.group(1))
+            username = match.group(2)
+            amount = u_text.return_numeric(match.group(3))
+            bonus = match.group(4)
+
+            if total == 0:
+                percent = 0
+            else:
+                percent = round(amount / total * 100, 2)
             
+            if abs(placement - previous_placement) >= 2:
+                lines.append("")
+            
+            previous_placement = placement
+            lines.append(
+                f"{u_text.smart_number(placement)}. {username} {percent}%{bonus}"
+            )
+        
+        embed = u_interface.gen_embed(
+            title = "Parsed leaderboard",
+            description = "Total: {total}\n\nPercent breakdown by person:\n{leaderboard}".format(
+                total = u_text.smart_number(total),
+                leaderboard = "\n".join(lines)
+            )
+        )
+
+        await ctx.reply(embed=embed)
+
+
 
 async def setup(bot: commands.Bot):
     global database
