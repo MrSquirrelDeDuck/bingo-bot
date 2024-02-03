@@ -689,7 +689,7 @@ async def brick_stats(
     if not u_interface.mm_checks(message, check_reply=False):
         return False
     
-    if not(message.content.startswith("Brick stats for") or message.content[-1] in ".?!"):
+    if not(message.content.startswith("Brick stats for") and message.content[-1] in ".?!"):
         return False
     
     gold_brick = u_text.extract_number(f"{u_values.brick_gold.internal_emoji} - ([\d,]+)", message.content, default=0)
