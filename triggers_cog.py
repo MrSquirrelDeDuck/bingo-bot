@@ -742,7 +742,7 @@ class Triggers_cog(u_custom.CustomCog, name="Triggers", description="Hey there! 
             if counting_data["count"] == 0: # If 1 hasn't been sent since the last break.
                 return
             
-            counting_data.set_counting_data(
+            database.set_counting_data(
                 channel_id = message.channel.id,
                 count = 0,
                 sender = 0
