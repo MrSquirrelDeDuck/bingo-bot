@@ -343,7 +343,7 @@ def stonk_report(database: u_files.DatabaseInterface):
     stonk_data = {stonk: {} for stonk in u_values.stonks}
 
     img = PIL_Image.open(f"images{SLASH}bases{SLASH}stonk_report_base.png").copy().convert("RGBA")
-    font = PIL_ImageFont.truetype("verdana.ttf", size=57)
+    font = PIL_ImageFont.truetype(f"images{SLASH}bases{SLASH}verdana.ttf", size=57)
     algorithm_font = PIL_ImageFont.truetype("images/bases/centaur.ttf", size=50)
     imgDraw = PIL_ImageDraw.Draw(img)
 
