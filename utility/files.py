@@ -15,13 +15,18 @@ class DatabaseInterface:
 
     database = {}
 
-    def __init__(self) -> None:
+    def __init__(
+            self: typing.Self
+        ) -> None:
         """Interface that deals with the database.
     
         An instance of this class should be set to an attribute of the bot so the cogs can use it."""
         self.load_database()
     
-    def save_database(self, make_backup: bool = False) -> None:
+    def save_database(
+            self: typing.Self,
+            make_backup: bool = False
+        ) -> None:
         """Saves the database to database.json.
 
         Args:
@@ -33,7 +38,7 @@ class DatabaseInterface:
         if make_backup:
             self.make_backup()
     
-    def make_backup(self) -> None:
+    def make_backup(self: typing.Self) -> None:
         """Creates a backup of the database in the backup folder."""
         print("Making backup.")
         folder_path = "backups/"
@@ -52,7 +57,7 @@ class DatabaseInterface:
             print(f"Backup clearing. Removed {folder_path + file_name}")
             os.remove(folder_path + file_name)
     
-    def load_database(self) -> None:
+    def load_database(self: typing.Self) -> None:
         """Loads the database from file.
         
         # This will overwrite the current stored database, so be careful."""
@@ -92,7 +97,11 @@ class DatabaseInterface:
     ##### Getting and saving data ########################################################################################################################
     ######################################################################################################################################################
         
-    def load(self: typing.Self, *keys: str, default: typing.Any = None) -> dict | list:
+    def load(
+            self: typing.Self,
+            *keys: str,
+            default: typing.Any = None
+        ) -> dict | list:
         """Returns a value from the database.
 
         Args:
@@ -112,7 +121,11 @@ class DatabaseInterface:
         
         return copy.deepcopy(val)
     
-    def save(self, *keys: str, data: dict | list) -> None:
+    def save(
+            self: typing.Self,
+            *keys: str,
+            data: dict | list
+        ) -> None:
         """Saves a dict or list to the database.
 
         Args:
@@ -135,7 +148,8 @@ class DatabaseInterface:
     ##### Dealing with files. ############################################################################################################################
     ######################################################################################################################################################
 
-    def load_json_file(self,
+    def load_json_file(
+            self: typing.Self,
             file_path: str,
             default: typing.Any = None,
             replace_slash: bool = False
@@ -159,7 +173,8 @@ class DatabaseInterface:
         except:
             return default
     
-    def save_json_file(self,
+    def save_json_file(
+            self: typing.Self,
             file_path: str,
             data: dict | list,
             replace_slash: bool = False
@@ -174,6 +189,9 @@ class DatabaseInterface:
         """
         if replace_slash:
             file_path = file_path.replace("/", SLASH)
+        
+        # Ensure there's the folder for the file.
+        os.makedirs(os.path.dirname(file_path), exist_ok=True)
 
         backup = self.load_json_file(file_path, default=type(data)())
 
@@ -188,7 +206,8 @@ class DatabaseInterface:
     ##### Daily counters. ################################################################################################################################
     ######################################################################################################################################################
     
-    def get_daily_counter(self,
+    def get_daily_counter(
+            self: typing.Self,
             counter_name: str,
             default: int = 0
         ) -> int:
@@ -203,7 +222,8 @@ class DatabaseInterface:
         """
         return self.load("daily_counters", default=dict()).get(counter_name, default)
     
-    def set_daily_counter(self,
+    def set_daily_counter(
+            self: typing.Self,
             counter_name: str,
             value: int
         ) -> None:
@@ -219,7 +239,8 @@ class DatabaseInterface:
 
         self.save("daily_counters", data=data)
 
-    def increment_daily_counter(self,
+    def increment_daily_counter(
+            self: typing.Self,
             counter_name: str,
             amount: int = 1
         ) -> None:
@@ -243,7 +264,9 @@ class DatabaseInterface:
     ##### Ping lists. ####################################################################################################################################
     ######################################################################################################################################################
     
-    def get_ping_list_file(self) -> dict[str, list[typing.Optional[int]]]:
+    def get_ping_list_file(
+            self: typing.Self
+        ) -> dict[str, list[typing.Optional[int]]]:
         """Returns the raw ping list data.
 
         Returns:
@@ -251,7 +274,8 @@ class DatabaseInterface:
         """
         return self.load("ping_lists", default={})
 
-    def set_ping_list_file(self,
+    def set_ping_list_file(
+            self: typing.Self,
             data: dict[str, list[typing.Optional[int]]]
         ) -> None:
         """Saves the raw ping list data.
@@ -261,7 +285,8 @@ class DatabaseInterface:
         """
         self.save("ping_lists", data=data)
 
-    def get_ping_list(self,
+    def get_ping_list(
+            self: typing.Self,
             ping_list_name: str
         ) -> list[typing.Optional[int]]:
         """Gets a ping list from the ping list file.
@@ -279,7 +304,8 @@ class DatabaseInterface:
         
         return []
 
-    def user_on_ping_list(self,
+    def user_on_ping_list(
+            self: typing.Self,
             ping_list_name: str,
             user_id: int
         ) -> bool:
@@ -294,7 +320,8 @@ class DatabaseInterface:
         """
         return user_id in self.get_ping_list_file().get(ping_list_name, [])
 
-    def update_ping_list(self,
+    def update_ping_list(
+            self: typing.Self,
             ping_list_name: str,
             user_id: int,
             new_state: bool
@@ -336,7 +363,8 @@ class DatabaseInterface:
     ##### AskOuija. ######################################################################################################################################
     ######################################################################################################################################################
     
-    def get_ouija_data(self,
+    def get_ouija_data(
+            self: typing.Self,
             channel_id: typing.Union[str, int]
         ) -> dict[str, typing.Union[str, int, bool]]:
         """Gets ouija data.
@@ -351,7 +379,8 @@ class DatabaseInterface:
 
         return ouija_data.get(str(channel_id), {"active": False, "letters": "", "message_id": None, "author_id": None})
     
-    def set_ouija_data(self,
+    def set_ouija_data(
+            self: typing.Self,
             channel_id: typing.Union[str, int],
             active: bool = None,
             letters: str = None,
@@ -402,7 +431,8 @@ class DatabaseInterface:
     ##### Counting. ######################################################################################################################################
     ######################################################################################################################################################
     
-    def get_counting_data(self,
+    def get_counting_data(
+            self: typing.Self,
             channel_id: typing.Union[str, int]
         ) -> dict[str, typing.Union[str, int, bool]]:
         """Gets counting data.
@@ -417,7 +447,8 @@ class DatabaseInterface:
 
         return counting_data.get(str(channel_id), {"count": 0, "sender": 0})
     
-    def set_counting_data(self, 
+    def set_counting_data(
+            self: typing.Self, 
             channel_id: typing.Union[str, int],
             count: int = None,
             sender: int = None
@@ -495,6 +526,9 @@ def save(
     """
     if replace_slash:
         path = path.replace("/", SLASH)
+    
+    # Ensure there's the folder for the file.
+    os.makedirs(os.path.dirname(path), exist_ok=True)
 
     with open(path, "w+") as file_write:
         json.dump(data, file_write, indent=4)
