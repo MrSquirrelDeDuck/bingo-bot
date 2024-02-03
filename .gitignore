@@ -163,9 +163,7 @@ cython_debug/
 *.code-workspace
 
 images/generated/
-data/stonks/
-data/misc/
-data/role_snapshots/
+data/*
 
 patch_notes.txt
 
@@ -173,4 +171,6 @@ algorithms.py
 ciphers.py
 database.json
 backups/
+
+# spooky
 secret_cog.py

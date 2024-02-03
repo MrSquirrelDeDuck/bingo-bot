@@ -7,8 +7,6 @@ import datetime
 import pytz
 import copy
 import math
-import aiohttp
-import traceback
 from scipy.stats import binom
 
 import sys
@@ -23,6 +21,8 @@ import utility.stonks as u_stonks
 import utility.values as u_values
 import utility.custom as u_custom
 import utility.solvers as u_solvers
+import utility.bingo as u_bingo
+import utility.images as u_images
 
 database = None # type: u_files.DatabaseInterface
 
@@ -1470,6 +1470,148 @@ class Bread_cog(u_custom.CustomCog, name="Bread", description="Utility commands 
             ]
         )
         await ctx.reply(embed=embed)
+
+    
+
+        
+
+
+    ######################################################################################################################################################
+    ##### BREAD DAY ######################################################################################################################################
+    ######################################################################################################################################################
+    
+    @bread.group(
+        name = "day",
+        aliases = ["today"],
+        brief = "Get the current day's stats.",
+        description = "Get the current day's stats.",
+        invoke_without_command = True,
+        pass_context = True
+    )
+    async def bread_day(self, ctx,
+            day: typing.Optional[u_converters.parse_int] = commands.parameter(description = "The day to get the stats for. Defaults to today.")
+        ):
+        if ctx.invoked_subcommand is not None:
+            return
+        
+        highest_accepted = u_bingo.live(database).get("daily_board_id")
+        if day is None or min(day, highest_accepted) == highest_accepted:
+            day = highest_accepted
+            stats = database.load("bread", "day_stats", default={})
+        else:
+            # If it's a day in history.
+            history = u_files.load("data/bread/day_stats.json", default={}, replace_slash=True)
+
+            if len(history.keys()) == 0:
+                stats = database.load("bread", "day_stats", default={})
+            else:
+                lowest_accepted = int(min(history.keys()))
+
+                day = max(day, lowest_accepted)
+                stats = history[str(day)]        
+        
+        embed = u_interface.gen_embed(
+            title = "Day stats",
+            description = "Day {day_id}'s stats:\n{stats}".format(
+                day_id = day,
+                stats = "\n".join([f"- **{key}**: {u_text.smart_number(value)}" for key, value in stats.items()])
+            ),
+            fields = [
+                ("", "If you don't see a stat here that means it hasn't occurred today.\n\nYou can get other days via '%bread day <day id>'\nYou can get a graph of a stat via '%bread day graph <stat name>'", False)
+            ]
+        )
+        await ctx.reply(embed=embed)
+
+    
+
+        
+
+
+    ######################################################################################################################################################
+    ##### BREAD DAY GRAPH ################################################################################################################################
+    ######################################################################################################################################################
+    
+    @bread_day.command(
+        name = "graph",
+        brief = "Get a graph of a stat.",
+        description = "Get a graph of a stat.\n\nList of other stats:\n- '-start <day>': Sets the start day of the graph.\n- '-end <day>': Sets the end day of the graph.\n- '-log': Changes the Y axis to be a logarithmic scale."
+    )
+    async def bread_day_graph(self, ctx,
+            stat_name: typing.Optional[str] = commands.parameter(description = "The name of the stat to graph."),
+            *, other_args: typing.Optional[str] = commands.parameter(description = "Other arguments.")
+        ):
+        current = database.load("bread", "day_stats", default={})
+        history = u_files.load("data/bread/day_stats.json", default={}, replace_slash=True)
+
+        # Get a version with all the data.
+        modified = history.copy()
+        modified[str(u_bingo.live(database)["daily_board_id"])] = current
+
+        stat_list = list(current.keys())
+
+        for day_stats in modified.values():
+            for key in day_stats:
+                if key not in stat_list:
+                    stat_list.append(key)
+        
+        if stat_name not in stat_list:
+            embed = u_interface.gen_embed(
+                title = "Stat list",
+                description = "You need to provide a stat name.\nHere's a list of stats:\n{stat_list}".format(stat_list = ", ".join(stat_list))
+            )
+            await ctx.reply(embed=embed)
+            return
+        
+        if other_args is None:
+            other_args = ""
+
+        split_args = other_args.split(" ")
+
+        log = "-log" in split_args
+
+        start = int(min(modified))
+        end = int(max(modified))
+
+        for arg in split_args:
+            try:
+                if arg.startswith("-start"):
+                    start = u_converters.parse_int(arg.split(" ")[1])
+                elif arg.startswith("-end"):
+                    end = u_converters.parse_int(arg.split(" ")[1])
+            except ValueError:
+                pass
+        
+        start = max(int(min(modified)), start)
+        end = int(max(modified))
+
+        if end <= start:
+            await ctx.reply("The start must be before the end.")
+            return
+        
+        data = []
+
+        found = False
+        for tick_id in range(start, end + 1):
+            if modified.get(str(tick_id), {}).get(stat_name, None) is None and not found:
+                continue
+
+            found = True
+            data.append(
+                (
+                    tick_id,
+                    modified.get(str(tick_id), {}).get(stat_name, 0)
+                )
+            )
+
+        graph = u_images.generate_graph(
+            lines = [{"values": data}],
+            x_label = "Day number",
+            y_label = stat_name.replace("_", " ").title(),
+            log_scale = log
+        )
+
+        await ctx.reply(file=discord.File(graph))
+            
 
 async def setup(bot: commands.Bot):
     global database

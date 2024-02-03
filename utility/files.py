@@ -191,7 +191,9 @@ class DatabaseInterface:
             file_path = file_path.replace("/", SLASH)
         
         # Ensure there's the folder for the file.
-        os.makedirs(os.path.dirname(file_path), exist_ok=True)
+        dirname = os.path.dirname(file_path)
+        if len(dirname) != 0:
+            os.makedirs(dirname, exist_ok=True)
 
         backup = self.load_json_file(file_path, default=type(data)())
 
@@ -528,7 +530,9 @@ def save(
         path = path.replace("/", SLASH)
     
     # Ensure there's the folder for the file.
-    os.makedirs(os.path.dirname(path), exist_ok=True)
+    dirname = os.path.dirname(path)
+    if len(dirname) != 0:
+        os.makedirs(dirname, exist_ok=True)
 
     with open(path, "w+") as file_write:
         json.dump(data, file_write, indent=4)

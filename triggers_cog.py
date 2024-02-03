@@ -412,6 +412,8 @@ class Triggers_cog(u_custom.CustomCog, name="Triggers", description="Hey there! 
         day_of_the_week = ((int(time.time()) - (hour_offset * 3600)) // 86400 + 4) % 7
         weekly_board = day_of_the_week == 0
 
+        ##### Archive the old bingo boards. #####
+
         # Archive daily board and the weekly board if it's Monday.
         live_data = u_bingo.live(database=database)
 
@@ -434,8 +436,31 @@ class Triggers_cog(u_custom.CustomCog, name="Triggers", description="Hey there! 
             }
 
             database.save("bingo", "previous_9x9_boards", data=archive_9x9)
+        
+        ##### Handle the day stats. #####
+            
+        handled_stats = False
 
-        # Now, make new boards.
+        try:
+            # Load the previous day stats.
+            existing = u_files.load("data/bread/day_stats.json", default={}, replace_slash=True)
+
+            # Update the previous day stats to add this last day's stats.
+            existing[
+                    str(live_data.get("daily_board_id", time.time() // 1))
+                ] = database.load("bread", "day_stats", default={})
+
+            # Save the day stats file.
+            u_files.save("data/bread/day_stats.json", data=existing, replace_slash=True)
+
+            # Clear the day stats in the database.
+            database.save("bread", "day_stats", data={})
+            
+            handled_stats = True
+        except:
+            print(traceback.format_exc())
+
+        ##### Make new boards. #####
 
         new_daily = u_bingo.generate_5x5_board(database=database)
 
@@ -453,7 +478,8 @@ class Triggers_cog(u_custom.CustomCog, name="Triggers", description="Hey there! 
         u_bingo.update_live(database=database, bot=self.bot, new_data=live_data)
         self.bot.update_bingo_cache(live_data)
 
-        # Send the daily board to the daily board channel.
+        ##### Send board announcement messages. #####
+        # Send the daily board.
         daily_channel = await self.bot.fetch_channel(DAILY_BOARD_CHANNEL)
         u_images.render_full_5x5(
             database = database,
@@ -461,7 +487,13 @@ class Triggers_cog(u_custom.CustomCog, name="Triggers", description="Hey there! 
             enabled = 0
         )
 
-        await daily_channel.send("Bingo Board #{}!\nThe wiki:\n<https://bread.miraheze.org/wiki/The_Bread_Game_Wiki>".format(live_data["daily_board_id"]), file=discord.File(r'images/generated/bingo_board.png'))
+        await daily_channel.send(
+            "Bingo Board #{board_id}!\nThe wiki:\n<https://bread.miraheze.org/wiki/The_Bread_Game_Wiki>\n{stats_text}".format(
+                board_id = live_data["daily_board_id"],
+                stats_text = f"The previous day's stats have been archived! You can check the stats with `%bread day {live_data['daily_board_id'] - 1}`!" if handled_stats else "*Something went wrong with the daily stats.*"
+            ),
+            file=discord.File(r'images/generated/bingo_board.png')
+        )
         
         # If it's the day for it, send the weekly board.
         if weekly_board:
@@ -851,12 +883,142 @@ class Triggers_cog(u_custom.CustomCog, name="Triggers", description="Hey there! 
         return
     
     async def auto_detection(self, message: discord.Message):
+        # Filter out all messages sent by the bot, unless it's an objective completion message.
+        if message.author.id == self.bot.user.id:
+            if not(u_interface.is_reply(message) and "completed!" in message.content):
+                return
+            
         await u_detection.on_message_detection(
             bot = self.bot,
             message = message,
             database = database,
             bingo_data = self.parsed_bingo_cache
         )
+    
+    async def daily_stats(self, message: discord.Message):
+        if message.guild is None:
+            return
+        
+        # Ensure messages are only counted if they're sent in the AC server.
+        if message.guild.id != 1105943535804493955:
+            return
+        
+        stats = database.load("bread", "day_stats", default={})
+
+        def increment(key: str, *, amount: int = 1):
+            nonlocal stats
+            
+            if key not in stats:
+                stats[key] = amount
+                return
+            
+            stats[key] += amount
+
+        # The number of sent messages.
+        increment("sent_messages")
+
+        # The number of bread commands.
+        if message.content.startswith("$bread"):
+            increment("bread_commands")
+        
+        # The number of messages sent in #bread-rolls.
+        if message.channel.id == 967544442468843560:
+            increment("bread_rolls_messages")
+        
+        # The number of messages sent in #announcements.
+        if message.channel.id == 958763826025742336:
+            increment("announcements_made")
+        
+        # The number of messages sent in #new-members, so long as the message content is blank.
+        if message.channel.id == 958679256156749866 and message.content == "":
+            increment("new_members")
+        
+        # The number of messages sent that are just "skill issue"
+        if message.content.lower() == "skill issue":
+            increment("skill_issues")
+        
+        # The number of messages that contain "owo"
+        if "owo" in message.content.lower():
+            increment("owo_messages")
+        
+        # The number of times @gets pinged too much was pinged.
+        if "<@&967443956659019786>" in message.content:
+            increment("gptm_pings")
+        
+        # The number of messages that contain "ah yes" after commas are removed.
+        if "ah yes" in message.content.lower().replace(",", ""):
+            increment("ah_yes")
+
+        # The following ones all require the message being sent by Machine-Mind.
+        if u_interface.is_mm(message):
+            # The number of messages sent by Machine-Mind.
+            increment("mm_messages")
+
+            replied = u_interface.is_reply(message)
+
+            # The number of gambles done.
+            if u_interface.is_gamble(message):
+                increment("gambles_done")
+            
+            # The amount of times alchemy was completed.
+            if replied and "Well done. You have created" in message.content:
+                increment("alchemy_completed")
+            
+
+            # The number of normal bricks found, along with the total number of bricks done.
+            if message.content in [":bricks:", "🧱"]:
+                increment("normal_bricks")
+                increment("total_bricks")
+            
+            # The number of golden bricks found, along with the total number of bricks done.
+            if message.content == "<:brick_gold:971239215968944168>":
+                increment("gold_bricks")
+                increment("total_bricks")
+            
+            # There are currently 4 different chessatron completion messages.
+            # This tron completion message is used if you're making 1 or 2 trons, it sends it once per tron.
+            if "You have collected all the chess pieces!" in message.content:
+                increment("chessatrons_made")
+            
+            # This tron completion message is used for if you're making 3 to 9 trons, it also sends it once per tron.
+            if "Congratulations! You've collected all the chess pieces!" in message.content:
+                increment("chessatrons_made")
+            
+            # This tron completion message is used for 10 to 4,999 chessatrons, it sends a single summary message, and then messages containing the chessatron emoji for each tron made.
+            if "Congratulations! More chessatrons!" in message.content:
+                increment(
+                    key ="chessatrons_made",
+                    amount = u_text.extract_number(r"Congratulations! More chessatrons! You've made ([\d,]+) of them\.", message.content, default=1)
+                )
+            
+            # This tron completion message is used for if you're making 5,000 or more chessatrons at once, it sends only two messages, a summary, and a message with the chessatron emoji once and the number of trons made.
+            if "Wow. You have created a **lot** of chessatrons." in message.content:
+                increment(
+                    key = "chessatrons_made",
+                    amount = u_text.extract_number(r"Wow\. You have created a \*\*lot\*\* of chessatrons\. ([\d,]+) to be exact\.", message.content, default=1)
+                )
+            
+            # Okay, done with the chessatrons.
+                
+            # The next two require the message being a roll summary.
+            if replied and "Summary of results:" in message.content:
+
+                # This is the number of MoaKs rolled. It's not going to be perfect, since it only uses the number shown in the roll summary.
+                if "<:anarchy_chess:960772054746005534>" in message.content:
+                    increment(
+                        key = "moaks_rolled",
+                        amount = u_text.extract_number(r"<:anarchy_chess:960772054746005534>: ([\d,]+)", message.content, default=0)
+                    )
+
+                # This is the number of gold gems rolled. Like MoaKs, it's not going to be perfect.
+                if "<:gem_gold:1006498746718244944>" in message.content:
+                    increment(
+                        key = "gold_gems_rolled",
+                        amount = u_text.extract_number(r"<:gem_gold:1006498746718244944>: ([\d,]+)", message.content, default=0)
+                    )
+        
+        # Save the updated stats.
+        database.save("bread", "day_stats", data=stats)
 
             
             
@@ -866,6 +1028,9 @@ class Triggers_cog(u_custom.CustomCog, name="Triggers", description="Hey there! 
     async def on_message(self, message):
         # Run the auto detection. It will automatically filter out messages sent by the bot if needed.
         await self.auto_detection(message)
+
+        # Increment the daily stats.
+        await self.daily_stats(message)
 
         # Make sure the bot doesn't read it's own messages.
         if message.author.id == self.bot.user.id:
