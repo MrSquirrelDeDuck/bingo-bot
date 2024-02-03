@@ -1102,7 +1102,7 @@ class Stonk_cog(u_custom.CustomCog, name="Stonk", description="Commands for work
             distance = {stonk: dough % stonk.value(database) for stonk in u_values.stonks}
             stonk = min(distance, key=distance.get)
         
-        invest_amount = dough // stonk.value()
+        invest_amount = dough // stonk.value(database)
         
         gift_command = ""
 
@@ -1111,7 +1111,7 @@ class Stonk_cog(u_custom.CustomCog, name="Stonk", description="Commands for work
         
         embed = u_interface.gen_embed(
             title = "Stonk gifting",
-            description = "By investing in **{} {}** you would have {} dough remaining.".format(u_text.smart_number(invest_amount), stonk.internal_emoji, u_text.smart_number(dough - (invest_amount * stonk.value()))),
+            description = "By investing in **{} {}** you would have {} dough remaining.".format(u_text.smart_number(invest_amount), stonk.internal_emoji, u_text.smart_number(dough - (invest_amount * stonk.value(datanase)))),
             fields = [("Commands", "$bread invest {} {} {}".format(u_text.smart_number(invest_amount), stonk.internal_emoji, gift_command), True)],
             footer_text = "On mobile, you can tap and hold on the Commands section's text to copy it."
         )
