@@ -1,7 +1,5 @@
 """Along with functions for permission checking, this has some checks that can be used with `@commands.check(checks.<function>)` if this file is loaded as checks via `import utility.checks as checks`."""
 
-from os.path import sep as SLASH
-
 import discord
 from discord.ext import commands
 import typing

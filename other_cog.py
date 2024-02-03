@@ -1,23 +1,40 @@
 """This cog is for commands that don't fit in the other cogs."""
 
 from discord.ext import commands
-from scipy.stats import binom
 import discord
 import typing
 import random
-import wikipedia
-import mpmath
 import copy
 import re
 import asyncio
-import aiohttp
 import traceback
 import time
-import datetime, pytz
-import cairosvg, chess, chess.svg
+import datetime
 import os
 from os.path import sep as SLASH
 import difflib
+
+# pip install CairoSVG
+import cairosvg
+
+# pip install chess
+import chess
+import chess.svg
+
+# pip install pytz
+import pytz
+
+# pip install aiohttp
+import aiohttp
+
+# pip install scipy
+from scipy.stats import binom
+
+# pip install mpmath
+import mpmath
+
+# pip install wikipedia
+import wikipedia
 
 import sys
 

@@ -5,7 +5,6 @@ import datetime
 import json
 import typing
 import traceback
-from os.path import sep as SLASH
 import copy
 
 class DatabaseInterface:

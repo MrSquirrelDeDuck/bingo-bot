@@ -1,7 +1,5 @@
 """Functions for working with stonks."""
 
-from os.path import sep as SLASH
-
 import typing
 import discord
 import re

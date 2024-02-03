@@ -2,7 +2,6 @@
 The primary use is in command parameters via typing.Optional, however it can also be used to parse integers that contain commas."""
 
 from discord.ext import commands
-import traceback
 import re
 
 import utility.text as u_text

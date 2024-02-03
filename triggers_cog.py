@@ -6,15 +6,15 @@ from discord.ext import tasks
 import discord
 import datetime
 import asyncio
-import aiohttp
 import time
 import traceback
 import re
 import random
 import time
 import typing
-import os
-from os.path import sep as SLASH
+
+# pip install aiohttp
+import aiohttp
 
 import sys
 

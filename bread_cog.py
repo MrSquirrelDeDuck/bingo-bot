@@ -4,10 +4,14 @@ from discord.ext import commands
 import discord
 import typing
 import datetime
-import pytz
 import copy
 import math
 import re
+
+# pip install pytz
+import pytz
+
+# pip install scipy
 from scipy.stats import binom
 
 import sys

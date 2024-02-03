@@ -3,10 +3,12 @@
 from discord.ext import commands
 import discord
 import typing
-from fuzzywuzzy import fuzz
 import math
 import asyncio
 from os.path import sep as SLASH
+
+# pip install fuzzywuzzy
+from fuzzywuzzy import fuzz
 
 import sys
 

@@ -2,15 +2,18 @@
 
 from os.path import sep as SLASH
 
+import typing
+import importlib
+import textwrap
+
+# pip install matplotlib
+import matplotlib.pyplot as plt
+import matplotlib.colors as mcolors
+
+# pip install pillow
 from PIL import Image as PIL_Image
 from PIL import ImageDraw as PIL_ImageDraw
 from PIL import ImageFont as PIL_ImageFont
-
-import textwrap
-import matplotlib.pyplot as plt
-import matplotlib.colors as mcolors
-import typing
-import importlib
 
 import utility.bingo as u_bingo
 import utility.text as u_text

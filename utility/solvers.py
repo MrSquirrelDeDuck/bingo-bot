@@ -1,6 +1,8 @@
 """Bread Game solvers using z3."""
 
 import re
+
+# pip install z3-solver
 import z3
 
 import utility.values as u_values
