@@ -102,7 +102,7 @@ def render_board(database: u_files.DatabaseInterface, tile_string: str, enabled:
 
     # Setup ImageDraw, the font, and the text wrapper.
     draw = PIL_ImageDraw.Draw(img)
-    font = PIL_ImageFont.truetype("verdana.ttf", size=25)
+    font = PIL_ImageFont.truetype(f"images{SLASH}bases{SLASH}verdana.ttf", size=25)
     text_wrapper = textwrap.TextWrapper(width=14) 
 
     # Convert the enabled number into a list of booleans.

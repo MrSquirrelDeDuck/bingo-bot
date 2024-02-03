@@ -8,6 +8,7 @@ import asyncio
 from os.path import sep as SLASH
 
 # pip install fuzzywuzzy
+# pip install python-Levenshtein
 from fuzzywuzzy import fuzz
 
 import sys
