@@ -387,7 +387,7 @@ class Stonk_cog(u_custom.CustomCog, name="Stonk", description="Commands for work
     )
     async def stonk_file(self, ctx):
         file_path = os.path.join("public", "stonk_history.json")
-        database.save_json_file(file_path, u_stonks.stonk_history(database))
+        database.save_json_file(file_path, data=u_stonks.stonk_history(database), join_file_path=False) # replace_slash is False since we're using os.path.join earlier.
         await ctx.reply(file=discord.File(file_path))
     
 

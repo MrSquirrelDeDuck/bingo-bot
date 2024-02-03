@@ -33,7 +33,7 @@ class DatabaseInterface:
             make_backup (bool, optional): Whether to make a backup of the database. Defaults to False.
         """
         print("Saving database.")
-        self.save_json_file("database.json", self.database)
+        self.save_json_file("database.json", data=self.database, join_file_path=False)
 
         if make_backup:
             self.make_backup()
@@ -47,7 +47,7 @@ class DatabaseInterface:
         
         file_name = (datetime.datetime.now().strftime('database_backup_%Y:%m:%d_%X.json')).replace(":", "-")
         print("Saving backup to " + folder_path + file_name)
-        self.save_json_file(folder_path + file_name, self.database)
+        self.save_json_file(folder_path + file_name, data=self.database, join_file_path=False)
         print("Saved backup.")
 
         # Remove files beyond the last 196 backups.
@@ -62,7 +62,7 @@ class DatabaseInterface:
         
         # This will overwrite the current stored database, so be careful."""
         print("Loading database.")
-        self.database = self.load_json_file("database.json", default=None)
+        self.database = self.load_json_file("database.json", default=None, join_file_path=False)
 
         if self.database is None:
             print("No database file found. Looking for a backup.")
@@ -82,7 +82,7 @@ class DatabaseInterface:
                     backup = backup_list[0]
 
                     print(f"Found backup. Loading {backup}")
-                    self.database = self.load_json_file("backups/" + backup, default=None)
+                    self.database = self.load_json_file("backups", "backup", default=None, join_file_path=True)
 
                     self.save_database(make_backup=False)
             else:
@@ -150,9 +150,9 @@ class DatabaseInterface:
 
     def load_json_file(
             self: typing.Self,
-            file_path: str,
+            *file_path: str,
             default: typing.Any = None,
-            replace_slash: bool = False
+            join_file_path: bool = False
         ) -> list | dict:
         """Loads a json file and returns the contents.
 
@@ -164,8 +164,13 @@ class DatabaseInterface:
         Returns:
             list | dict: The contents of the file.
         """
-        if replace_slash:
-            file_path = file_path.replace("/", SLASH)
+        # if join_file_path:
+        #     file_path = file_path.replace("/", SLASH)
+
+        if join_file_path:
+            file_path = os.path.join(*file_path)
+        else:
+            file_path = file_path[0]
 
         try:
             with open(file_path, "r", encoding="utf8") as file_load:
@@ -175,27 +180,30 @@ class DatabaseInterface:
     
     def save_json_file(
             self: typing.Self,
-            file_path: str,
+            *file_path: str,
             data: dict | list,
-            replace_slash: bool = False
+            join_file_path: bool = True
         ) -> None:
         """Saves a dict or list to a file. Will create the file if it doesn't exist.
         Will load the file before saving, and if there is an error while saving it will revert it.        
 
         Args:
-            file_path (str): The path to the file to save.
+            *file_path (str): The path to the file to save as multiple strings for parameters. If join_file_path is True it will join it, otherwise it will go with the first item here. Like `"folder1", "folder2", "file.json"`.
             data (dict | list): The data to save.
-            replace_slash (bool, optional): Whether to replace all slashes in the given path with os.path.sep. Defaults to False.
+            join_file_path (bool, optional): Whether to use os.path.join to join what's provided in file_path. Defaults to True.
         """
-        if replace_slash:
-            file_path = file_path.replace("/", SLASH)
+
+        if join_file_path:
+            file_path = os.path.join(*file_path)
+        else:
+            file_path = file_path[0]
         
         # Ensure there's the folder for the file.
         dirname = os.path.dirname(file_path)
         if len(dirname) != 0:
             os.makedirs(dirname, exist_ok=True)
 
-        backup = self.load_json_file(file_path, default=type(data)())
+        backup = self.load_json_file(file_path, default=type(data)(), join_file_path=False)
 
         with open(file_path, "w+") as file_write:
             try:
@@ -491,9 +499,9 @@ class DatabaseInterface:
 
 
 def load(
-        path: str,
+        *path: str,
         default: typing.Any = None,
-        replace_slash: bool = False
+        join_file_path: bool = True
     ) -> dict | list:
     """Loads a json file.
 
@@ -505,8 +513,13 @@ def load(
     Returns:
         dict | list: The data inside the loaded file.
     """
-    if replace_slash:
-        path = path.replace("/", SLASH)
+    # if replace_slash:
+    #     path = path.replace("/", SLASH)
+
+    if join_file_path:
+        path = os.path.join(*path)
+    else:
+        path = path[0]
     
     try:
         with open(path, "r", encoding="utf8") as file_load:
@@ -515,9 +528,9 @@ def load(
         return default
 
 def save(
-        path: str,
+        *path: str,
         data: dict | list,
-        replace_slash: bool = False
+        join_file_path: bool = True
     ) -> None:
     """Saves a dict or list to a file. Will create a file if it does not already exist.
 
@@ -526,8 +539,13 @@ def save(
         data (dict | list): The list or dict to save.
         replace_slash (bool, optional): Whether to replace all slashes in the given path with os.path.sep. Defaults to False.
     """
-    if replace_slash:
-        path = path.replace("/", SLASH)
+    # if join_file_path:
+    #     path = path.replace("/", SLASH)
+
+    if join_file_path:
+        path = os.path.join(*path)
+    else:
+        path = path[0]
     
     # Ensure there's the folder for the file.
     dirname = os.path.dirname(path)

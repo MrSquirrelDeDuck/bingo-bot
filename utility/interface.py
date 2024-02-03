@@ -184,7 +184,7 @@ def is_mm(message: discord.Message) -> bool:
     Returns:
         bool: Whether the message was sent by Machine-Mind or a known Machine-Mind clone.
     """
-    mm_ids = [960869046323134514, 1144833820940578847, 658290426435862619]
+    mm_ids = [960869046323134514, 1144833820940578847]
 
     return message.author.id in mm_ids
 
@@ -381,15 +381,15 @@ def snapshot_roles(guild: discord.Guild) -> None:
     
     # Save the snapshot to file.
     snapshot_id = time.time()
-    u_files.save(f"data/role_snapshots/snapshots/{snapshot_id}.json", data=out, replace_slash=True)
+    u_files.save("data", "role_snapshots", "snapshots", f"{snapshot_id}.json", data=out, join_file_path=True)
 
     # Updating the list of snapshots people were previously in.
-    base = u_files.load("data/role_snapshots/last_snapshot.json", default={},replace_slash=True)
+    base = u_files.load("data", "role_snapshots", "last_snapshot.json", default={}, join_file_path=True)
 
     for member_id in out:
         base[str(member_id)] = str(snapshot_id)
     
-    u_files.save("data/role_snapshots/last_snapshot.json", data=base, replace_slash=True)
+    u_files.save("data", "role_snapshots", "last_snapshot.json", data=base, join_file_path=True)
 
 async def refresh_status(bot: u_custom.CustomBot | commands.Bot, database: u_files.DatabaseInterface):
     """Refreshes the status from the database.

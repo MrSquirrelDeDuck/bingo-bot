@@ -1500,7 +1500,7 @@ class Bread_cog(u_custom.CustomCog, name="Bread", description="Utility commands 
             stats = database.load("bread", "day_stats", default={})
         else:
             # If it's a day in history.
-            history = u_files.load("data/bread/day_stats.json", default={}, replace_slash=True)
+            history = u_files.load("data", "bread", "day_stats.json", default={}, join_file_path=True)
 
             if len(history.keys()) == 0:
                 stats = database.load("bread", "day_stats", default={})
@@ -1541,7 +1541,7 @@ class Bread_cog(u_custom.CustomCog, name="Bread", description="Utility commands 
             *, other_args: typing.Optional[str] = commands.parameter(description = "Other arguments.")
         ):
         current = database.load("bread", "day_stats", default={})
-        history = u_files.load("data/bread/day_stats.json", default={}, replace_slash=True)
+        history = u_files.load("data", "bread", "day_stats.json", default={}, join_file_path=True)
 
         # Get a version with all the data.
         modified = history.copy()

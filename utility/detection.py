@@ -1940,7 +1940,7 @@ async def handle_completed(
         )
     
     try:
-        await message.add_reaction("🎉")
+        await message.add_reaction("<a:you_did_a_thing:1090712320663109772>")
     except discord.Forbidden:
         pass
         

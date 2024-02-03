@@ -23,6 +23,8 @@ import utility.files as u_files
 
 database = None # type: u_files.DatabaseInterface
 
+MAIN_GUILD = 958392331671830579
+
 class Admin_cog(u_custom.CustomCog, name="Admin", description="Administration commands for the Bingo-Bot."):
     bot = None
 
@@ -631,7 +633,7 @@ class Admin_cog(u_custom.CustomCog, name="Admin", description="Administration co
             await ctx.reply("The mode must be 'allow' or 'disallow'.")
             return
         
-        permission_data = u_files.load("data/misc/permissions.json", replace_slash=True)
+        permission_data = u_files.load("data", "misc", "permissions.json", default = {}, join_file_path=True)
         
         if mode == "allow":
             if user.id in permission_data.get(permission, []):
@@ -649,7 +651,7 @@ class Admin_cog(u_custom.CustomCog, name="Admin", description="Administration co
             
             permission_data[permission].remove(user.id)
         
-        u_files.save("data/misc/permissions.json", data=permission_data, replace_slash=True)
+        u_files.save("data", "misc", "permissions.json", data=permission_data, join_file_path=True)
         
         await ctx.reply("Done.")
 
@@ -794,7 +796,7 @@ class Admin_cog(u_custom.CustomCog, name="Admin", description="Administration co
     @commands.is_owner()
     async def admin_snapshot_roles(self, ctx):
         u_interface.snapshot_roles(
-            guild = self.bot.get_guild(1105943535804493955)
+            guild = self.bot.get_guild(MAIN_GUILD)
         )
         await ctx.reply("Done.")
 
@@ -819,7 +821,7 @@ class Admin_cog(u_custom.CustomCog, name="Admin", description="Administration co
         if ctx.guild is None:
             await ctx.reply("This can't be run in DMs.")
             return
-        if ctx.guild.id != 1105943535804493955:
+        if ctx.guild.id != MAIN_GUILD:
             await ctx.reply("This isn't available in this server, sorry.")
             return
         
@@ -833,7 +835,7 @@ class Admin_cog(u_custom.CustomCog, name="Admin", description="Administration co
         snapshots_containing = {}
 
         for snapshot in snapshot_list_sorted:
-            loaded_data = u_files.load(f"data/role_snapshots/snapshots/{snapshot}.json", default={}, replace_slash=True)
+            loaded_data = u_files.load("data", "role_snapshots", "snapshots", f"{snapshot}.json", default={}, join_file_path=True)
 
             if str(member.id) not in loaded_data:
                 continue

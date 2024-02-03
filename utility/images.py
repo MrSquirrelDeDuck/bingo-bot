@@ -174,7 +174,7 @@ def render_full_5x5(database: u_files.DatabaseInterface, tile_string: str, enabl
         board_size = 5
     )
 
-    base = PIL_Image.open("images/bases/full_5x5_base.png").copy().convert("RGBA")
+    base = PIL_Image.open(f"images{SLASH}bases{SLASH}full_5x5_base.png").copy().convert("RGBA")
 
     base.paste(main_board, (0, 270))
 
@@ -322,8 +322,8 @@ def stonk_report(database: u_files.DatabaseInterface):
     algorithm_portfolio = algorithm_data["func"](1_000_000)["portfolio"]
 
     algorithm_choices = [ # This can be called via list[bool] to get whether it was chosen by the algorithm or not.
-        ((0.75, 0.4, 0.4, 1), PIL_Image.open("images/bases/x.png").resize((90, 90)).convert("RGBA")),
-        ((0.4, 0.75, 0.4, 1), PIL_Image.open("images/bases/check.png").resize((90, 90)).convert("RGBA"))
+        ((0.75, 0.4, 0.4, 1), PIL_Image.open(f"images{SLASH}bases{SLASH}x.png").resize((90, 90)).convert("RGBA")),
+        ((0.4, 0.75, 0.4, 1), PIL_Image.open(f"images{SLASH}bases{SLASH}check.png").resize((90, 90)).convert("RGBA"))
     ]
     ###################
 
@@ -339,7 +339,7 @@ def stonk_report(database: u_files.DatabaseInterface):
 
     stonk_data = {stonk: {} for stonk in u_values.stonks}
 
-    img = PIL_Image.open("images/bases/stonk_report_base.png").copy().convert("RGBA")
+    img = PIL_Image.open(f"images{SLASH}bases{SLASH}stonk_report_base.png").copy().convert("RGBA")
     font = PIL_ImageFont.truetype("verdana.ttf", size=57)
     algorithm_font = PIL_ImageFont.truetype("images/bases/centaur.ttf", size=50)
     imgDraw = PIL_ImageDraw.Draw(img)

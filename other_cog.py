@@ -1285,7 +1285,7 @@ class Other_cog(u_custom.CustomCog, name="Other", description="Commands that don
         tracked_data = []
         for snapshot_id, snapshot in enumerate(snapshot_list):
             count = 0
-            snapshot_data = u_files.load("data/role_snapshots/snapshots/{}".format(snapshot), default={}, replace_slash=True)
+            snapshot_data = u_files.load("data", "role_snapshots", "snapshots", snapshot, default={}, join_file_path=True)
             for user in snapshot_data:
                 if role.id in snapshot_data[user]:
                     count += 1
@@ -1561,7 +1561,7 @@ class Other_cog(u_custom.CustomCog, name="Other", description="Commands that don
             for emoji in guild.emojis:
                 emoji_list.append((str(emoji), score_emoji(emoji.name)))
         
-        emoji_data = database.load_json_file("data/emoji_data.json") # This file isn't loaded into the database since it's really large and also shouldn't be changing.
+        emoji_data = database.load_json_file("data", "emoji_data.json", default=[], join_file_path=False) # This file isn't loaded into the database since it's really large and also shouldn't be changing.
         for data in emoji_data:
             emoji_list.append((data["text"], score_emoji(data["name"])))
         

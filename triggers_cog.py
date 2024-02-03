@@ -48,12 +48,12 @@ bingo_time = datetime.time(
     tzinfo = datetime.timezone.utc
 )
 
-MAIN_GUILD = 1105943535804493955
+MAIN_GUILD = 958392331671830579
 
-REMINDERS_CHANNEL = 1196865764511191090
-PING_LISTS_CHANNEL = 1196865786489344120
-DAILY_BOARD_CHANNEL = 1196865970355052644
-WEEKLY_BOARD_CHANNEL = 1196865991632748614
+REMINDERS_CHANNEL = 1138583859508813955
+PING_LISTS_CHANNEL = 1060344552818483230
+DAILY_BOARD_CHANNEL = 958705808860921906
+WEEKLY_BOARD_CHANNEL = 958763826025742336
 # lol they get longer by 1 letter each time
 
 database = None # type: u_files.DatabaseInterface
@@ -192,6 +192,11 @@ class Triggers_cog(u_custom.CustomCog, name="Triggers", description="Hey there! 
             return
         
         await ctx.reply(self.get_pk_explanation(auto_trigger=False))
+
+
+        
+        
+
     
     @pk_explanation_command.group(
         name = "counter",
@@ -212,6 +217,11 @@ class Triggers_cog(u_custom.CustomCog, name="Triggers", description="Hey there! 
             description = "Days since the last PluralKit confusion:\n# {}\nThe current record is **{}**.".format(u_text.smart_number(counter_data), u_text.smart_text(record, 'day'))
         )
         await ctx.reply(embed=embed)
+
+
+        
+        
+
     
     @pk_explanation_counter.command(
         name = "reset",
@@ -253,19 +263,6 @@ class Triggers_cog(u_custom.CustomCog, name="Triggers", description="Hey there! 
     @commands.check(u_checks.hide_from_help)
     async def latent_explanation_command(self, ctx):
         await ctx.reply("Latent-Dreamer is a bot that creates new responses via ChatGPT when triggered by specific phrases.\nWhen triggered she will send a message based on what the trigger was.\nThings like 'google en passant' and 'chess 2' always use the same prompt. Triggers such as 'what is ...' and 'google ...' will have ChatGPT provide an answer to the question or generate a list of search terms, depending on which was triggered.\n\nLatent-Dreamer also has a credits system to limit the amount of times people can trigger her per day.\nMore information about the credits system can be found [here](<https://discord.com/channels/958392331671830579/958392332590387262/1110078862286671962>) or by pinging Latent-Dreamer with the word 'credits'.")
-
-
-        
-        
-
-    @commands.command(
-        name = "test",
-        brief="Test command.",
-        description="Test command."
-    )
-    @commands.check(u_checks.hide_from_help)
-    async def test_command(self, ctx):
-        await self.daily_loop()
 
 
         
@@ -443,7 +440,7 @@ class Triggers_cog(u_custom.CustomCog, name="Triggers", description="Hey there! 
 
         try:
             # Load the previous day stats.
-            existing = u_files.load("data/bread/day_stats.json", default={}, replace_slash=True)
+            existing = u_files.load("data", "bread", "day_stats.json", default={}, join_file_path=True)
 
             # Update the previous day stats to add this last day's stats.
             existing[
@@ -451,7 +448,7 @@ class Triggers_cog(u_custom.CustomCog, name="Triggers", description="Hey there! 
                 ] = database.load("bread", "day_stats", default={})
 
             # Save the day stats file.
-            u_files.save("data/bread/day_stats.json", data=existing, replace_slash=True)
+            u_files.save("data", "bread", "day_stats.json", data=existing, join_file_path=True)
 
             # Clear the day stats in the database.
             database.save("bread", "day_stats", data={})
@@ -609,10 +606,10 @@ class Triggers_cog(u_custom.CustomCog, name="Triggers", description="Hey there! 
         database.save_database(make_backup=True)
 
         # Update public/stonk_history.json.
-        database.save_json_file("public/stonk_history.json", data=u_stonks.stonk_history(database), replace_slash=True)
+        database.save_json_file("public", "stonk_history.json", data=u_stonks.stonk_history(database), join_file_path=True)
 
         # Update public/stonk_current.json.
-        database.save_json_file("public/stonk_current.json", data=u_stonks.full_current_values(database), replace_slash=True)
+        database.save_json_file("public", "stonk_current.json", data=u_stonks.full_current_values(database), join_file_path=True)
 
         # Running _on_stonk_tick in other cogs.
         for cog in self.bot.cogs.values():
@@ -643,7 +640,7 @@ class Triggers_cog(u_custom.CustomCog, name="Triggers", description="Hey there! 
             )
 
             if channel_data["count"] >= 3:
-                await message.add_reaction("<a:you_broke_the_chain:1064256620617535538>")
+                await message.add_reaction("<a:you_broke_the_chain:1064349721361133608>")
             return
         
         if channel_data["sender"] == message.author.id:
@@ -758,7 +755,7 @@ class Triggers_cog(u_custom.CustomCog, name="Triggers", description="Hey there! 
                 )
             )
             try:
-                await message.add_reaction("<a:you_cant_count:1134902783095603300>")
+                await message.add_reaction("<:blunder:958752015188656138>") # <a:you_cant_count:1134902783095603300>
                 await u_interface.smart_reply(message, embed=embed)
             except discord.errors.Forbidden:
                 database.set_counting_data(channel_id = message.channel.id, count = counting_data["count"], sender = counting_data["sender"])
@@ -900,7 +897,7 @@ class Triggers_cog(u_custom.CustomCog, name="Triggers", description="Hey there! 
             return
         
         # Ensure messages are only counted if they're sent in the AC server.
-        if message.guild.id != 1105943535804493955:
+        if message.guild.id != MAIN_GUILD:
             return
         
         stats = database.load("bread", "day_stats", default={})
@@ -1072,7 +1069,7 @@ class Triggers_cog(u_custom.CustomCog, name="Triggers", description="Hey there! 
         
         # Gold brick reacting.
         if message.content == "<:brick_gold:971239215968944168>" and u_interface.is_mm(message) and not u_checks.sensitive_check(message.channel):
-            await message.add_reaction("<:Pog:1029515439971258398>")
+            await message.add_reaction("<:brilliant_move:958751616939474995>")
         
         # Brick stats correcting.
         if message.content.startswith("$brick stats"):
