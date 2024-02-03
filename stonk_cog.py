@@ -1099,7 +1099,7 @@ class Stonk_cog(u_custom.CustomCog, name="Stonk", description="Commands for work
             return
         
         if stonk is None:
-            distance = {stonk: dough % stonk.value() for stonk in u_values.stonks}
+            distance = {stonk: dough % stonk.value(database) for stonk in u_values.stonks}
             stonk = min(distance, key=distance.get)
         
         invest_amount = dough // stonk.value()
