@@ -727,7 +727,7 @@ class Other_cog(u_custom.CustomCog, name="Other", description="Commands that don
             await ctx.reply("You must provide a guess.")
             return
         
-        if not guess.startswith("3."):
+        if not (guess.startswith("3.") or guess.startswith("3,")):
             await ctx.reply("I'll give you a hint, π starts with `3.`.")
             return
         
