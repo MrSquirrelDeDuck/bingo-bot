@@ -742,6 +742,9 @@ class Other_cog(u_custom.CustomCog, name="Other", description="Commands that don
             await ctx.reply("That's correct!")
             return
 
+        correct = correct[2:]
+        guess = guess[2:]
+
         for index, data in enumerate(zip(guess, correct)):
             if data[0] == data[1]:
                 continue
