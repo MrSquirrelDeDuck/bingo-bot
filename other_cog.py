@@ -717,17 +717,21 @@ class Other_cog(u_custom.CustomCog, name="Other", description="Commands that don
             await ctx.reply("You're off by a lot.")
             return
 
-        if not u_converters.is_float(guess.replace(",","",1)): # This will catch None.
+        if guess.startswith("3,"):
+            await ctx.reply("Sorry, but can you pwease do that with `3.` instead of `3,`? owo")
+            return
+
+        if not u_converters.is_float(guess): # This will catch None.
             await ctx.reply("You should provide a numerical guess.")
             return
         
         guess = str(guess)
 
-        if not guess.replace('.','',1).replace(",","",1).isdigit():
+        if not guess.replace('.','',1).isdigit():
             await ctx.reply("You must provide a guess.")
             return
         
-        if not (guess.startswith("3.") or guess.startswith("3,")):
+        if not (guess.startswith("3.")):
             await ctx.reply("I'll give you a hint, π starts with `3.`.")
             return
         
@@ -741,9 +745,6 @@ class Other_cog(u_custom.CustomCog, name="Other", description="Commands that don
         if correct[:len(guess)] == guess:
             await ctx.reply("That's correct!")
             return
-
-        correct = correct[2:]
-        guess = guess[2:]
 
         for index, data in enumerate(zip(guess, correct)):
             if data[0] == data[1]:
