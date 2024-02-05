@@ -1415,7 +1415,7 @@ class Other_cog(u_custom.CustomCog, name="Other", description="Commands that don
         role_counts = [
             (
                 key,
-                len([role_id for role_id in role_data[key] if role_id not in prune_ids]) - len([role_id for role_id in role_data[key] if role_id in subtract_ids])
+                len([role_id for role_id in role_data[key] if role_id not in prune_ids and role_id not in subtract_ids]) - len([role_id for role_id in role_data[key] if role_id in subtract_ids])
             )
             for key in role_data
         ]
