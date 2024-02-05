@@ -717,7 +717,7 @@ class Other_cog(u_custom.CustomCog, name="Other", description="Commands that don
             await ctx.reply("You're off by a lot.")
             return
 
-        if not u_converters.is_float(guess): # This will catch None.
+        if not u_converters.is_float(guess.replace(",","",1)): # This will catch None.
             await ctx.reply("You should provide a numerical guess.")
             return
         
