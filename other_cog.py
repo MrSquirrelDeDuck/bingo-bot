@@ -1395,6 +1395,7 @@ class Other_cog(u_custom.CustomCog, name="Other", description="Commands that don
     
     @commands.command(
         name = "role_leaderboard",
+        aliases = ["role_lb"],
         brief = "A leaderboard for roles.",
         description = "A leaderboard for roles."
     )
