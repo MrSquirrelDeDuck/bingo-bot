@@ -693,6 +693,10 @@ class Other_cog(u_custom.CustomCog, name="Other", description="Commands that don
     async def pi(self, ctx,
             guess: typing.Optional[str] = commands.parameter(description = "Your guess as to the value of pi.")
         ):
+        if guess is None:
+            await ctx.reply("Contrary to popular belief, π actually has digits.")
+            return
+            
         if guess == "π":
             await ctx.reply("While that is technically correct, it does not test your knowledge of π.")
             return
