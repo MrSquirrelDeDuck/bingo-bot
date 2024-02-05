@@ -277,6 +277,17 @@ class Other_cog(u_custom.CustomCog, name="Other", description="Commands that don
         if message is None:
             await ctx.reply("||\n||")
             return
+
+        # If it's a sub-admin, just go with it.
+        if u_checks.sub_admin_check(ctx):
+            await ctx.send(message)
+    
+            try:
+                await ctx.message.delete()
+            except discord.Forbidden:
+                # Missing permissions to delete the command message, oh well.
+                pass
+            
         
         bingo_data = u_bingo.live(database=database)
         
