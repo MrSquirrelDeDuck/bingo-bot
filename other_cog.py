@@ -741,6 +741,7 @@ class Other_cog(u_custom.CustomCog, name="Other", description="Commands that don
                 data[0],
                 data[1]
             ))
+            break
 
         
             
