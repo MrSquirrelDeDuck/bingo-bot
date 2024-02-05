@@ -696,9 +696,17 @@ class Other_cog(u_custom.CustomCog, name="Other", description="Commands that don
         if guess == "π":
             await ctx.reply("While that is technically correct, it does not test your knowledge of π.")
             return
+            
+        if guess == "e":
+            await ctx.reply("That is the wrong transcendental number.")
+            return
+            
+        if guess == "🥧" or guess == ":pie:":
+            await ctx.reply(":yum:")
+            return
 
         if not u_converters.is_float(guess): # This will catch None.
-            await ctx.reply("You must provide a guess.")
+            await ctx.reply("You should provide a numerical guess.")
             return
         
         guess = str(guess)
