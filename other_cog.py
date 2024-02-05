@@ -705,13 +705,25 @@ class Other_cog(u_custom.CustomCog, name="Other", description="Commands that don
             await ctx.reply(":yum:")
             return
 
+        if guess == "pi":
+            await ctx.reply("You was doing PIPI in your pampers when i was beating players much more stronger then you!")
+            return
+
+        if guess == "😋" or guess == ":yum:":
+            await ctx.reply(":pie:")
+            return
+
+        if guess == "31004150":
+            await ctx.reply("You're off by a lot.")
+            return
+
         if not u_converters.is_float(guess): # This will catch None.
             await ctx.reply("You should provide a numerical guess.")
             return
         
         guess = str(guess)
 
-        if not guess.replace('.','',1).isdigit():
+        if not guess.replace('.','',1).replace(",","",1).isdigit():
             await ctx.reply("You must provide a guess.")
             return
         
