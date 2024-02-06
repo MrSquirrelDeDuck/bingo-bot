@@ -1609,6 +1609,10 @@ class Other_cog(u_custom.CustomCog, name="Other", description="Commands that don
     async def emoji_command(self, ctx,
             *, text: typing.Optional[str] = commands.parameter(description = "The emoji, or text to search for.")
         ):
+        if text is None:
+            await ctx.reply("You can provide a custom emoji to get the image for it or provide a piece of text to search for it.")
+            return
+            
         matched = re.search("<a?:\w+:(\d+)>", text)
         
         if matched is None:
