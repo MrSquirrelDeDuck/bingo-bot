@@ -287,6 +287,8 @@ class Other_cog(u_custom.CustomCog, name="Other", description="Commands that don
             except discord.Forbidden:
                 # Missing permissions to delete the command message, oh well.
                 pass
+
+            return
             
         
         bingo_data = u_bingo.live(database=database)
