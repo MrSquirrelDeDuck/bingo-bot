@@ -968,8 +968,8 @@ class Other_cog(u_custom.CustomCog, name="Other", description="Commands that don
                     "Gold brick percentage: {}%\nExpected golds: {}\nGold brick odds:\n- {} {}%\n- Exact odds: {}%".format(
                         round(gold / total * 100, 2),
                         round(total / 32, 2),
-                        half, gold_brick_chance,
-                        exact_odds        
+                        half, round(gold_brick_chance, 2),
+                        round(exact_odds, 2)
                     ), 
                     False
                 )
