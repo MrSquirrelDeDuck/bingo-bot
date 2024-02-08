@@ -1864,7 +1864,7 @@ async def handle_completed(
             spot = bingo_data["weekly_tile_string"].index(full_id)
             bingo_data["weekly_enabled"][spot] = True
         
-        if tile_data.get("silent", True):
+        if not tile_data.get("silent", False):
             if objective.startswith("d"):
                 daily_lines.append(f"- {tile_data['name']} ({full_id})")
             else:
@@ -1912,7 +1912,7 @@ async def handle_completed(
         content_lines += daily_lines
     
     if len(weekly_lines) > 0:
-        if len(daily_lines) == 1:
+        if len(weekly_lines) == 1:
             content_lines.append("Weekly bingo objective completed!")
         else:
             content_lines.append(f"{len(weekly_lines)} weekly bingo objectives completed!")
