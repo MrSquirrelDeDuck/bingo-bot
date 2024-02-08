@@ -727,7 +727,7 @@ class Admin_cog(u_custom.CustomCog, name="Admin", description="Administration co
             new_value: typing.Optional[u_converters.parse_int] = commands.parameter(description = "The new value for counting.")
         ):
         if None in [channel_id, new_value]:
-            await ctx.reply("You must provide a counter name and a new value for it.")
+            await ctx.reply("You must provide a channel id and a new value for it.")
             return
         
         old_data = database.get_counting_data(channel_id)
@@ -739,6 +739,40 @@ class Admin_cog(u_custom.CustomCog, name="Admin", description="Administration co
         )
         
         await ctx.reply("Done, old count was {}.".format(u_text.smart_number(old_data.get("count", 0))))
+
+        
+            
+
+        
+    ######################################################################################################################################################
+    ##### ADMIN SET CHAIN ################################################################################################################################
+    ######################################################################################################################################################
+    
+    @admin.command(
+        name="set_chain",
+        brief = "Sets a channel's chain state.",
+        description = "Sets a channel's chain stats."
+    )
+    @commands.is_owner()
+    async def admin_set_chain(self, ctx,
+            channel_id: typing.Optional[u_converters.parse_int] = commands.parameter(description = "The channel id of the channel."),
+            amount: typing.Optional[u_converters.parse_int] = commands.parameter(description = "The amount of messages in a row that have been sent."),
+            *, message: typing.Optional[str] = commands.parameter(description = "The message that has been chained.")
+        ):
+        if None in [channel_id, amount, message]:
+            await ctx.reply("You must provide a channel id, the amount of times the message was chained, and the message that has been chained.")
+            return
+        
+        database.save(
+            "chains_data", str(channel_id),
+            data= {
+                "message": message,
+                "sender": None,
+                "count": amount
+            }
+        )
+        
+        await ctx.reply("Done.")
 
         
             
