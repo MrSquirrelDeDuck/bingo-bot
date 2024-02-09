@@ -1561,18 +1561,26 @@ class Other_cog(
         name = "role_leaderboard",
         aliases = ["role_lb"],
         brief = "A leaderboard for roles.",
-        description = "A leaderboard for roles."
+        description = "A leaderboard for roles.\n\nModifier list:\n- '-list' will provide a list of all the roles the highlighted person has."
     )
     @commands.check(u_checks.hide_from_help)
     async def role_leaderboard(
             self: typing.Self,
             ctx: commands.Context | u_custom.CustomContext,
-            member: typing.Optional[discord.Member] = commands.parameter(description = "The member to view.")
+            member: typing.Optional[discord.Member] = commands.parameter(description = "The member to view."),
+            *, modifiers: typing.Optional[str] = commands.parameter(description = "Optional modifiers, see above for modifier list.")
         ):
         if member is None:
             member = ctx.author
 
         role_data = u_interface.get_role_list(ctx.guild)
+
+        if modifiers is not None:
+            modifiers = modifiers.split(" ")
+        else:
+            modifiers = []
+
+        list_roles = "-list" in modifiers
 
         ## Roles to not count: ##
 
@@ -1658,6 +1666,15 @@ class Other_cog(
             fields = [("", "\n".join(lines), False)],
             footer_text = "You can use '%role_leaderboard <user>' to highlight someone else."
         )
+
+        if list_roles:
+            embed.add_field(
+                name = "Role list:",
+                value = "List of roles the highlighted person has:\n{role_list}".format(
+                    role_list = ", ".join([f"<@&{role_id}>" for role_id in role_data[member.id] if role_id not in prune_ids])
+                ),
+                inline = False
+            )
         
         await ctx.reply(embed=embed)
 
