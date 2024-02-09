@@ -25,12 +25,16 @@ import utility.detection as u_detection
 
 database = None # type: u_files.DatabaseInterface
 
-class Bingo_cog(u_custom.CustomCog, name="Bingo", description="Commands for running the bingo game!"):
+class Bingo_cog(
+        u_custom.CustomCog,
+        name="Bingo",
+        description="Commands for running the bingo game!"
+    ):
     bot = None
 
     creating_objectives = [] # List of user ids that are currently making objectives.
 
-    async def hourly_task(self):
+    async def hourly_task(self: typing.Self):
         """Code that runs for every hour."""
         self.creating_objectives.clear()
     
@@ -38,7 +42,12 @@ class Bingo_cog(u_custom.CustomCog, name="Bingo", description="Commands for runn
     ##### UTILTIY FUNCTIONS ##############################################################################################################################
     ######################################################################################################################################################
 
-    def _determine_coordinate(self, board_size: int, x_input: int, y_input: int | None) -> (int | str):
+    def _determine_coordinate(
+            self: typing.Self,
+            board_size: int,
+            x_input: int,
+            y_input: int | None
+        ) -> int | str:
         """Determines a tile id coordinate from X and Y inputs. A raw tile id can also be passed.
         This can return a string, in which that string should be sent as a Discord message."""
 
@@ -56,7 +65,10 @@ class Bingo_cog(u_custom.CustomCog, name="Bingo", description="Commands for runn
         
         return x_input - 1
     
-    def _match_tile_list(self, board: str) -> list[dict]:
+    def _match_tile_list(
+            self: typing.Self,
+            board: str
+        ) -> list[dict]:
         """Returns a tile list based on a string input. 'daily' will be the daily tile list and 'weekly' will be the weekly tile list."""
         match board:
             case "daily":
@@ -64,7 +76,17 @@ class Bingo_cog(u_custom.CustomCog, name="Bingo", description="Commands for runn
             case "weekly":
                 return u_bingo.tile_list_9x9(database=database)
     
-    def _generate_list(self, tile_list: list[dict], base_tile_list: list[dict], title: str, page: (int | None) = 0, type_text: str = "daily", command: str = "%objective list", page_size: int = 6, identifier: str = "in the daily tile list") -> discord.Embed:
+    def _generate_list(
+            self: typing.Self,
+            tile_list: list[dict],
+            base_tile_list: list[dict],
+            title: str,
+            page: int | None = 0,
+            type_text: str = "daily",
+            command: str = "%objective list",
+            page_size: int = 6,
+            identifier: str = "in the daily tile list"
+        ) -> discord.Embed:
         """Generates a list of objectives for the objective list and board stats commands. Returns a Discord.py embed object.
         
         Parameters:
@@ -124,7 +146,9 @@ class Bingo_cog(u_custom.CustomCog, name="Bingo", description="Commands for runn
         pass_context = True,
         invoke_without_command = True
     )
-    async def objective(self, ctx,
+    async def objective(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext,
             board: typing.Optional[str] = commands.parameter(description = "Which board to use, 'daily' or 'weekly'."),
             objective: typing.Optional[u_converters.parse_int] = commands.parameter(description = "The id of the objective to look up.")
         ):
@@ -178,7 +202,9 @@ class Bingo_cog(u_custom.CustomCog, name="Bingo", description="Commands for runn
         brief = "Search for an objective.",
         description = "Search for an objective on the daily or weekly board.\nTo get information about a specific objective, use '%objective [daily|weekly] [objective id]'\nTo get a list of objectives, use '%objective list [daily|weekly]'"
     )
-    async def objective_search(self, ctx,
+    async def objective_search(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext,
             board: typing.Optional[str] = commands.parameter(description = "Which board to use, 'daily' or 'weekly'."),
             *, search: typing.Optional[str] = commands.parameter(description = "The text to search for.")
         ):
@@ -232,7 +258,9 @@ class Bingo_cog(u_custom.CustomCog, name="Bingo", description="Commands for runn
         brief = "Provides a list of objectives.",
         description = "Get a list of all the daily or weekly objectives.\nTo get information about a specific objective, use '%objective [daily|weekly] [objective id]'\nTo search for an objective, use '%objective search [daily|weekly] [search term]'"
     )
-    async def objective_list(self, ctx,
+    async def objective_list(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext,
             board: typing.Optional[str] = commands.parameter(description = "Which board to use, 'daily' or 'weekly'."),
             page: typing.Optional[int] = commands.parameter(description = "An integer for what page to use.", displayed_default = 1)
         ):
@@ -270,7 +298,9 @@ class Bingo_cog(u_custom.CustomCog, name="Bingo", description="Commands for runn
         description = "Adds an objective to either the 5x5 or 9x9 tile lists.\nIt will prompt you to provide the required information, so you just need to say the board type in the initial command."
     )
     @commands.check(u_checks.bingo_tick_check)
-    async def objective_add(self, ctx,
+    async def objective_add(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext,
             board: typing.Optional[str] = commands.parameter(description = "Which board to append to, 'daily' or 'weekly'."),
         ):
         if ctx.author.id in self.creating_objectives:
@@ -384,7 +414,9 @@ class Bingo_cog(u_custom.CustomCog, name="Bingo", description="Commands for runn
         description = "Modifies an objective in either the 5x5 or 9x9 tile lists.\n\nCurrently used modification types:\n- name (text)\n- description (text)\n- center (boolean)\n- solo (boolean)\n- disabled (boolean)"
     )
     @commands.check(u_checks.bingo_tick_check)
-    async def objective_modify(self, ctx,
+    async def objective_modify(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext,
             board: typing.Optional[str] = commands.parameter(description = "Which board to append to, 'daily' or 'weekly'."),
             objective_id: typing.Optional[u_converters.parse_int] = commands.parameter(description = "The id of the objective to modify."),
             modification_type: typing.Optional[str] = commands.parameter(description = "The type of data to modify. See above for list."),
@@ -472,7 +504,9 @@ class Bingo_cog(u_custom.CustomCog, name="Bingo", description="Commands for runn
         description = "Removes an objective."
     )
     @commands.is_owner()
-    async def objective_remove(self, ctx,
+    async def objective_remove(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext,
             board: typing.Optional[str] = commands.parameter(description = "Which board to append to, 'daily' or 'weekly'."),
             objective_id: typing.Optional[u_converters.parse_int] = commands.parameter(description = "The id of the objective to modify.")
         ):
@@ -535,7 +569,10 @@ class Bingo_cog(u_custom.CustomCog, name="Bingo", description="Commands for runn
         pass_context = True,
         invoke_without_command = True
     )
-    async def board(self, ctx):
+    async def board(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext
+        ):
         if ctx.invoked_subcommand is not None:
             return
         
@@ -564,7 +601,9 @@ class Bingo_cog(u_custom.CustomCog, name="Bingo", description="Commands for runn
         brief = "Get information about the current board.",
         description = "Get information about the current board."
     )
-    async def daily_stats(self, ctx,
+    async def daily_stats(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext,
             page: typing.Optional[int] = commands.parameter(description = "An integer for what page to use.", displayed_default = 1)
         ):
         base_tile_list = u_bingo.tile_list_5x5(database=database)
@@ -603,7 +642,9 @@ class Bingo_cog(u_custom.CustomCog, name="Bingo", description="Commands for runn
         description = "Tick off a tile on the bingo board."
     )
     @commands.check(u_checks.bingo_tick_check)
-    async def tick(self, ctx,
+    async def tick(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext,
             coord_x: typing.Optional[int] = commands.parameter(description = "The X coordinate of the tile to tick."),
             coord_y: typing.Optional[int] = commands.parameter(description = "The Y coordinate of the tile to tick.")
         ):
@@ -666,7 +707,9 @@ class Bingo_cog(u_custom.CustomCog, name="Bingo", description="Commands for runn
         description = "Untick a tile on the bingo board."
     )
     @commands.check(u_checks.bingo_tick_check)
-    async def untick(self, ctx,
+    async def untick(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext,
             coord_x: typing.Optional[int] = commands.parameter(description = "The X coordinate of the tile to untick."),
             coord_y: typing.Optional[int] = commands.parameter(description = "The Y coordinate of the tile to untick.")
         ):        
@@ -723,7 +766,10 @@ class Bingo_cog(u_custom.CustomCog, name="Bingo", description="Commands for runn
         description = "Get a handy tile id guide for ticking."
     )
     @commands.check(u_checks.bingo_tick_check)
-    async def tick_guide(self, ctx):
+    async def tick_guide(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext
+        ):
         u_images.render_board(
             database = database,
             tile_string = "".join([f"{i:03}" for i in range(25)]),
@@ -753,7 +799,10 @@ class Bingo_cog(u_custom.CustomCog, name="Bingo", description="Commands for runn
         description = "Generates the tile string for a 5x5 bingo board.",
         hidden = True
     )
-    async def board_generate(self, ctx):
+    async def board_generate(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext
+        ):
         await ctx.reply("`{}`".format(u_bingo.generate_5x5_board(database=database)))
 
     
@@ -771,7 +820,9 @@ class Bingo_cog(u_custom.CustomCog, name="Bingo", description="Commands for runn
         brief = "Renders a custom 5x5 board.",
         description = "Renders a custom 5x5 board.\nYou can get a random tile string using the '%board generate' command."
     )
-    async def board_render(self, ctx,
+    async def board_render(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext,
             tile_string: typing.Optional[str] = commands.parameter(description = "A 75 character string that says what's on each tile."),
             enabled_number: typing.Optional[u_converters.parse_int] = commands.parameter(description = "Number between 0 and 2^25 - 1 that defines completed tiles.")
         ):
@@ -832,7 +883,10 @@ class Bingo_cog(u_custom.CustomCog, name="Bingo", description="Commands for runn
         pass_context = True,
         invoke_without_command = True
     )
-    async def weekly(self, ctx):
+    async def weekly(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext
+        ):
         if ctx.invoked_subcommand is not None:
             return
         
@@ -864,7 +918,9 @@ class Bingo_cog(u_custom.CustomCog, name="Bingo", description="Commands for runn
         brief = "Get information about the current board.",
         description = "Get information about the current board."
     )
-    async def weekly_stats(self, ctx,
+    async def weekly_stats(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext,
             page: typing.Optional[int] = commands.parameter(description = "An integer for what page to use.", displayed_default = 1)
         ):
         base_tile_list = u_bingo.tile_list_9x9(database=database)
@@ -903,7 +959,9 @@ class Bingo_cog(u_custom.CustomCog, name="Bingo", description="Commands for runn
         description = "Tick off a tile on the weekly board."
     )
     @commands.check(u_checks.bingo_tick_check)
-    async def weekly_tick(self, ctx,
+    async def weekly_tick(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext,
             coord_x: typing.Optional[int] = commands.parameter(description = "The X coordinate of the tile to tick."),
             coord_y: typing.Optional[int] = commands.parameter(description = "The Y coordinate of the tile to tick.")
         ):
@@ -966,7 +1024,9 @@ class Bingo_cog(u_custom.CustomCog, name="Bingo", description="Commands for runn
         description = "Untick a tile on the weekly board."
     )
     @commands.check(u_checks.bingo_tick_check)
-    async def weekly_untick(self, ctx,
+    async def weekly_untick(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext,
             coord_x: typing.Optional[int] = commands.parameter(description = "The X coordinate of the tile to untick."),
             coord_y: typing.Optional[int] = commands.parameter(description = "The Y coordinate of the tile to untick.")
         ):
@@ -1023,7 +1083,10 @@ class Bingo_cog(u_custom.CustomCog, name="Bingo", description="Commands for runn
         description = "Get a handy tile id guide for ticking."
     )
     @commands.check(u_checks.bingo_tick_check)
-    async def weekly_tick_guide(self, ctx):        
+    async def weekly_tick_guide(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext
+        ):        
         u_images.render_board(
             database = database,
             tile_string = "".join([f"{i:03}" for i in range(81)]),
@@ -1051,7 +1114,10 @@ class Bingo_cog(u_custom.CustomCog, name="Bingo", description="Commands for runn
         brief = "Generates a 9x9 bingo board.",
         description = "Generates the tile string for a 9x9 bingo board."
     )
-    async def weekly_generate(self, ctx):
+    async def weekly_generate(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext
+        ):
         await ctx.reply("`{}`".format(u_bingo.generate_9x9_board(database=database)))
 
 
@@ -1070,7 +1136,9 @@ class Bingo_cog(u_custom.CustomCog, name="Bingo", description="Commands for runn
         brief = "Renders a custom 9x9 board.",
         description = "Renders a custom 9x9 board.\nYou can get a random tile string using the '%weekly generate' command."
     )
-    async def board_render(self, ctx,
+    async def board_render(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext,
             tile_string: typing.Optional[str] = commands.parameter(description = "A 243 character string that says what's on each tile."),
             enabled_number: typing.Optional[u_converters.parse_int] = commands.parameter(description = "Number between 0 and 2^81 - 1 that defines completed tiles.")
         ):

@@ -24,7 +24,7 @@ def stonk_history(database: u_files.DatabaseInterface) -> list[dict[str, int]]:
     
     return get
 
-def full_current_values(database: u_files.DatabaseInterface) -> dict[str, typing.Union[dict[str, int], int]]:
+def full_current_values(database: u_files.DatabaseInterface) -> dict[str, dict[str, int] | int]:
     """Returns the full current data from stonks/current_values in the database."""
     get = database.load("stonks", "current_values", default=None)
 
@@ -48,7 +48,10 @@ def current_tick_number(database: u_files.DatabaseInterface) -> int:
     """Returns the current stonk tick number."""
     return full_current_values(database)["tick_number"]
 
-def filter_splits(previous: dict[u_values.StonkItem, int], current: dict[u_values.StonkItem, int]) -> dict[str, dict[u_values.StonkItem, int]]:    
+def filter_splits(
+        previous: dict[u_values.StonkItem, int],
+        current: dict[u_values.StonkItem, int]
+    ) -> dict[str, dict[u_values.StonkItem, int]]:    
     """Filters splits and returns a corrected version. Also provides the amount of times each stonk was split."""
     amounts = {stonk: 0 for stonk in current}
 
@@ -104,7 +107,10 @@ def parse_stonk_tick(message: discord.Message) -> dict[u_values.StonkItem, list[
     
     return out
 
-def closest_to_dough(dough_amount: int, database: u_files.DatabaseInterface) -> u_values.StonkItem:
+def closest_to_dough(
+        dough_amount: int,
+        database: u_files.DatabaseInterface
+    ) -> u_values.StonkItem:
     """Returns the stonk that, if all the dough is invested in that stonk, would result in the lowest remaining dough.
 
     Args:

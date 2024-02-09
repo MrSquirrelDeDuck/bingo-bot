@@ -58,7 +58,11 @@ WEEKLY_BOARD_CHANNEL = 958763826025742336
 
 database = None # type: u_files.DatabaseInterface
 
-class Triggers_cog(u_custom.CustomCog, name="Triggers", description="Hey there! owo\n\nyou just lost the game >:3"):
+class Triggers_cog(
+        u_custom.CustomCog,
+        name="Triggers",
+        description="Hey there! owo\n\nyou just lost the game >:3"
+    ):
     bot = None
 
     bingo_cache = {}
@@ -78,7 +82,7 @@ class Triggers_cog(u_custom.CustomCog, name="Triggers", description="Hey there! 
 
     pk_triggers = [f" {item} " for item in pk_triggers] # Add spaces on both sides of each trigger, so there isn't a Scunthorpe problem.
 
-    def __init__(self) -> None:
+    def __init__(self: typing.Self) -> None:
         super().__init__()
         self.hourly_loop.start()
         self.daily_loop.start()
@@ -86,11 +90,9 @@ class Triggers_cog(u_custom.CustomCog, name="Triggers", description="Hey there! 
         self.bingo_cache = u_bingo.live(database=database)
         self.bingo_cache_updated()
     
-    def cog_unload(self):
+    def cog_unload(self: typing.Self):
         self.hourly_loop.cancel()
         self.daily_loop.cancel()
-
-        # self._save_chains_data()
     
     def bingo_cache_updated(self: typing.Self) -> None:
         """Runs whenever the bingo cache is updated."""
@@ -102,14 +104,6 @@ class Triggers_cog(u_custom.CustomCog, name="Triggers", description="Hey there! 
             "weekly_enabled": u_bingo.decompile_enabled(self.bingo_cache["weekly_enabled"], 9),
             "weekly_board_id": self.bingo_cache["weekly_board_id"]
         }
-
-    # def _save_chains_data(self) -> None:
-    #     """Saves self.chains_data to the data file."""
-    #     u_files.save("data/chains_data.json", self.chains_data)
-
-    # def _refresh_chains_data(self) -> None:
-    #     """Refreshes self.chains_data from the data file."""
-    #     self.chains_data = u_files.load("data/chains_data.json")
     
     def _get_channel_chain(self, channel_id: int) -> dict:
         """Returns the chains data for a specific channel."""
@@ -118,10 +112,6 @@ class Triggers_cog(u_custom.CustomCog, name="Triggers", description="Hey there! 
     def _update_channel_chain(self, channel_id: int, data: dict) -> None:
         """Updates the chains data for a specific channel."""
         database.save("chains_data", str(channel_id), data=data)
-    
-    # def save_all_data(self) -> None:
-    #     """Saves all stored data to files."""
-    #     self._save_chains_data()
 
 
 
@@ -131,7 +121,8 @@ class Triggers_cog(u_custom.CustomCog, name="Triggers", description="Hey there! 
     ##### UTILITY FUNCTIONS ##############################################################################################################################
     ######################################################################################################################################################
     
-    def get_pk_explanation(self: typing.Self,
+    def get_pk_explanation(
+            self: typing.Self,
             replace_pings: bool = False,
             auto_trigger: bool = True
         ) -> str:
@@ -160,7 +151,7 @@ class Triggers_cog(u_custom.CustomCog, name="Triggers", description="Hey there! 
         
         return text
     
-    async def refresh_status(self):
+    async def refresh_status(self: typing.Self) -> None:
         await u_interface.refresh_status(
             bot = self.bot,
             database = database
@@ -183,7 +174,10 @@ class Triggers_cog(u_custom.CustomCog, name="Triggers", description="Hey there! 
         pass_context = True
     )
     @commands.check(u_checks.hide_from_help)
-    async def pk_explanation_command(self, ctx):
+    async def pk_explanation_command(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext
+        ):
         if ctx.invoked_subcommand is not None:
             return
         
@@ -205,7 +199,10 @@ class Triggers_cog(u_custom.CustomCog, name="Triggers", description="Hey there! 
         invoke_without_command = True,
         pass_context = True
     )
-    async def pk_explanation_counter(self, ctx):
+    async def pk_explanation_counter(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext
+        ):
         if ctx.invoked_subcommand is not None:
             return
         
@@ -228,7 +225,10 @@ class Triggers_cog(u_custom.CustomCog, name="Triggers", description="Hey there! 
         description = "Resets the PluralKit counter.",
         brief = "Resets the PluralKit counter."
     )
-    async def pk_explanation_counter_reset(self, ctx):
+    async def pk_explanation_counter_reset(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext
+        ):
         if ctx.invoked_subcommand is not None:
             return
         
@@ -261,7 +261,10 @@ class Triggers_cog(u_custom.CustomCog, name="Triggers", description="Hey there! 
         aliases=["latent", "latent-dreamer"]
     )
     @commands.check(u_checks.hide_from_help)
-    async def latent_explanation_command(self, ctx):
+    async def latent_explanation_command(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext
+        ):
         await ctx.reply("Latent-Dreamer is a bot that creates new responses via ChatGPT when triggered by specific phrases.\nWhen triggered she will send a message based on what the trigger was.\nThings like 'google en passant' and 'chess 2' always use the same prompt. Triggers such as 'what is ...' and 'google ...' will have ChatGPT provide an answer to the question or generate a list of search terms, depending on which was triggered.\n\nLatent-Dreamer also has a credits system to limit the amount of times people can trigger her per day.\nMore information about the credits system can be found [here](<https://discord.com/channels/958392331671830579/958392332590387262/1110078862286671962>) or by pinging Latent-Dreamer with the word 'credits'.")
 
 
@@ -277,7 +280,7 @@ class Triggers_cog(u_custom.CustomCog, name="Triggers", description="Hey there! 
     @tasks.loop(
         minutes = 60
     )
-    async def hourly_loop(self):
+    async def hourly_loop(self: typing.Self):
         print("Hourly loop triggered at {}.".format(datetime.datetime.now()))
 
         ### REMINDERS ###
@@ -369,7 +372,7 @@ class Triggers_cog(u_custom.CustomCog, name="Triggers", description="Hey there! 
 
 
     @hourly_loop.before_loop
-    async def hourly_setup(self):
+    async def hourly_setup(self: typing.Self):
         # Update the bot status.
         try:
             await self.refresh_status()
@@ -402,7 +405,7 @@ class Triggers_cog(u_custom.CustomCog, name="Triggers", description="Hey there! 
     @tasks.loop(
         time = bingo_time
     )
-    async def daily_loop(self):
+    async def daily_loop(self: typing.Self):
         print("Daily loop triggered at {}".format(datetime.datetime.now()))
 
         hour_offset = 5 # The number of hours to subract from the current unix timestamp.
@@ -536,7 +539,10 @@ class Triggers_cog(u_custom.CustomCog, name="Triggers", description="Hey there! 
     ##### ON EVENTS ######################################################################################################################################
     ######################################################################################################################################################
         
-    async def on_stonk_tick(self, message: discord.Message):
+    async def on_stonk_tick(
+            self: typing.Self,
+            message: discord.Message
+        ):
         if message.content[-1] in "!.?":
             return
         
@@ -623,7 +629,10 @@ class Triggers_cog(u_custom.CustomCog, name="Triggers", description="Hey there! 
 
         
     
-    async def chains(self, message: discord.Message):
+    async def chains(
+            self: typing.Self,
+            message: discord.Message
+        ):
         if u_checks.sensitive_check(message.channel):
             return
         
@@ -677,7 +686,10 @@ class Triggers_cog(u_custom.CustomCog, name="Triggers", description="Hey there! 
 
 
         
-    async def on_gamble(self, message: discord.Message):
+    async def on_gamble(
+            self: typing.Self,
+            message: discord.Message
+        ):
         # Gamble messages.
 
         command = None
@@ -696,7 +708,10 @@ class Triggers_cog(u_custom.CustomCog, name="Triggers", description="Hey there! 
         
         database.save("bread", "gamble_messages", data=gamble_messages)
     
-    async def ask_ouija(self, message: discord.Message):
+    async def ask_ouija(
+            self: typing.Self,
+            message: discord.Message
+        ):
         if u_checks.sensitive_check(message.channel):
             return
         
@@ -727,7 +742,10 @@ class Triggers_cog(u_custom.CustomCog, name="Triggers", description="Hey there! 
 
         database.set_ouija_data(message.channel.id, letters = "{}{}".format(ouija_data["letters"], content))
     
-    async def counting(self, message: discord.Message):
+    async def counting(
+            self: typing.Self,
+            message: discord.Message
+        ):
         if u_checks.sensitive_check(message.channel):
             return
         
@@ -775,7 +793,10 @@ class Triggers_cog(u_custom.CustomCog, name="Triggers", description="Hey there! 
         except discord.errors.Forbidden:
             database.set_counting_data(channel_id = message.channel.id, count = counting_data["count"], sender = counting_data["sender"])
                 
-    async def pk_reply(self, message: discord.Message):
+    async def pk_reply(
+            self: typing.Self,
+            message: discord.Message
+        ):
         if message.flags.silent:
             # If the message is a silent message.
             return
@@ -825,7 +846,10 @@ class Triggers_cog(u_custom.CustomCog, name="Triggers", description="Hey there! 
         except discord.errors.HTTPException:
             await message.channel.send(f"Psst, <@{return_json['sender']}>, someone replied to your [message]({replied_to.jump_url})!")
     
-    async def pk_explanation(self, message: discord.Message):
+    async def pk_explanation(
+            self: typing.Self,
+            message: discord.Message
+        ):
         if message.author.id in self.pk_trigger_blacklist or message.author.bot:
             return
 
@@ -843,7 +867,10 @@ class Triggers_cog(u_custom.CustomCog, name="Triggers", description="Hey there! 
             replace_pings=message.guild.id != 958392331671830579, 
             auto_trigger=True))
     
-    async def brick_stats_correcting(self, message: discord.Message):
+    async def brick_stats_correcting(
+            self: typing.Self,
+            message: discord.Message
+        ):
         if u_checks.serious_channel_check(message.channel):
             return
         
@@ -856,7 +883,10 @@ class Triggers_cog(u_custom.CustomCog, name="Triggers", description="Hey there! 
         if user is not None:
             await message.reply(f"Do you mean `$brick {user.id} stats`?")
 
-    async def seven_twenty_seven(self, message: discord.Message):
+    async def seven_twenty_seven(
+            self: typing.Self,
+            message: discord.Message
+        ):
         if u_checks.serious_channel_check(message.channel):
             return
         
@@ -879,7 +909,10 @@ class Triggers_cog(u_custom.CustomCog, name="Triggers", description="Hey there! 
         await message.reply("".join([f"<@{user_id}>" for user_id in ping_data]), mention_author=False)
         return
     
-    async def auto_detection(self, message: discord.Message):
+    async def auto_detection(
+            self: typing.Self,
+            message: discord.Message
+        ):
         # Filter out all messages sent by the bot, unless it's an objective completion message.
         if message.author.id == self.bot.user.id:
             if not(u_interface.is_reply(message) and "completed!" in message.content):
@@ -892,7 +925,10 @@ class Triggers_cog(u_custom.CustomCog, name="Triggers", description="Hey there! 
             bingo_data = self.parsed_bingo_cache
         )
     
-    async def daily_stats(self, message: discord.Message):
+    async def daily_stats(
+            self: typing.Self,
+            message: discord.Message
+        ):
         if message.guild is None:
             return
         
@@ -1022,7 +1058,10 @@ class Triggers_cog(u_custom.CustomCog, name="Triggers", description="Hey there! 
 
     
     @commands.Cog.listener()
-    async def on_message(self, message):
+    async def on_message(
+            self: typing.Self,
+            message: discord.Message
+        ):
         # Run the auto detection. It will automatically filter out messages sent by the bot if needed.
         await self.auto_detection(message)
 
@@ -1088,7 +1127,10 @@ class Triggers_cog(u_custom.CustomCog, name="Triggers", description="Hey there! 
     ##### ON REACTION ADD ################################################################################################################################
     ######################################################################################################################################################
             
-    async def pk_explanation_deletion(self, payload: discord.RawReactionActionEvent):
+    async def pk_explanation_deletion(
+            self: typing.Self,
+            payload: discord.RawReactionActionEvent
+        ):
         """If someone reacts to a PluralKit explanation message with ❌, then we need to edit the message to something saying it was removed."""
 
         try:
@@ -1114,7 +1156,10 @@ class Triggers_cog(u_custom.CustomCog, name="Triggers", description="Hey there! 
             pass    
     
     @commands.Cog.listener()
-    async def on_raw_reaction_add(self, payload: discord.RawReactionActionEvent):
+    async def on_raw_reaction_add(
+            self: typing.Self,
+            payload: discord.RawReactionActionEvent
+        ):
         if payload.event_type != "REACTION_ADD":
             return
         
@@ -1132,7 +1177,11 @@ class Triggers_cog(u_custom.CustomCog, name="Triggers", description="Hey there! 
     ######################################################################################################################################################
 
     @commands.Cog.listener()
-    async def on_command_error(self, ctx, error):
+    async def on_command_error(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext,
+            error: Exception
+        ):
         # Command check errors.
         if isinstance(error, commands.errors.CheckFailure):
             # A command check failed.

@@ -19,6 +19,14 @@ import importlib
 importlib.reload(u_values)
 
 def bread_time() -> datetime.timedelta:
+    """Returns a datetime.timedelta representing the time since the last Bread o' Clock.
+
+    You can use `bread_time().total_seconds() // 3600` to get the current Bread Standard Time hour.
+
+    Returns:
+        datetime.timedelta: Timedelta for the time since the last Bread o' Clock.
+    """
+
     def is_dst(dt=None, timezone="UTC"):
         if dt is None:
             dt = datetime.datetime.utcnow()
@@ -40,7 +48,13 @@ def bread_time() -> datetime.timedelta:
 
     return timestamp - breadoclock
 
-def calculate_tron_value(ascension: int = 0, omega_count: int = 0, active_shadowmegas: int = 0, shadowmegas: int = 0, chessatron_contraption: int = 0) -> int:
+def calculate_tron_value(
+        ascension: int = 0,
+        omega_count: int = 0,
+        active_shadowmegas: int = 0,
+        shadowmegas: int = 0,
+        chessatron_contraption: int = 0
+    ) -> int:
     """Calculates the value of a chessatron.
 
     Args:
@@ -57,8 +71,33 @@ def calculate_tron_value(ascension: int = 0, omega_count: int = 0, active_shadow
 
     return round((2000 + (250 * omega_count) + (100 * active_shadowmegas)) * (1 + (0.1 * ascension)))
 
-def get_ascension(tokens: int = 0, ddc: int = 0, scy: int = 0, mb: int = 0, cpe: int = 0, hrt: int = 0, cc: int = 0, es: int = 0, fcotd: int = 0) -> int:
-    """Figures out what ascension someone is on based on their token number and their hidden bakery purchases."""
+def get_ascension(
+        tokens: int = 0,
+        ddc: int = 0,
+        scy: int = 0,
+        mb: int = 0,
+        cpe: int = 0,
+        hrt: int = 0,
+        cc: int = 0,
+        es: int = 0,
+        fcotd: int = 0
+    ) -> int:
+    """Determines the ascension of a player based on their current ascension tokens and hidden bakery purchases.
+
+    Args:
+        tokens (int, optional): The amount of ascension tokens the player has on them. Defaults to 0.
+        ddc (int, optional): Level of Daily Discount Card. Defaults to 0.
+        scy (int, optional): Level of Self Converting Yeast. Defaults to 0.
+        mb (int, optional): Level of MoaK Booster. Defaults to 0.
+        cpe (int, optional): Level of Chess Piece Equalizer. Defaults to 0.
+        hrt (int, optional): Level of High Roller Table. Defaults to 0.
+        cc (int, optional): Level of Chessatron Contraption. Defaults to 0.
+        es (int, optional): Level of Ethereal Shine. Defaults to 0.
+        fcotd (int, optional): Level of First Catch of the Day. Defaults to 0.
+
+    Returns:
+        int: The ascension the player is on.
+    """
 
     token_list = [
         int((ddc + 3) / 3) * ddc - 3 * (int(ddc / 3) * (int(ddc / 3) + 1) / 2), # DDC
@@ -76,7 +115,11 @@ def get_ascension(tokens: int = 0, ddc: int = 0, scy: int = 0, mb: int = 0, cpe:
 
     return int(((token_sum - 31) / 6 + 6 if token_sum-1 > 30 else (token_sum - 1) / 5) + 1)
 
-def parse_attempt(message: discord.Message, require_reply: bool = False, custom_check: typing.Callable[[discord.Message], bool] = None) -> typing.Union[bool, dict[str, typing.Union[int, u_values.Item, dict[str, bool], bool]]]:
+def parse_attempt(
+        message: discord.Message,
+        require_reply: bool = False,
+        custom_check: typing.Callable[[discord.Message], bool] = None
+    ) -> bool | dict[str, int | typing.Type[u_values.Item] | dict[str, bool], bool]:
     """Attempts to parse a Discord message. Returns the parser output, or False if any check failed.
 
     Args:
@@ -85,7 +128,7 @@ def parse_attempt(message: discord.Message, require_reply: bool = False, custom_
         custom_check (typing.Callable[[discord.Message], bool], optional): A custom check that can be provided. The replied-to message will be passed to this. Defaults to None.
 
     Returns:
-        typing.Union[bool, dict[str, typing.Union[int, u_values.Item, dict[str, bool], bool]]]: The parser output, or False if any check failed.
+        bool | dict[str, int | typing.Type[u_values.Item] | dict[str, bool], bool]: The parser output, or False if any check failed.
     """
     replied_to = u_interface.replying_mm_checks(message, require_reply=require_reply, return_replied_to=True)
     
@@ -102,7 +145,7 @@ def parse_attempt(message: discord.Message, require_reply: bool = False, custom_
     return parse_stats(message.reference.resolved)
 
 
-def parse_stats(message: discord.Message) -> dict[str, typing.Union[int, u_values.Item, dict[str, bool], bool]]:
+def parse_stats(message: discord.Message) -> dict[str | typing.Type[u_values.Item], int | dict[str, bool] | bool]:
     """Parses a Machine-Mind message and returns a dict of as many stats as it can figure out, both user stats and internal stats, like stonks, will be returned in the `stats` dict.
     
     The following messages can be parsed:
@@ -122,7 +165,7 @@ def parse_stats(message: discord.Message) -> dict[str, typing.Union[int, u_value
         message (discord.Message): The discord message that will be parsed.
 
     Returns:
-        dict: A dictionary containing the found stats and the key "parse_successful". If parse_successful is True, then there will be a "stats_type" key with the stats type and a "stats" dict. If parse_successful is False, then no stats will be returned, and something went wrong with the parsing of the stats.
+        dict[str | typing.Type[u_values.Item], int | dict[str, bool] | bool]: A dictionary containing the found stats and the key "parse_successful". If parse_successful is True, then there will be a "stats_type" key with the stats type and a "stats" dict. If parse_successful is False, then no stats will be returned, and something went wrong with the parsing of the stats.
     
     stats_type key:
     - "main": `$bread stats`.
@@ -142,7 +185,16 @@ def parse_stats(message: discord.Message) -> dict[str, typing.Union[int, u_value
 
     content = message.content
     
-    def extract(surrounding: str, *, text: str = None, emoji_discord: str = "", emoji_ascii: str = "", group_id: int = 1, default: int = None, escape: bool = True) -> typing.Union[int, None]:
+    def extract(
+            surrounding: str,
+            *,
+            text: str = None,
+            emoji_discord: str = "",
+            emoji_ascii: str = "",
+            group_id: int = 1,
+            default: int = None,
+            escape: bool = True
+        ) -> int | None:
         """Extracts a number from a string via regex.
         If an emoji is important to the regex string, it should be replaced with "&&" in `surrounding` and the parameters `emoji_discord` and `emoji_ascii` must be provided.
 
@@ -156,7 +208,7 @@ def parse_stats(message: discord.Message) -> dict[str, typing.Union[int, u_value
             escape (bool, optional): Whether to automatically escape regex markdown found in `surrounding`. Defaults to True.
 
         Returns:
-            typing.Union[int, None]: If it's an int, the number that's found (or the default), if it's None, then nothing was found.
+            int | None: If it's an int, the number that's found (or the default), if it's None, then nothing was found.
         """
 
         if text is None:
@@ -738,14 +790,19 @@ def parse_stats(message: discord.Message) -> dict[str, typing.Union[int, u_value
     # If nothing is found, say the parsing was unsuccessful.
     return {"parse_successful": False}
 
-def get_stored_data(database: u_files.DatabaseInterface, user_id: int) -> dict[str | u_values.Item, int] | None:
+############################################################################################################################################
+
+def get_stored_data(
+        database: u_files.DatabaseInterface,
+        user_id: int
+    ) -> dict[str | typing.Type[u_values.Item], int] | None:
     """Gets a piece of stored data.
 
     Args:
         user_id (int): The user id to look up.
 
     Returns:
-        dict[str | u_values.Item, int] | None: The returned data, with items replaced with u_values.Item objects. None will be returned if the user id is not in the data.
+        dict[str | typing.Type[u_values.Item], int] | None: The returned data, with items replaced with u_values.Item objects. None will be returned if the user id is not in the data.
     """
     stored_data = database.load("bread", "data_storage", default={})
     
@@ -766,15 +823,19 @@ def get_stored_data(database: u_files.DatabaseInterface, user_id: int) -> dict[s
     
     return data
 
-def update_stored_data(database: u_files.DatabaseInterface, user_id: int | str, data: dict[str | u_values.Item, int]) -> dict[str | u_values.Item, int]:
+def update_stored_data(
+        database: u_files.DatabaseInterface,
+        user_id: int | str,
+        data: dict[str | typing.Type[u_values.Item], int]
+    ) -> dict[str | typing.Type[u_values.Item], int]:
     """Updates a piece of stored data.
 
     Args:
         user_id (int): The user id to update.
-        data (dict[str | u_values.Item, int]): The data to update, preferably the raw data from the parser.
+        data (dict[str | typing.Type[u_values.Item], int]): The data to update, preferably the raw data from the parser.
 
     Returns:
-        dict[str | u_values.Item, int]: The updated data.
+        dict[str | typing.Type[u_values.Item], int]: The updated data.
     """
     stored_data = database.load("bread", "data_storage", default={})
 
@@ -818,7 +879,10 @@ def update_stored_data(database: u_files.DatabaseInterface, user_id: int | str, 
 
     return stored_data[user_id]
 
-def clear_stored_data(database: u_files.DatabaseInterface, user_id: int | str) -> None:
+def clear_stored_data(
+        database: u_files.DatabaseInterface,
+        user_id: int | str
+    ) -> None:
     """Clears someone's stored data.
 
     Args:
@@ -836,14 +900,14 @@ def clear_stored_data(database: u_files.DatabaseInterface, user_id: int | str) -
 
     database.save("bread", "data_storage", data=stored_data)
 
-def parse_gamble(message: discord.Message | str) -> list[u_values.Item] | None:
+def parse_gamble(message: discord.Message | str) -> list[typing.Type[u_values.Item]] | None:
     """Parses a gamble message to determine the items it contains. This will check if the message is a gamble via `utility.interface.is_gamble()`.
 
     Args:
         message (discord.Message): The gamble message to parse.
 
     Returns:
-        list[u_values.Item] | None: The items in the gamble, in order from left to right, top to bottom. None will be returned if the message is not a gamble.
+        list[typing.Type[u_values.Item]] | None: The items in the gamble, in order from left to right, top to bottom. None will be returned if the message is not a gamble.
     """
     if not u_interface.is_gamble(message):
         return None
@@ -857,14 +921,14 @@ def parse_gamble(message: discord.Message | str) -> list[u_values.Item] | None:
 
     return [u_values.get_item(item, "gamble_item") for item in raw]
 
-def parse_roll(message: discord.Message) -> list[list[type[u_values.Item]]] | None:
+def parse_roll(message: discord.Message) -> list[list[typing.Type[u_values.Item]]] | None:
     """Parses a message to determine the items it contains.
 
     Args:
         message (discord.Message): The message to parse.
 
     Returns:
-        list[list[type[u_values.Item]]] | None: A list of lists of items. Each inner list is a single roll in a compound roller message. This will return None if the message is not a bread roll. 
+        list[list[typing.Type[u_values.Item]]] | None: A list of lists of items. Each inner list is a single roll in a compound roller message. This will return None if the message is not a bread roll. 
     """
     if not u_interface.is_bread_roll(message):
         return None

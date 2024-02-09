@@ -11,7 +11,10 @@ import importlib
 
 importlib.reload(u_values)
 
-def universal_solver(items: dict[u_values.Item, int], maximize: u_values.Item) -> dict[str, int]:
+def universal_solver(
+        items: dict[u_values.Item, int],
+        maximize: u_values.Item
+    ) -> dict[str, int]:
     """Universal solver.
 
     Args:
@@ -92,7 +95,10 @@ def universal_solver(items: dict[u_values.Item, int], maximize: u_values.Item) -
 
     return result_json
 
-def solver_wrapper(items: dict[u_values.Item, int], maximize: u_values.Item) -> tuple[list[str], dict[u_values.Item, int], dict[str, int]]:
+def solver_wrapper(
+        items: dict[u_values.Item, int],
+        maximize: u_values.Item
+    ) -> tuple[list[str], dict[u_values.Item, int], dict[str, int]]:
     """Wrapper for the universal_solver that automatically generates the command list.
 
     Args:

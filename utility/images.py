@@ -26,8 +26,19 @@ import utility.algorithms as u_algorithms
 ##### BINGO BOARDS ###################################################################################################################
 ######################################################################################################################################
 
-def bingo_board_base(board_size: int, solo: bool = False) -> PIL_Image:
-    """Generates the base for a bingo board, allowing for any size."""
+def bingo_board_base(
+        board_size: int,
+        solo: bool = False
+    ) -> PIL_Image:
+    """Generates the base of a bingo board, without any text.
+
+    Args:
+        board_size (int): The length of one side of the square board. So for the 5x5 board it would be 5.
+        solo (bool, optional): Whether this is a solo board, in which case the background will be green. Defaults to False.
+
+    Returns:
+        PIL_Image: The generated image object.
+    """
 
     # Figure out how large the image is going to be 
     size = (
@@ -73,12 +84,29 @@ def bingo_board_base(board_size: int, solo: bool = False) -> PIL_Image:
     # Return the finished image.
     return img
 
-def render_board(database: u_files.DatabaseInterface, tile_string: str, enabled: int, tile_list: list[dict], board_size: int, solo: bool = False, force: bool = False) -> PIL_Image:
-    """Generates an image for a 5x5 bingo board and saves it to images/generated/bingo_board.png
+def render_board(
+        database: u_files.DatabaseInterface,
+        tile_string: str,
+        enabled: int,
+        tile_list: list[dict],
+        board_size: int,
+        solo: bool = False,
+        force: bool = False
+    ) -> PIL_Image:
+    """Generates the image for a bingo board and saves it to 'images/generated/bingo_board.png'
 
-    Board size is in length of one face of the sqaure, so for a 5x5 board it would be 5.
-    
-    After saving the image it will return the image object."""
+    Args:
+        database (u_files.DatabaseInterface): The database object.
+        tile_string (str): The tile string to render.
+        enabled (int): The integer that defines what objectives have been completed.
+        tile_list (list[dict]): The tile list to pull objective names from.
+        board_size (int): The length of one side of the square board. So for the 5x5 board it would be 5.
+        solo (bool, optional): Whether this is a solo board, in which case the background will be green. Defaults to False.
+        force (bool, optional): Whether to force it to make the image, and to not use the last generated image if the data matches. Defaults to False.
+
+    Returns:
+        PIL_Image: The generated image object. The image is also saved to the above path.
+    """
 
     # Get the current data, since if the last image generated is the same as the one we're making, then we don't need to make anything new.
     if not force:
@@ -149,7 +177,11 @@ def render_board(database: u_files.DatabaseInterface, tile_string: str, enabled:
     # Return the image.
     return img
 
-def render_board_5x5(database: u_files.DatabaseInterface, tile_string: str, enabled: int) -> PIL_Image:
+def render_board_5x5(
+        database: u_files.DatabaseInterface,
+        tile_string: str,
+        enabled: int
+    ) -> PIL_Image:
     """Renders a 5x5 bingo board and saves to images/generated/bingo_board.png
 
     After saving the image it will return the image object."""
@@ -164,7 +196,11 @@ def render_board_5x5(database: u_files.DatabaseInterface, tile_string: str, enab
         board_size = 5
     )
 
-def render_full_5x5(database: u_files.DatabaseInterface, tile_string: str, enabled: int) -> PIL_Image:
+def render_full_5x5(
+        database: u_files.DatabaseInterface,
+        tile_string: str,
+        enabled: int
+    ) -> PIL_Image:
     """Renders the 5x5 board in the announcement version."""
 
     tile_list = u_bingo.tile_list_5x5(database=database)
@@ -191,7 +227,11 @@ def render_full_5x5(database: u_files.DatabaseInterface, tile_string: str, enabl
 
     return base
 
-def render_board_9x9(database: u_files.DatabaseInterface, tile_string: str, enabled: int) -> PIL_Image:
+def render_board_9x9(
+        database: u_files.DatabaseInterface,
+        tile_string: str,
+        enabled: int
+    ) -> PIL_Image:
     """Renders a 9x9 bingo board and saves to images/generated/bingo_board.png
 
     After saving the image it will return the image object."""
@@ -211,7 +251,7 @@ def render_board_9x9(database: u_files.DatabaseInterface, tile_string: str, enab
 ######################################################################################################################################
 
 def generate_graph(
-        lines: list[dict[str, typing.Union[str, tuple[int, int, int], list[tuple[int, int]]]]], # color, label, values
+        lines: list[dict[str, str | tuple[int, int, int] | list[tuple[int, int]]]], # color, label, values
         *,
         x_label: str = "",
         y_label: str = "",
@@ -221,7 +261,7 @@ def generate_graph(
     """Generates a graph.
 
     Args:
-        lines (list[dict[str, typing.Union[str, tuple[int, int, int], list[tuple[int, int]]]]]): The data to graph, should be a list of dicts, each dict with "color", "label" and "values" keys, the values one should be a list of tuples with x and y coordinates, "color" can be a string hex code or RGB, "label" should just be a string.
+        lines (list[dict[str, str | tuple[int, int, int] | list[tuple[int, int]]]]): The data to graph, should be a list of dicts, each dict with "color", "label" and "values" keys, the values one should be a list of tuples with x and y coordinates, "color" can be a string hex code or RGB, "label" should just be a string.
         x_label (str, optional): The label of the x axis. Defaults to "".
         y_label (str, optional): The label of the y axis. Defaults to "".
         log_scale (bool, optional): Whether the y axis should be on a log scale. Defaults to False.
@@ -301,7 +341,12 @@ def generate_bar_graph(
 ##### STONK REPORT ###################################################################################################################
 ######################################################################################################################################
 
-def stonk_report(database: u_files.DatabaseInterface):
+def stonk_report(database: u_files.DatabaseInterface) -> None:
+    """Generates the image for the stonk report and saves it to 'images/generated/stonk_report.png'
+
+    Args:
+        database (u_files.DatabaseInterface): The database object.
+    """
     START_TICK = 2000 # The starting tick for the average value calculation.
 
     stonk_history = u_stonks.stonk_history(database)
@@ -350,7 +395,12 @@ def stonk_report(database: u_files.DatabaseInterface):
     # Write the best algorithm's name.
     imgDraw.text((100, 660), algorithm_data["name"].replace("_"," ").title(), (0, 0, 0), font=algorithm_font, align="center", stroke_width=1)
 
-    def get_data_list(key: typing.Callable[[int, int], float], stonk: u_values.StonkItem, offset: int = 0, default: int = 1) -> list[int | float]:
+    def get_data_list(
+            key: typing.Callable[[int, int], float],
+            stonk: u_values.StonkItem,
+            offset: int = 0,
+            default: int = 1
+        ) -> list[int | float]:
         """Generates a list of values using the key function.
 
         Args:
@@ -380,13 +430,24 @@ def stonk_report(database: u_files.DatabaseInterface):
     def convert_color(data: tuple):
         return tuple([int(item * 255) for item in data])
     
-    def render_gradient(gradient: mcolors.LinearSegmentedColormap, vertical_position: int, stonk_id: int, pixel_count: int = 47) -> tuple:
+    def render_gradient(
+            gradient: mcolors.LinearSegmentedColormap,
+            vertical_position: int,
+            stonk_id: int,
+            pixel_count: int = 47
+        ) -> tuple:
         for pixel in range(pixel_count):
             color = convert_color(gradient(pixel / pixel_count))
             imgDraw.rectangle([(520 + (stonk_id * 435), 315 + (vertical_position * 100) + pixel), (949 + (stonk_id * 435), 315 + (vertical_position * 100) + pixel)], fill=color)
             imgDraw.rectangle([(520 + (stonk_id * 435), 409 + (vertical_position * 100) - pixel), (949 + (stonk_id * 435), 409 + (vertical_position * 100) - pixel)], fill=color)
 
-    def render_data(data: float, data_list: list[float], text: str, vertical_position: int, stonk_id: int) -> None:
+    def render_data(
+            data: float,
+            data_list: list[float],
+            text: str,
+            vertical_position: int,
+            stonk_id: int
+        ) -> None:
         """Renders the gradient on the image and then puts the text on top."""
 
         base_gradient = gradients[stonk_id % 2]

@@ -6,8 +6,14 @@ import re
 
 import utility.interface as u_interface
 import utility.converters as u_converters
+import utility.custom as u_custom
 
-def rreplace(string: str, old: str, new: str, amount: int = -1) -> str:
+def rreplace(
+        string: str,
+        old: str,
+        new: str,
+        amount: int = -1
+    ) -> str:
     """Replaces in a string, from right to left.
 
     Args:
@@ -32,7 +38,10 @@ def smart_number(number: int) -> str:
     """
     return f'{number:,}'
 
-def word_plural(text: str, number: int) -> str:
+def word_plural(
+        text: str,
+        number: int
+    ) -> str:
     """Returns the provided text, with an "s" added at the end if the number is not 1.
 
     Args:
@@ -44,7 +53,10 @@ def word_plural(text: str, number: int) -> str:
     """
     return f"{text}{'s' if number != 1 else ''}"
 
-def smart_text(number: int, text: str) -> str:
+def smart_text(
+        number: int,
+        text: str
+    ) -> str:
     """Combines smart_number() and word_plural() into one function. Will add a space between the number and text.
 
     Args:
@@ -56,7 +68,10 @@ def smart_text(number: int, text: str) -> str:
     """
     return f"{smart_number(number)} {word_plural(text, number)}"
 
-def split_chunks(text: str, chunk_length: int) -> list[str]:
+def split_chunks(
+        text: str,
+        chunk_length: int
+    ) -> list[str]:
     """Splits a string into chunks of equal length.
 
     Args:
@@ -92,7 +107,10 @@ def has_ping(text: str) -> bool:
     """
     return re.match("<@&?\d+>|@(everyone|here)", text) is not None
 
-def after_parameter(ctx: commands.Context, parameter_text: str) -> str:
+def after_parameter(
+        ctx: commands.Context | u_custom.CustomContext,
+        parameter_text: str
+    ) -> str:
     """Returns all the text after a parameter.
 
     If possible, using `arg1, *, arg2` for command parameters is better.
@@ -171,7 +189,7 @@ def parse_wikitext(
         page_title: str = None,
         return_sections: bool = False,
         manual_replacements: typing.Callable[[str], str] = None
-    ) -> typing.Union[str, dict[str, str]]:
+    ) -> str | dict[str, str]:
     """Parses wikitext into something that can be sent in Discord.
 
     Args:
@@ -182,7 +200,7 @@ def parse_wikitext(
         manual_replacements (typing.Callable[[str], str], optional): A callable that will be called on the wikitext before it is parsed. It will be passed the wikitext and should return a modified copy of that text. Defaults to None.
 
     Returns:
-        typing.Union[str, dict[str, str]]: The parsed wikitext as a string, or a dict with section titles as keys and the section text as values.
+        str | dict[str, str]: The parsed wikitext as a string, or a dict with section titles as keys and the section text as values.
     """    
     parsed = wikitext
 

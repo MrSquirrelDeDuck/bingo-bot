@@ -52,48 +52,103 @@ import utility.images as u_images
 database = None # type: u_files.DatabaseInterface
 
 class TruthOrDare_Buttons(discord.ui.View):
-    def __init__(self, timeout=3600.0):
+    def __init__(
+            self: typing.Self,
+            timeout: float = 3600.0
+        ):
         super().__init__(timeout=timeout)
         self.state = None
         self.interaction = None
 
-    @discord.ui.button(label='Truth', style=discord.ButtonStyle.green)
-    async def truth(self, interaction: discord.Interaction, button: discord.ui.Button):
+    @discord.ui.button(
+        label='Truth',
+        style=discord.ButtonStyle.green
+    )
+    async def truth(
+            self: typing.Self,
+            interaction: discord.Interaction,
+            button: discord.ui.Button
+        ):
         self.state = "truth"
         self.interaction = interaction
         self.stop()
 
-    @discord.ui.button(label='Dare', style=discord.ButtonStyle.red)
-    async def dare(self, interaction: discord.Interaction, button: discord.ui.Button):
+    @discord.ui.button(
+        label='Dare',
+        style=discord.ButtonStyle.red
+    )
+    async def dare(
+            self: typing.Self,
+            interaction: discord.Interaction,
+            button: discord.ui.Button
+        ):
         self.state = "dare"
         self.interaction = interaction
         self.stop()
         
-    @discord.ui.button(label='Random', style=discord.ButtonStyle.blurple)
-    async def random(self, interaction: discord.Interaction, button: discord.ui.Button):
+    @discord.ui.button(
+        label='Random',
+        style=discord.ButtonStyle.blurple
+    )
+    async def random(
+            self: typing.Self,
+            interaction: discord.Interaction,
+            button: discord.ui.Button
+        ):
         self.state = "random"
         self.interaction = interaction
         self.stop()
 
 class TruthOrDare_Buttons_Disabled(discord.ui.View):
-    def __init__(self, timeout=3600.0):
+    def __init__(
+            self: typing.Self,
+            timeout: float = 3600.0
+        ):
         super().__init__(timeout=timeout)
         self.state = None
         self.interaction = None
 
-    @discord.ui.button(label='Truth', style=discord.ButtonStyle.green, disabled=True)
-    async def truth(self, interaction: discord.Interaction, button: discord.ui.Button):
+    @discord.ui.button(
+        label='Truth',
+        style=discord.ButtonStyle.green,
+        disabled=True
+    )
+    async def truth(
+            self: typing.Self,
+            interaction: discord.Interaction,
+            button: discord.ui.Button
+        ):
         self.stop()
 
-    @discord.ui.button(label='Dare', style=discord.ButtonStyle.red, disabled=True)
-    async def dare(self, interaction: discord.Interaction, button: discord.ui.Button):
+    @discord.ui.button(
+        label='Dare',
+        style=discord.ButtonStyle.red,
+        disabled=True
+    )
+    async def dare(
+            self: typing.Self,
+            interaction: discord.Interaction,
+            button: discord.ui.Button
+        ):
         self.stop()
         
-    @discord.ui.button(label='Random', style=discord.ButtonStyle.blurple, disabled=True)
-    async def random(self, interaction: discord.Interaction, button: discord.ui.Button):
+    @discord.ui.button(
+        label='Random',
+        style=discord.ButtonStyle.blurple,
+        disabled=True
+    )
+    async def random(
+            self: typing.Self,
+            interaction: discord.Interaction,
+            button: discord.ui.Button
+        ):
         self.stop()
 
-async def send_truth_or_dare(ctx, type_input="truth", interaction=None):
+async def send_truth_or_dare(
+        ctx: commands.Context | u_custom.CustomContext,
+        type_input="truth",
+        interaction=None
+    ):
     prompt_type = None
 
     if type_input == "random":
@@ -155,7 +210,11 @@ async def send_truth_or_dare(ctx, type_input="truth", interaction=None):
         await clear(buttons.interaction.message)
         await send_truth_or_dare(ctx, "random", interaction=buttons.interaction)
 
-class Other_cog(u_custom.CustomCog, name="Other", description="Commands that don't fit elsewhere, and are kind of silly."):
+class Other_cog(
+        u_custom.CustomCog,
+        name="Other",
+        description="Commands that don't fit elsewhere, and are kind of silly."
+    ):
     bot = None
 
     minecraft_wiki_searching = False
@@ -170,11 +229,17 @@ class Other_cog(u_custom.CustomCog, name="Other", description="Commands that don
     ##### UTILITY FUNCTIONS ##############################################################################################################################
     ######################################################################################################################################################
 
-    async def _cipher_translate(self: typing.Self, ctx: typing.Union[commands.Context, u_custom.CustomContext], cipher_function: typing.Callable, text: str, translation_type: str) -> discord.Message:
+    async def _cipher_translate(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext,
+            cipher_function: typing.Callable,
+            text: str,
+            translation_type: str
+        ) -> discord.Message:
         """Does all the logic required to translate a piece of text with a cipher. Returns the sent message.
 
         Args:
-            ctx (typing.Union[discord.Context, u_custom.CustomContext]): The context object.
+            ctx (commands.Context | u_custom.CustomContext): The context object.
             cipher_function (typing.Callable): The function that will be called.
             text (str): The text to translate.
             translation_type (str): String for what type of translation this is, "encode" or "decode"
@@ -198,11 +263,15 @@ class Other_cog(u_custom.CustomCog, name="Other", description="Commands that don
         
         return await ctx.reply(translated)
     
-    async def _cipher_wikipedia(self: typing.Self, ctx: typing.Union[commands.Context, u_custom.CustomContext], cipher_function: typing.Callable) -> discord.Message:
+    async def _cipher_wikipedia(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext,
+            cipher_function: typing.Callable
+        ) -> discord.Message:
         """Does all the logic required for the cipher Wikipedia messages.
 
         Args:
-            ctx (typing.Union[commands.Context, u_custom.CustomContext]): The context.
+            ctx (commands.Context | u_custom.CustomContext): The context.
             cipher_function (typing.Callable): The function that will be called.
 
         Returns:
@@ -224,7 +293,7 @@ class Other_cog(u_custom.CustomCog, name="Other", description="Commands that don
         )
         await ctx.reply(embed=embed)
 
-    def hourly_task(self: typing.Self):
+    def hourly_task(self: typing.Self) -> None:
         """Code that runs for every hour."""
         self.minecraft_wiki_searching = False
         self.vdc_wiki_searching = False
@@ -239,7 +308,9 @@ class Other_cog(u_custom.CustomCog, name="Other", description="Commands that don
         brief = "Get someone's avatar.",
         description = "Get someone's avatar.\nThis will use their global avatar, however the `display` parameter can be used to fetch server-specific avatars."
     )
-    async def avatar(self, ctx,
+    async def avatar(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext,
             target: typing.Optional[discord.Member] = commands.parameter(description = "The member to use, if nothing is provided it'll use you."),
             display: typing.Optional[str] = commands.parameter(description = "If 'display' is provided it will use server avatars.")
         ):
@@ -272,7 +343,9 @@ class Other_cog(u_custom.CustomCog, name="Other", description="Commands that don
         brief = "Use wisely, and follow the rules.",
         description = "Use wisely, and follow the rules."
     )
-    async def say(self, ctx,
+    async def say(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext,
             *, message: typing.Optional[str] = commands.parameter(description = "What you want me to say.")
         ):
         if message is None:
@@ -379,13 +452,15 @@ class Other_cog(u_custom.CustomCog, name="Other", description="Commands that don
     
     @commands.group(
         name = "card",
-        brief = "Take a card, any card.",
-        description = "Take a card, any card.",
+        brief = "Pick a card, any card.",
+        description = "Pick a card, any card.",
         invoke_without_command = True,
         pass_context = True
     )
     @commands.check(u_checks.hide_from_help)
-    async def card_command(self, ctx,
+    async def card_command(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext,
             card: typing.Optional[str] = commands.parameter(description = "The key of the card.")
         ):
         if ctx.invoked_subcommand is not None:
@@ -420,7 +495,10 @@ class Other_cog(u_custom.CustomCog, name="Other", description="Commands that don
         brief = "Thanks the bot :3",
         description = "Thanks the bot :3"
     )
-    async def thanks(self, ctx):
+    async def thanks(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext
+        ):
         await ctx.reply("You're welcome!")
 
         
@@ -437,7 +515,10 @@ class Other_cog(u_custom.CustomCog, name="Other", description="Commands that don
         description = "Holy code"
     )
     @commands.check(u_checks.hide_from_help)
-    async def holy_command(self, ctx):
+    async def holy_command(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext
+        ):
         await ctx.reply("holy code")
 
         
@@ -453,7 +534,10 @@ class Other_cog(u_custom.CustomCog, name="Other", description="Commands that don
         brief = "Poggers.",
         description = "Poggers."
     )
-    async def poggers_command(self, ctx):
+    async def poggers_command(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext
+        ):
         await ctx.reply("Poggers.")
 
         
@@ -470,7 +554,10 @@ class Other_cog(u_custom.CustomCog, name="Other", description="Commands that don
         brief = "Good morning!",
         description = "Good morning!"
     )
-    async def good_morning(self, ctx):
+    async def good_morning(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext
+        ):
         await ctx.reply("Good morning!")
 
         
@@ -487,7 +574,10 @@ class Other_cog(u_custom.CustomCog, name="Other", description="Commands that don
         brief = "Good night!",
         description = "Good night!"
     )
-    async def good_night(self, ctx):
+    async def good_night(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext
+        ):
         if random.randint(1, 32) == 1:
             await ctx.reply("Good horser!")
             return
@@ -508,7 +598,10 @@ class Other_cog(u_custom.CustomCog, name="Other", description="Commands that don
         description = "You can't just say perchance."
     )
     @commands.check(u_checks.hide_from_help)
-    async def perchance(self, ctx):
+    async def perchance(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext
+        ):
         await ctx.reply("You can't just say perchance.")
 
         
@@ -525,7 +618,10 @@ class Other_cog(u_custom.CustomCog, name="Other", description="Commands that don
         description = "Typing..."
     )
     @commands.check(u_checks.hide_from_help)
-    async def typing_command(self, ctx):
+    async def typing_command(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext
+        ):
         async with ctx.typing():
             pass
 
@@ -543,7 +639,10 @@ class Other_cog(u_custom.CustomCog, name="Other", description="Commands that don
         description = "Random tetromino."
     )
     @commands.check(u_checks.hide_from_help)
-    async def tetris(self, ctx):
+    async def tetris(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext
+        ):
         await ctx.reply(random.choice(["O", "L", "The J", "S", "Z", "I", "T"]) + "-piece.")
 
         
@@ -562,7 +661,10 @@ class Other_cog(u_custom.CustomCog, name="Other", description="Commands that don
         pass_context = True
     )
     @commands.check(u_checks.hide_from_help)
-    async def ewr(self, ctx):
+    async def ewr(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext
+        ):
         if ctx.invoked_subcommand is not None:
             return
         
@@ -573,7 +675,9 @@ class Other_cog(u_custom.CustomCog, name="Other", description="Commands that don
         brief = "Wbxisw rwzr ubri rgw wqe xuogwe.",
         description = "Wbxisw rwzr ubri rgw wqe xuogwe.",
     )
-    async def ewr_encode(self, ctx,
+    async def ewr_encode(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext,
             *, text: typing.Optional[str] = commands.parameter(description = "Rgw rwzr ri wbxisw.", displayed_name = "rwzr")
         ):
         await self._cipher_translate(ctx, u_ciphers.ewr_encode, text, "encode")
@@ -583,7 +687,9 @@ class Other_cog(u_custom.CustomCog, name="Other", description="Commands that don
         brief = "Decode text from the ewr cipher.",
         description = "Decode text from the ewr cipher.",
     )
-    async def ewr_decode(self, ctx,
+    async def ewr_decode(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext,
             *, text: typing.Optional[str] = commands.parameter(description = "The text to decode.")
         ):
         await self._cipher_translate(ctx, u_ciphers.ewr_decode, text, "decode")
@@ -604,7 +710,10 @@ class Other_cog(u_custom.CustomCog, name="Other", description="Commands that don
         pass_context = True
     )
     @commands.check(u_checks.hide_from_help)
-    async def fdg(self, ctx):
+    async def fdg(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext
+        ):
         if ctx.invoked_subcommand is not None:
             return
         
@@ -615,7 +724,9 @@ class Other_cog(u_custom.CustomCog, name="Other", description="Commands that don
         brief = "Dyelcd gdwg kygl gnd vcb ekpndf.",
         description = "Dyelcd gdwg kygl gnd vcb ekpndf.",
     )
-    async def fdg_encode(self, ctx,
+    async def fdg_encode(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext,
             *, text: typing.Optional[str] = commands.parameter(description = "Gnd gdwg gl dyelcd.", displayed_name = "gdwg")
         ):
         await self._cipher_translate(ctx, u_ciphers.fdg_encode, text, "encode")
@@ -625,7 +736,9 @@ class Other_cog(u_custom.CustomCog, name="Other", description="Commands that don
         brief = "Decode text from the fdg cipher.",
         description = "Decode text from the fdg cipher.",
     )
-    async def fdg_decode(self, ctx,
+    async def fdg_decode(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext,
             *, text: typing.Optional[str] = commands.parameter(description = "The text to decode.")
         ):
         await self._cipher_translate(ctx, u_ciphers.fdg_decode, text, "decode")
@@ -648,7 +761,10 @@ class Other_cog(u_custom.CustomCog, name="Other", description="Commands that don
         pass_context = True
     )
     @commands.check(u_checks.hide_from_help)
-    async def r_circle_section(self, ctx):
+    async def r_circle_section(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext
+        ):
         if ctx.invoked_subcommand is not None:
             return
 
@@ -664,7 +780,9 @@ class Other_cog(u_custom.CustomCog, name="Other", description="Commands that don
         brief = "Ec':]X G08t }'^] G3p g@= VGM3pr.",
         description = "Ec':]X G08t }'^] G3p g@= VGM3pr.",
     )
-    async def r_circle_section_encode(self, ctx,
+    async def r_circle_section_encode(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext,
             *, text: typing.Optional[str] = commands.parameter(description = "TØ; ^X>G uo ;'[]LB.", displayed_name = "t○b}")
         ):
         func = u_ciphers.fake_r_circle_section_encode
@@ -679,7 +797,9 @@ class Other_cog(u_custom.CustomCog, name="Other", description="Commands that don
         brief = "Decode text from the r○§ cipher.",
         description = "Decode text from the r○§ cipher.",
     )
-    async def r_circle_section_decode(self, ctx,
+    async def r_circle_section_decode(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext,
             *, text: typing.Optional[str] = commands.parameter(description = "The text to decode.")
         ):
         func = u_ciphers.fake_r_circle_section_decode
@@ -704,7 +824,9 @@ class Other_cog(u_custom.CustomCog, name="Other", description="Commands that don
         description = "Test your knowledge of π."
     )
     @commands.check(u_checks.hide_from_help)
-    async def pi(self, ctx,
+    async def pi(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext,
             guess: typing.Optional[str] = commands.parameter(description = "Your guess as to the value of pi.")
         ):
         if guess is None:
@@ -799,7 +921,9 @@ class Other_cog(u_custom.CustomCog, name="Other", description="Commands that don
         description = "Powering up the Grammar Cannon."
     )
     @commands.check(u_checks.hide_from_help)
-    async def prepare(self, ctx,
+    async def prepare(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext,
             *, prepare: typing.Optional[str] = commands.parameter(description = "What to prepare.")
         ):
         if prepare is None:
@@ -830,7 +954,9 @@ class Other_cog(u_custom.CustomCog, name="Other", description="Commands that don
         description = "Summoning the Grammar Cannon."
     )
     @commands.check(u_checks.hide_from_help)
-    async def summon(self, ctx,
+    async def summon(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext,
             *, summon: typing.Optional[str] = commands.parameter(description = "What to summon.")
         ):
         if summon is None:
@@ -860,7 +986,10 @@ class Other_cog(u_custom.CustomCog, name="Other", description="Commands that don
         brief = "Brick-related utility commands.",
         description = "Brick-related utility commands."
     )
-    async def brick(self, ctx):
+    async def brick(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext
+        ):
         if ctx.invoked_subcommand is not None:
             return
         
@@ -880,7 +1009,10 @@ class Other_cog(u_custom.CustomCog, name="Other", description="Commands that don
         brief = "Analyzes brick stats messages.",
         description = "Analyzes brick stats messages, note that replying to the brick stats message is required."
     )
-    async def brick_analyze(self, ctx):
+    async def brick_analyze(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext
+        ):
         replied_to = u_interface.replying_mm_checks(ctx.message, False, True)
         if not replied_to:
             await ctx.reply("You must reply to the stats of someone who has been bricked at least once.")
@@ -996,7 +1128,9 @@ class Other_cog(u_custom.CustomCog, name="Other", description="Commands that don
         invoke_without_command = True,
         pass_context = True
     )
-    async def xkcd(self, ctx,
+    async def xkcd(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext,
             strip_id: typing.Optional[str] = commands.parameter(description = "The strip id to get, or 'random' for a random strip.")
         ):
         if ctx.invoked_subcommand is not None:
@@ -1038,7 +1172,9 @@ class Other_cog(u_custom.CustomCog, name="Other", description="Commands that don
         description = "Pinglist for new xkcd strips!\nUse '%xkcd ping on' to get on the pinglist and '%xkcd ping off' to leave it.",
         brief = "Pinglist for new xkcd strips!"
     )
-    async def xkcd_ping(self, ctx,
+    async def xkcd_ping(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext,
             state: typing.Optional[str] = commands.parameter(description = "'on' to join the ping list, 'off' to leave.")
         ):
         new_state = False
@@ -1074,7 +1210,9 @@ class Other_cog(u_custom.CustomCog, name="Other", description="Commands that don
         description = "Ask the spirits a question."
     )
     @commands.check(u_checks.hide_from_help)
-    async def askouija(self, ctx,
+    async def askouija(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext,
             *, question: typing.Optional[str] = commands.parameter(description = "The question to ask the spirits.")
         ):
         if u_checks.sensitive_check(ctx.channel):
@@ -1123,7 +1261,10 @@ class Other_cog(u_custom.CustomCog, name="Other", description="Commands that don
         description = "Retrieves the current count."
     )
     @commands.check(u_checks.hide_from_help)
-    async def get_count(self, ctx):
+    async def get_count(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext
+        ):
         if u_checks.sensitive_check(ctx.channel):
             await ctx.reply("This is not the channel for that.")
             return
@@ -1152,7 +1293,10 @@ class Other_cog(u_custom.CustomCog, name="Other", description="Commands that don
         description = "Starts a game of Traitor, a game where one player is the traitor and everyone else is innocent.\nThis will DM players involved whether they are the traitor or not 2 minutes after the game starts."
     )
     @commands.check(u_checks.hide_from_help)
-    async def traitor(self, ctx):
+    async def traitor(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext
+        ):
         if self.traitor_game_going:
             await ctx.reply("I am sorry, but there is already a game going.")
             return
@@ -1281,7 +1425,10 @@ class Other_cog(u_custom.CustomCog, name="Other", description="Commands that don
         description = "Yep, it's just a coin flip."
     )
     @commands.check(u_checks.hide_from_help)
-    async def flip_coin(self, ctx):
+    async def flip_coin(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext
+        ):
         await ctx.reply(random.choice(["Heads.","Tails."]))
 
         
@@ -1297,7 +1444,10 @@ class Other_cog(u_custom.CustomCog, name="Other", description="Commands that don
         brief = "What's the current day of the week in EDT?",
         description = "What's the current day of the week in EDT?"
     )
-    async def weekday(self, ctx):
+    async def weekday(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext
+        ):
         await ctx.reply(datetime.datetime.today().astimezone(pytz.timezone("US/Eastern")).strftime('%A') + ".")
 
         
@@ -1313,7 +1463,10 @@ class Other_cog(u_custom.CustomCog, name="Other", description="Commands that don
         brief = "Truth or dare?",
         description = "Truth or dare?"
     )
-    async def truth_or_dare(self, ctx):
+    async def truth_or_dare(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext
+        ):
         await send_truth_or_dare(ctx, "random")
     
     @commands.command(
@@ -1322,7 +1475,10 @@ class Other_cog(u_custom.CustomCog, name="Other", description="Commands that don
         description = "The truth part of Truth or Dare."
     )
     @commands.check(u_checks.hide_from_help)
-    async def truth(self, ctx):
+    async def truth(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext
+        ):
         await send_truth_or_dare(ctx, "truth")
 
     @commands.command(
@@ -1331,7 +1487,10 @@ class Other_cog(u_custom.CustomCog, name="Other", description="Commands that don
         description = "The dare part of Truth or Dare."
     )
     @commands.check(u_checks.hide_from_help)
-    async def dare(self, ctx):
+    async def dare(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext
+        ):
         await send_truth_or_dare(ctx, "dare")
 
         
@@ -1348,7 +1507,9 @@ class Other_cog(u_custom.CustomCog, name="Other", description="Commands that don
         description = "Graphs the number of people who have a role using role snapshots."
     )
     @commands.check(u_checks.hide_from_help)
-    async def role_graph(self, ctx,
+    async def role_graph(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext,
             role: typing.Optional[discord.Role] = commands.parameter(description = "The id of the role to graph.")
         ):
         if role is None:
@@ -1403,7 +1564,9 @@ class Other_cog(u_custom.CustomCog, name="Other", description="Commands that don
         description = "A leaderboard for roles."
     )
     @commands.check(u_checks.hide_from_help)
-    async def role_leaderboard(self, ctx,
+    async def role_leaderboard(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext,
             member: typing.Optional[discord.Member] = commands.parameter(description = "The member to view.")
         ):
         if member is None:
@@ -1512,7 +1675,9 @@ class Other_cog(u_custom.CustomCog, name="Other", description="Commands that don
         description = "Get information about a Lichess tournament."
     )
     @commands.check(u_checks.hide_from_help)
-    async def lichess(self, ctx,
+    async def lichess(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext,
             tournament: typing.Optional[str] = commands.parameter(description = "The id of the tournament to look up.")
         ):
         if time.time() <= self.lichess_cooldown:
@@ -1646,7 +1811,9 @@ class Other_cog(u_custom.CustomCog, name="Other", description="Commands that don
         brief = "Searches for an emoji, or gives an image.",
         description = "If given a custom emoji, it will send the image for that emoji, otherwise it will search for whatever text is given."
     )
-    async def emoji_command(self, ctx,
+    async def emoji_command(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext,
             *, text: typing.Optional[str] = commands.parameter(description = "The emoji, or text to search for.")
         ):
         if text is None:
@@ -1670,7 +1837,10 @@ class Other_cog(u_custom.CustomCog, name="Other", description="Commands that don
         
 
 
-    async def _emoji_search(self, text: str) -> str:
+    async def _emoji_search(
+            self: typing.Self,
+            text: str
+        ) -> str:
         
         def score_emoji(emoji_text: str) -> float:
             return difflib.SequenceMatcher(None, text.lower(), emoji_text.lower()).ratio()
@@ -1703,7 +1873,9 @@ class Other_cog(u_custom.CustomCog, name="Other", description="Commands that don
         description = "Search the Valve Developer Community Wiki."
     )
     @commands.check(u_checks.hide_from_help)
-    async def vdc_wiki(self, ctx,
+    async def vdc_wiki(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext,
             *, search_term: typing.Optional[str] = commands.parameter(description = "The search term to search the wiki with.")
         ):
         
@@ -1754,7 +1926,9 @@ class Other_cog(u_custom.CustomCog, name="Other", description="Commands that don
         description = "Search the Minecraft Wiki."
     )
     @commands.check(u_checks.hide_from_help)
-    async def minecraft(self, ctx,
+    async def minecraft(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext,
             *, search_term: typing.Optional[str] = commands.parameter(description = "The search term to search the wiki with.")
         ):
         
@@ -1811,7 +1985,10 @@ class Other_cog(u_custom.CustomCog, name="Other", description="Commands that don
         invoke_without_command = True,
         pass_context = True
     )
-    async def dnd_command(self, ctx):
+    async def dnd_command(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext
+        ):
         if ctx.invoked_subcommand is not None:
             return
         
@@ -1822,7 +1999,9 @@ class Other_cog(u_custom.CustomCog, name="Other", description="Commands that don
         brief = "Roll some dice.",
         description = "Roll some dice."
     )
-    async def dnd_roll(self, ctx,
+    async def dnd_roll(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext,
             dice: typing.Optional[str] = commands.parameter(description = "The number of dice and number of sides, like '2d6'.")
         ):
         if dice is None:

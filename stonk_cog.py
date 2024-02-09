@@ -24,7 +24,11 @@ import utility.algorithms as u_algorithms
 
 database = None # type: u_files.DatabaseInterface
 
-class Stonk_cog(u_custom.CustomCog, name="Stonk", description="Commands for working with the stonks in The Bread Game!"):
+class Stonk_cog(
+        u_custom.CustomCog,
+        name="Stonk",
+        description="Commands for working with the stonks in The Bread Game!"
+    ):
 
     @commands.group(
         name = "stonks",
@@ -34,7 +38,10 @@ class Stonk_cog(u_custom.CustomCog, name="Stonk", description="Commands for work
         invoke_without_command = True,
         pass_context = True
     )
-    async def stonk(self, ctx):
+    async def stonk(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext
+        ):
         if ctx.invoked_subcommand is not None:
             return
         
@@ -54,7 +61,9 @@ class Stonk_cog(u_custom.CustomCog, name="Stonk", description="Commands for work
         description = "Look through previous stonk values.",
         brief = "Look through previous stonk values."
     )
-    async def stonk_history(self, ctx,
+    async def stonk_history(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext,
             tick_id: typing.Optional[u_converters.parse_int] = commands.parameter(description = "An optional specific tick to look at.")
         ):
         stonk_history = u_stonks.stonk_history(database)
@@ -98,7 +107,10 @@ class Stonk_cog(u_custom.CustomCog, name="Stonk", description="Commands for work
         description = "Get information about the current tick.",
         brief = "Get information about the current tick."
     )
-    async def stonk_current(self, ctx):
+    async def stonk_current(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext
+        ):
         stonk_data = u_stonks.full_current_values(database)
 
         tick_data = stonk_data["values"]
@@ -131,7 +143,9 @@ class Stonk_cog(u_custom.CustomCog, name="Stonk", description="Commands for work
         description = "Pinglist for stonk ticks!\nUse '%stonk ping on' to get on the pinglist and '%stonk ping off' to leave it.",
         brief = "Pinglist for stonk ticks!"
     )
-    async def stonk_ping(self, ctx,
+    async def stonk_ping(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext,
             state: typing.Optional[str] = commands.parameter(description = "'on' to join the ping list, 'off' to leave.")
         ):
         new_state = False
@@ -166,7 +180,9 @@ class Stonk_cog(u_custom.CustomCog, name="Stonk", description="Commands for work
         description = "Previous stonk values, stonk tick style.\nYou can provide a specific stonk or set of stonks to use just those. If no stonks are provided, all will be used.\nAdditional parameters:\n  '-color' or '-colour to use emojis to mark rises, falls, or stagnations.",
         brief = "Previous stonk values, stonk tick style."
     )
-    async def stonk_previous(self, ctx,
+    async def stonk_previous(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext,
             ticks: typing.Optional[u_converters.parse_int] = commands.parameter(description = "The number of ticks to show, must be between 2 and 50."),
             *, modifiers: typing.Optional[str] = commands.parameter(description = "Optional modifiers, see above for modifier list."),
         ):
@@ -267,7 +283,10 @@ class Stonk_cog(u_custom.CustomCog, name="Stonk", description="Commands for work
         description = "Get a link to the last stonk tick.",
         brief = "Get a link to the last stonk tick."
     )
-    async def stonk_message(self, ctx):
+    async def stonk_message(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext
+        ):
         await ctx.reply(u_stonks.full_current_values(database)["message_link"])
     
 
@@ -284,7 +303,10 @@ class Stonk_cog(u_custom.CustomCog, name="Stonk", description="Commands for work
         description = "When you're having trouble deciding what to invest in.",
         brief = "When you're having trouble deciding what to invest in."
     )
-    async def stonk_message(self, ctx):
+    async def stonk_message(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext
+        ):
         commands = [f"$bread invest all {stonk.internal_name}" for stonk in u_values.stonks]
 
         random.shuffle(commands)
@@ -311,7 +333,9 @@ class Stonk_cog(u_custom.CustomCog, name="Stonk", description="Commands for work
         description = "Calculate a portfolio's value on any stonk tick.\n\nNote that if a stonk is in the portfolio but did not exist for the tick you're analyzing it will not be used.",
         brief = "Calculate a portfolio's value on any stonk tick."
     )
-    async def stonk_analyze(self, ctx,
+    async def stonk_analyze(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext,
             tick_id: typing.Optional[u_converters.parse_int] = commands.parameter(description = "The tick number to use the values from.")
         ):
         current_tick = u_stonks.current_tick_number(database=database)
@@ -385,7 +409,10 @@ class Stonk_cog(u_custom.CustomCog, name="Stonk", description="Commands for work
         description = "Provides the entire stonk history as a json file.",
         brief = "Provides the entire stonk history as a json file."
     )
-    async def stonk_file(self, ctx):
+    async def stonk_file(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext
+        ):
         file_path = os.path.join("public", "stonk_history.json")
         database.save_json_file(file_path, data=u_stonks.stonk_history(database), join_file_path=False) # replace_slash is False since we're using os.path.join earlier.
         await ctx.reply(file=discord.File(file_path))
@@ -404,7 +431,9 @@ class Stonk_cog(u_custom.CustomCog, name="Stonk", description="Commands for work
         description = "Searches for stonk values in the stonk history.\n\nTo provide the values for your search, format each one as '<stonk> <value>', with a space in the middle. Multiple stonks can be provided, as well.\n\nFor example, '%stonk search cookie 25' would search for ticks where cookies are worth 25 dough.\n\nIf multiple stonks are provided, they all must be true, so if you provide 'cookie 30 pretzel 107' then it will search for every tick where cookies are worth 30 and pretzels are worth 107.",
         brief = "Searches for stonk values in the stonk history."
     )
-    async def stonk_search(self, ctx,
+    async def stonk_search(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext,
             *, parameters: typing.Optional[str] = commands.parameter(description = "The stonk values to search. See above for more info.", displayed_name="values")
         ):
         if parameters is None:
@@ -469,7 +498,10 @@ class Stonk_cog(u_custom.CustomCog, name="Stonk", description="Commands for work
         description = "Gives the highest and lowest values of all the stonks.",
         brief = "Gives the highest and lowest values of all the stonks."
     )
-    async def stonk_records(self, ctx):
+    async def stonk_records(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext
+        ):
         history = u_stonks.stonk_history(database)
 
         stonks = {
@@ -542,7 +574,9 @@ class Stonk_cog(u_custom.CustomCog, name="Stonk", description="Commands for work
         description = "Get the number of splits in a time frame.\nIf no end is provided it'll use the current tick as the end.",
         brief = "Get the number of splits in a time frame."
     )
-    async def stonk_splits(self, ctx,
+    async def stonk_splits(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext,
             start: typing.Optional[u_converters.parse_int] = commands.parameter(description = "The start of the time frame."),
             end: typing.Optional[u_converters.parse_int] = commands.parameter(description = "The end of the time frame."),
         ):
@@ -597,7 +631,9 @@ class Stonk_cog(u_custom.CustomCog, name="Stonk", description="Commands for work
         description = "Graphs of stonk values.\n\nParameters:\n- The stonks you want to use, you can use an emoji or their name. You can also use 'all' to use all the stonks. Putting an exclamation mark before a stonk will remove it. If none are provided it will use them all.\n- To mark the start of the graph, use 'start <start point>'. If none is provided it will use 0.\n- To mark the end, 'end <end point>'. If none is provided it will use the current tick.\n- 'log' can be used to set the Y axis to a log scale.",
         brief = "Graphs of stonk values."
     )
-    async def stonk_graph(self, ctx,
+    async def stonk_graph(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext,
             *, parameters: typing.Optional[str] = commands.parameter(description = "The parameters to use. See above for more information.")
         ):
         current_tick = u_stonks.current_tick_number(database=database)
@@ -713,7 +749,10 @@ class Stonk_cog(u_custom.CustomCog, name="Stonk", description="Commands for work
         description = "Sends the last stonk report.",
         brief = "Sends the last stonk report."
     )
-    async def stonk_report(self, ctx):
+    async def stonk_report(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext
+        ):
         try:
             await ctx.reply(file=discord.File(f"images{SLASH}generated{SLASH}stonk_report.png"))
         except FileNotFoundError:
@@ -733,7 +772,9 @@ class Stonk_cog(u_custom.CustomCog, name="Stonk", description="Commands for work
         description = "Shows a graph of a portfolio.\nThis does require you to reply to a portfolio.",
         brief = "Shows a graph of a portfolio."
     )
-    async def stonk_portfolio_graph(self, ctx,
+    async def stonk_portfolio_graph(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext,
             start: typing.Optional[u_converters.parse_int] = commands.parameter(description = "The start tick of the graph."),
             end: typing.Optional[u_converters.parse_int] = commands.parameter(description = "The end tick of the graph.")
         ):
@@ -815,7 +856,10 @@ class Stonk_cog(u_custom.CustomCog, name="Stonk", description="Commands for work
         invoke_without_command = True,
         pass_context = True
     )
-    async def stonk_algorithms(self, ctx):
+    async def stonk_algorithms(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext
+        ):
         if ctx.invoked_subcommand is not None:
             return
         
@@ -837,7 +881,9 @@ class Stonk_cog(u_custom.CustomCog, name="Stonk", description="Commands for work
         description = "Get the stats of an algorithm.",
         brief = "Get the stats of an algorithm."
     )
-    async def stonk_algorithm_stats(self, ctx,
+    async def stonk_algorithm_stats(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext,
             algorithm_name: typing.Optional[u_algorithms.AlgorithmConverter] = commands.parameter(description = "The name of the algorithm you want to get the stats of.")
         ):
         if algorithm_name is None:
@@ -891,7 +937,10 @@ class Stonk_cog(u_custom.CustomCog, name="Stonk", description="Commands for work
         description = "Chooses a random algorithm.",
         brief = "Chooses a random algorithm."
     )
-    async def stonk_algorithm_random(self, ctx):
+    async def stonk_algorithm_random(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext
+        ):
         algorithm_list = u_algorithms.all_live_algorithms(database=database)
         await self.stonk_algorithm_stats(ctx, algorithm_name=random.choice(algorithm_list))
     
@@ -911,7 +960,9 @@ class Stonk_cog(u_custom.CustomCog, name="Stonk", description="Commands for work
         description = "Leaderboards for algorithms.",
         brief = "Leaderboards for algorithms."
     )
-    async def stonk_algorithm_leaderboard(self, ctx,
+    async def stonk_algorithm_leaderboard(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext,
             algorithm_name: typing.Optional[u_algorithms.AlgorithmConverter] = commands.parameter(description = "The name of the algorithm you want to get the stats of.")                    
         ):
         def check(algorithm_info):
@@ -974,7 +1025,9 @@ class Stonk_cog(u_custom.CustomCog, name="Stonk", description="Commands for work
         description = "Graphs of algorithm performances.",
         brief = "Graphs of algorithm performances."
     )
-    async def stonk_algorithm_graph(self, ctx,
+    async def stonk_algorithm_graph(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext,
             *, parameters: typing.Optional[str] = commands.parameter(description = "The parameters to use. See above for more information.")
         ):
         current_tick = u_stonks.current_tick_number(database=database)
@@ -1089,7 +1142,9 @@ class Stonk_cog(u_custom.CustomCog, name="Stonk", description="Commands for work
         brief = "Automates stonk gifting math.",
         description = "Figures out how much dough to invest in a stonk to get a specific amount of dough."
     )
-    async def stonk_gift(self, ctx,
+    async def stonk_gift(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext,
             dough: typing.Optional[u_converters.parse_int] = commands.parameter(description = "The amount of dough to use."),
             stonk: typing.Optional[u_values.StonkConverter] = commands.parameter(description = "The stonk to use. If nothing is provided it'll use whatever stonk is closest to the goal."),
             user: typing.Optional[discord.Member] = commands.parameter(description = "Optional user to generate a gift command for.")

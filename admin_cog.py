@@ -25,7 +25,12 @@ database = None # type: u_files.DatabaseInterface
 
 MAIN_GUILD = 958392331671830579
 
-class Admin_cog(u_custom.CustomCog, name="Admin", description="Administration commands for the Bingo-Bot."):
+class Admin_cog(
+        u_custom.CustomCog,
+        name="Admin",
+        description="Administration commands for the Bingo-Bot."
+    ):
+
     bot = None
 
     all_extensions = [
@@ -46,12 +51,12 @@ class Admin_cog(u_custom.CustomCog, name="Admin", description="Administration co
     ##### GLOBAL UTILITY FUNCTIONS #######################################################################################################################
     ######################################################################################################################################################
 
-    def reload_database(self):
+    def reload_database(self: typing.Self):
         """Reloads the database."""
         self.bot.database.save_database(make_backup=True)
         self.bot.database = u_files.DatabaseInterface()
     
-    def cog_unload(self):
+    def cog_unload(self: typing.Self):
         """This runs when the cog is unloaded."""
         database.save_database(make_backup=True)
 
@@ -64,7 +69,10 @@ class Admin_cog(u_custom.CustomCog, name="Admin", description="Administration co
     ##### CHECKS #########################################################################################################################################
     ######################################################################################################################################################
 
-    async def cog_check(self, ctx):
+    async def cog_check(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext
+        ):
         if ctx.author.id == self.bot.owner_id:
             return True
         
@@ -84,7 +92,10 @@ class Admin_cog(u_custom.CustomCog, name="Admin", description="Administration co
         return False
     
     # Added via bot.add_check in add_checks.
-    async def dm_check(self, ctx) -> bool:
+    async def dm_check(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext
+        ) -> bool:
         """Disables commands in DMs, with a few exceptions."""
         
         if ctx.guild is not None:
@@ -102,7 +113,10 @@ class Admin_cog(u_custom.CustomCog, name="Admin", description="Administration co
         return False
     
     # Added via bot.add_check in add_checks.
-    async def disabled_check(self, ctx) -> bool:
+    async def disabled_check(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext
+        ) -> bool:
         """Bot check that returns False and sends a message if the command is disabled."""
 
         invoked_command = ctx.command.qualified_name
@@ -126,7 +140,7 @@ class Admin_cog(u_custom.CustomCog, name="Admin", description="Administration co
         return True
 
 
-    def add_checks(self):
+    def add_checks(self: typing.Self):
         """Adds a list of global checks that are in Admin_cog."""
         self.bot.add_check(self.dm_check)
         self.bot.add_check(self.disabled_check)
@@ -140,7 +154,7 @@ class Admin_cog(u_custom.CustomCog, name="Admin", description="Administration co
     ##### COG UTILITY FUNCTIONS ##########################################################################################################################
     ######################################################################################################################################################
 
-    async def _load_all_extensions(self) -> None:
+    async def _load_all_extensions(self: typing.Self) -> None:
         """Uses self.all_extensions to load all listed cogs."""
         print("Loading all extensions.\nExtension list: {}".format(self.all_extensions))
 
@@ -149,7 +163,10 @@ class Admin_cog(u_custom.CustomCog, name="Admin", description="Administration co
 
         print("Loaded all extensions.")
 
-    async def _load_extension(self, extension_name: str) -> None:
+    async def _load_extension(
+            self: typing.Self,
+            extension_name: str
+        ) -> None:
         """Loads a cog if it is not already loaded."""
         print("Attempting to load extension \"{}\"".format(extension_name))
         
@@ -163,7 +180,10 @@ class Admin_cog(u_custom.CustomCog, name="Admin", description="Administration co
         # It was loaded!
         print("\"{}\" loaded successfully.".format(extension_name))
     
-    async def _unload_extension(self, extension_name: str) -> None:
+    async def _unload_extension(
+            self: typing.Self,
+            extension_name: str
+        ) -> None:
         """Unloads a cog, note that this can unload the admin cog."""
         print("Attempting to unload extension \"{}\"".format(extension_name))
         
@@ -177,7 +197,10 @@ class Admin_cog(u_custom.CustomCog, name="Admin", description="Administration co
         # It was unloaded!
         print("\"{}\" unloaded successfully.".format(extension_name))
 
-    async def _reload_extension(self, extension_name: str) -> None:
+    async def _reload_extension(
+            self: typing.Self,
+            extension_name: str
+        ) -> None:
         print("Attempting to reload extension \"{}\"".format(extension_name))
         
         # Try to reload it.
@@ -185,7 +208,10 @@ class Admin_cog(u_custom.CustomCog, name="Admin", description="Administration co
 
         print("Reloaded \"{}\" extension.".format(extension_name))
     
-    async def _reload_module_universal(self, module_name: str) -> int:
+    async def _reload_module_universal(
+            self: typing.Self,
+            module_name: str
+        ) -> int:
         """Attempts to have all cogs reload a module by name.
         Returns the number of cogs that reloaded the module."""
 
@@ -204,7 +230,10 @@ class Admin_cog(u_custom.CustomCog, name="Admin", description="Administration co
         return reloaded_count
 
     
-    async def _smart_reload(self, extension_name: str) -> int:
+    async def _smart_reload(
+            self: typing.Self,
+            extension_name: str
+        ) -> int:
         """Attempts to reload a cog via the extension name, and if there is no cog with that name tries to reload it as a module.
         Returns an int of the number of things reloaded."""
 
@@ -226,7 +255,7 @@ class Admin_cog(u_custom.CustomCog, name="Admin", description="Administration co
 
         return 0
     
-    async def _reload_all(self) -> int:
+    async def _reload_all(self: typing.Self) -> int:
         """Reloads all the cogs the bot has loaded and all the modules in the utility folder."""
 
         reloaded_count = 0
@@ -260,7 +289,10 @@ class Admin_cog(u_custom.CustomCog, name="Admin", description="Administration co
         invoke_without_command=True
     )
     @commands.is_owner()
-    async def admin(self, ctx):
+    async def admin(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext
+        ):
         await ctx.reply("You're missing a subcommand.")
 
         
@@ -279,7 +311,10 @@ class Admin_cog(u_custom.CustomCog, name="Admin", description="Administration co
         invoke_without_command = True
     )
     @commands.is_owner()
-    async def admin_database(self, ctx):
+    async def admin_database(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext
+        ):
         if ctx.invoked_subcommand is not None:
             return
         
@@ -300,7 +335,10 @@ class Admin_cog(u_custom.CustomCog, name="Admin", description="Administration co
         description = "Reloads the database."
     )
     @commands.is_owner()
-    async def admin_database_reload(self, ctx):
+    async def admin_database_reload(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext
+        ):
         self.reload_database()
 
         await ctx.reply("Done.")
@@ -319,7 +357,10 @@ class Admin_cog(u_custom.CustomCog, name="Admin", description="Administration co
         description = "Saves the database."
     )
     @commands.is_owner()
-    async def admin_database_save(self, ctx):
+    async def admin_database_save(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext
+        ):
         database.save_database(make_backup=True)
 
         await ctx.reply("Done.")
@@ -338,7 +379,10 @@ class Admin_cog(u_custom.CustomCog, name="Admin", description="Administration co
         description = "Loads the database."
     )
     @commands.is_owner()
-    async def admin_database_load(self, ctx):
+    async def admin_database_load(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext
+        ):
         database.load_database()
 
         await ctx.reply("Done.")
@@ -357,7 +401,9 @@ class Admin_cog(u_custom.CustomCog, name="Admin", description="Administration co
         description = "Prints a part of the database."
     )
     @commands.is_owner()
-    async def admin_database_dump(self, ctx,
+    async def admin_database_dump(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext,
             *key: typing.Optional[str]
         ):
         if len(key) == 0:
@@ -384,7 +430,10 @@ class Admin_cog(u_custom.CustomCog, name="Admin", description="Administration co
         description = "Shuts the bot down.\nPlease only use if it is the last option."
     )
     @commands.check(u_checks.shutdown_check)
-    async def admin_shutdown(self, ctx):        
+    async def admin_shutdown(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext
+        ):        
         letters = list("abcdefghijklmnopqrstuvwxyABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789")
         security_code = "".join(random.choice(letters) for i in range(16))
 
@@ -411,7 +460,9 @@ class Admin_cog(u_custom.CustomCog, name="Admin", description="Administration co
         description = "Load a cog."
     )
     @commands.check(u_checks.sub_admin_check)
-    async def admin_load(self, ctx,
+    async def admin_load(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext,
             extension_name: typing.Optional[str] = commands.parameter(description = "The name of the extension to load.")
         ):
         if extension_name is None:
@@ -442,7 +493,9 @@ class Admin_cog(u_custom.CustomCog, name="Admin", description="Administration co
         description = "Unload a cog."
     )
     @commands.check(u_checks.sub_admin_check)
-    async def admin_unload(self, ctx,
+    async def admin_unload(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext,
             extension_name: typing.Optional[str] = commands.parameter(description = "The name of the extension to unload.")
         ):
         if extension_name is None:
@@ -473,7 +526,9 @@ class Admin_cog(u_custom.CustomCog, name="Admin", description="Administration co
         description = "Reload a cog/module, note that to load a module like utility.bingo, you need to say 'utility.bingo'."
     )
     @commands.check(u_checks.sub_admin_check)
-    async def admin_reload(self, ctx,
+    async def admin_reload(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext,
             extension_name: typing.Optional[str] = commands.parameter(description = "The name of the extension to reload.")
         ):
         if extension_name is None:
@@ -504,7 +559,10 @@ class Admin_cog(u_custom.CustomCog, name="Admin", description="Administration co
         description = "Pulls from Git and updates the bot."
     )
     @commands.check(u_checks.sub_admin_check)
-    async def admin_update_bot(self, ctx):
+    async def admin_update_bot(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext
+        ):
         await ctx.reply("Pulling from Git.")
 
         os.system("git pull")
@@ -532,7 +590,10 @@ class Admin_cog(u_custom.CustomCog, name="Admin", description="Administration co
         description = "Refreshes the public folder in the Git repository."
     )
     @commands.check(u_checks.sub_admin_check)
-    async def admin_refresh_public(self, ctx):
+    async def admin_refresh_public(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext
+        ):
         cogs = self.bot.cogs
 
         done = False
@@ -550,21 +611,6 @@ class Admin_cog(u_custom.CustomCog, name="Admin", description="Administration co
             await ctx.reply("Done.")
         else:
             await ctx.reply("Failed, check the log.")
-            
-
-        # public_folder = os.listdir(f"public{SLASH}")
-
-        # for file_iter in public_folder:
-        #     if not os.path.isfile(f"public{SLASH}{file_iter}"):
-        #         continue
-
-        #     os.system(f"git add public{SLASH}{file_iter}")
-        
-        # os.system('git commit -m "Automatic public folder data update."')
-
-        # os.system("git push")
-
-        # await ctx.reply("Done.")
 
         
             
@@ -580,7 +626,10 @@ class Admin_cog(u_custom.CustomCog, name="Admin", description="Administration co
         description = "Resimulates the stonk algorithms."
     )
     @commands.is_owner()
-    async def admin_resimulate_algorithms(self, ctx):
+    async def admin_resimulate_algorithms(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext
+        ):
         await ctx.reply("Resimulating stonk algorithms, this will take some time.")
 
         u_algorithms.resimulate_all(database)
@@ -601,7 +650,10 @@ class Admin_cog(u_custom.CustomCog, name="Admin", description="Administration co
         description = "Re-generates the stonk report."
     )
     @commands.is_owner()
-    async def admin_generate_report(self, ctx):
+    async def admin_generate_report(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext
+        ):
         u_images.stonk_report(database)
         
         await ctx.reply(file=discord.File(f"images/generated/stonk_report.png"))
@@ -620,7 +672,9 @@ class Admin_cog(u_custom.CustomCog, name="Admin", description="Administration co
         description = "Modifies permissions."
     )
     @commands.is_owner()
-    async def admin_modify_permissions(self, ctx,
+    async def admin_modify_permissions(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext,
             mode: typing.Optional[str] = commands.parameter(description = "The mode to use, 'allow' or 'disallow'."),
             permission: typing.Optional[str] = commands.parameter(description = "The permission name to allow or disallow."),
             user: typing.Optional[discord.Member] = commands.parameter(description = "The user to allow or disallow the permission.")
@@ -669,7 +723,9 @@ class Admin_cog(u_custom.CustomCog, name="Admin", description="Administration co
         description = "Modifies pinglists."
     )
     @commands.is_owner()
-    async def admin_modify_pinglist(self, ctx,
+    async def admin_modify_pinglist(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext,
             mode: typing.Optional[str] = commands.parameter(description = "The mode to use, 'add' or 'remove'."),
             pinglist: typing.Optional[str] = commands.parameter(description = "The pinglist to use."),
             user: typing.Optional[discord.Member] = commands.parameter(description = "The user to add to or remove from the pinglist.")
@@ -696,7 +752,9 @@ class Admin_cog(u_custom.CustomCog, name="Admin", description="Administration co
         description = "Sets a counter to a specific value."
     )
     @commands.is_owner()
-    async def admin_set_counter(self, ctx,
+    async def admin_set_counter(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext,
             counter_name: typing.Optional[str] = commands.parameter(description = "The counter name to set."),
             new_value: typing.Optional[u_converters.parse_int] = commands.parameter(description = "The new value for the counter.")
         ):
@@ -722,7 +780,9 @@ class Admin_cog(u_custom.CustomCog, name="Admin", description="Administration co
         description = "Sets a channel's counting progress."
     )
     @commands.is_owner()
-    async def admin_set_count(self, ctx,
+    async def admin_set_count(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext,
             channel_id: typing.Optional[u_converters.parse_int] = commands.parameter(description = "The channel id of the channel."),
             new_value: typing.Optional[u_converters.parse_int] = commands.parameter(description = "The new value for counting.")
         ):
@@ -754,7 +814,9 @@ class Admin_cog(u_custom.CustomCog, name="Admin", description="Administration co
         description = "Sets a channel's chain stats."
     )
     @commands.is_owner()
-    async def admin_set_chain(self, ctx,
+    async def admin_set_chain(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext,
             channel_id: typing.Optional[u_converters.parse_int] = commands.parameter(description = "The channel id of the channel."),
             amount: typing.Optional[u_converters.parse_int] = commands.parameter(description = "The amount of messages in a row that have been sent."),
             *, message: typing.Optional[str] = commands.parameter(description = "The message that has been chained.")
@@ -788,7 +850,9 @@ class Admin_cog(u_custom.CustomCog, name="Admin", description="Administration co
         description = "Hehe"
     )
     @commands.check(u_checks.remote_say_check)
-    async def admin_remote_say(self, ctx,
+    async def admin_remote_say(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext,
             message_link: typing.Optional[u_converters.parse_message_link] = commands.parameter(description = "Link to a message to reply to or send a message in."),
             to_reply: typing.Optional[u_converters.extended_bool] = commands.parameter(description = "Whether to reply to the message, or just send in the channel."),
             *, message_content: typing.Optional[str] = commands.parameter(description = "The content of the message to send.")
@@ -828,7 +892,10 @@ class Admin_cog(u_custom.CustomCog, name="Admin", description="Administration co
         description = "Creates a new snapshot of the roles."
     )
     @commands.is_owner()
-    async def admin_snapshot_roles(self, ctx):
+    async def admin_snapshot_roles(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext
+        ):
         u_interface.snapshot_roles(
             guild = self.bot.get_guild(MAIN_GUILD)
         )
@@ -848,7 +915,9 @@ class Admin_cog(u_custom.CustomCog, name="Admin", description="Administration co
         description = "Restores someone's roles from a snapshot."
     )
     @commands.check(u_checks.in_authority)
-    async def admin_from_snapshot(self, ctx,
+    async def admin_from_snapshot(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext,
             member: typing.Optional[discord.Member],
             snapshot_id: typing.Optional[str]
         ):
@@ -971,7 +1040,10 @@ class Admin_cog(u_custom.CustomCog, name="Admin", description="Administration co
         description = "Refreshes the status from the database."
     )
     @commands.is_owner()
-    async def admin_refresh_status(self, ctx):
+    async def admin_refresh_status(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext
+        ):
         await u_interface.refresh_status(
             bot = self.bot,
             database = database
@@ -992,7 +1064,9 @@ class Admin_cog(u_custom.CustomCog, name="Admin", description="Administration co
         description = "Changes the bot's status."
     )
     @commands.is_owner()
-    async def admin_change_status(self, ctx,
+    async def admin_change_status(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext,
             status_type: typing.Optional[str] = commands.parameter(description = "The type of status to change to."),
             *, text: typing.Optional[str] = commands.parameter(description = "The content of the status.")
         ):
@@ -1041,7 +1115,9 @@ class Admin_cog(u_custom.CustomCog, name="Admin", description="Administration co
         description = "Changes the bot's nickname in the specified server."
     )
     @commands.is_owner()
-    async def admin_change_nickname(self, ctx,
+    async def admin_change_nickname(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext,
             guild_id: typing.Optional[u_converters.parse_int] = commands.parameter(description = "The id of the server to change the nickname in."),
             *, text: typing.Optional[str] = commands.parameter(description = "The new nickname.")
         ):
@@ -1074,7 +1150,9 @@ class Admin_cog(u_custom.CustomCog, name="Admin", description="Administration co
         description = "Universally enables and disables commands.\n\nUse the 'fetch' parameter to fetch the current state of the command."
     )
     @commands.check(u_checks.sub_admin_check)
-    async def admin_toggle_command(self, ctx,
+    async def admin_toggle_command(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext,
             new_state: typing.Optional[str] = commands.parameter(description = "The new toggled state for the command or 'fetch'."),
             *, command_name: typing.Optional[str] = commands.parameter(description = "The name of the command to toggle.")
         ):

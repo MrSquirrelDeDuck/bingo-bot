@@ -7,7 +7,10 @@ import utility.custom as u_custom
 import utility.files as u_files
 import utility.text as u_text
 
-def generate_custom_board(tile_list: dict, size: int = 25) -> str:
+def generate_custom_board(
+        tile_list: dict,
+        size: int = 25
+    ) -> str:
     """Generates a bingo board based on a tile list and a size."""
     # data = files.load("data/bingo/tile_list_5x5.json")
     data = tile_list
@@ -59,7 +62,10 @@ def generate_9x9_board(database: u_files.DatabaseInterface) -> str:
 
     return generate_custom_board(tile_list, 81)
 
-def decompile_enabled(enabled: int, board_size: int) -> list[bool]:
+def decompile_enabled(
+        enabled: int,
+        board_size: int
+    ) -> list[bool]:
     """Decompiles an enabled integer into a list of booleans.
     
     Note that providing the size of the board is required. The size of the board is the length of one edge, so for the 5x5 board it would be 5."""
@@ -89,7 +95,10 @@ def compile_enabled(enabled_list: list[bool]) -> int:
     
     return result
 
-def count_bingos(enabled_data: list[bool] | int, board_size: int = None) -> int:
+def count_bingos(
+        enabled_data: list[bool] | int,
+        board_size: int = None
+    ) -> int:
     """Returns the amount of bingos in an enabled tiles list or enabled integer. If an integer is provided a board size must also be provided as the length of one side."""
 
     # If enabled_data is an int, make sure that board_size is passed, and then convert enabled_data to a list of bools.
@@ -152,7 +161,10 @@ def tile_list_5x5(database: u_files.DatabaseInterface) -> list[dict]:
 
 
 
-def get_objective_5x5(database: u_files.DatabaseInterface, objective_id: int) -> dict:
+def get_objective_5x5(
+        database: u_files.DatabaseInterface,
+        objective_id: int
+    ) -> dict:
     """Gets the data for an objective from the 5x5 tile list."""
     return tile_list_5x5(database=database)[objective_id]
 
@@ -177,7 +189,10 @@ def tile_list_9x9(database: u_files.DatabaseInterface) -> list[dict]:
     
     return get
 
-def get_objective_9x9(database: u_files.DatabaseInterface, objective_id: int) -> dict:
+def get_objective_9x9(
+        database: u_files.DatabaseInterface,
+        objective_id: int
+    ) -> dict:
     """Gets the data for an objective from the 9x9 tile list."""
     return tile_list_9x9(database=database)[objective_id]
 
@@ -200,7 +215,11 @@ def live(database: u_files.DatabaseInterface) -> dict:
     
     return get
 
-def update_live(database: u_files.DatabaseInterface, bot: u_custom.CustomBot, new_data: dict) -> None:
+def update_live(
+        database: u_files.DatabaseInterface,
+        bot: u_custom.CustomBot,
+        new_data: dict
+    ) -> None:
     """Updates the live data with the provided dict."""
     # Update the data.
     database.save("bingo", "live_data", data=new_data)
@@ -208,7 +227,12 @@ def update_live(database: u_files.DatabaseInterface, bot: u_custom.CustomBot, ne
     # Update all bingo caches.
     bot.update_bingo_cache(new_data)
 
-def set_live(database: u_files.DatabaseInterface, bot: u_custom.CustomBot, key: str, value: typing.Any) -> dict:
+def set_live(
+        database: u_files.DatabaseInterface,
+        bot: u_custom.CustomBot,
+        key: str,
+        value: typing.Any
+    ) -> dict:
     """Sets a single value in the live data, takes the key and new value. Returns the new version of the live data."""
     
     # Get the current data.
@@ -223,7 +247,10 @@ def set_live(database: u_files.DatabaseInterface, bot: u_custom.CustomBot, key: 
     # Return the new version of the live data.
     return live_data
 
-def get_tile_state_5x5(database: u_files.DatabaseInterface, tile_id: int) -> bool:
+def get_tile_state_5x5(
+        database: u_files.DatabaseInterface,
+        tile_id: int
+    ) -> bool:
     """Gets a bool for whether a specific tile on the 5x5 board is ticked or not."""
 
     # Get the live data.
@@ -232,7 +259,10 @@ def get_tile_state_5x5(database: u_files.DatabaseInterface, tile_id: int) -> boo
     # Decompile the enabled integer into a list of bools, and return the one chosen by the tile_id parameter.
     return decompile_enabled(live_data["daily_enabled"], 5)[tile_id]
 
-def get_tile_state_9x9(database: u_files.DatabaseInterface, tile_id: int) -> bool:
+def get_tile_state_9x9(
+        database: u_files.DatabaseInterface,
+        tile_id: int
+    ) -> bool:
     """Gets a bool for whether a specific tile on the 9x9 board is ticked or not."""
 
     # Get the live data.
@@ -241,7 +271,15 @@ def get_tile_state_9x9(database: u_files.DatabaseInterface, tile_id: int) -> boo
     # Decompile the enabled integer into a list of bools, and return the one chosen by the tile_id parameter.
     return decompile_enabled(live_data["weekly_enabled"], 9)[tile_id]
 
-def update_tile(database: u_files.DatabaseInterface, bot: u_custom.CustomBot, tile_id: int, board_size: int, live_data_key: str, new_value: bool, live_data: dict = None) -> tuple[int, int, dict]:
+def update_tile(
+        database: u_files.DatabaseInterface,
+        bot: u_custom.CustomBot,
+        tile_id: int,
+        board_size: int,
+        live_data_key: str,
+        new_value: bool,
+        live_data: dict = None
+    ) -> tuple[int, int, dict]:
     """Updates a tile on a bingo board.
     
     Parameters:
@@ -278,7 +316,11 @@ def update_tile(database: u_files.DatabaseInterface, bot: u_custom.CustomBot, ti
     # Return the before and after version of the enabled integer.
     return (pre_tick, post_tick, new_live)
 
-def tick_5x5(database: u_files.DatabaseInterface, bot: u_custom.CustomBot, tile_id: int) -> tuple[int, int, int, dict]:
+def tick_5x5(
+        database: u_files.DatabaseInterface,
+        bot: u_custom.CustomBot,
+        tile_id: int
+    ) -> tuple[int, int, int, dict]:
     """Ticks a tile on the 5x5 board, takes a tile id.
     
     Returns a tuple of:
@@ -307,7 +349,11 @@ def tick_5x5(database: u_files.DatabaseInterface, bot: u_custom.CustomBot, tile_
     # Return an integer version of the objective id of the ticked tile.
     return (pre_tick, post_tick, int(split_tile_string[tile_id]), new_live)
 
-def untick_5x5(database: u_files.DatabaseInterface, bot: u_custom.CustomBot, tile_id: int) -> tuple[int, int, dict]:
+def untick_5x5(
+        database: u_files.DatabaseInterface,
+        bot: u_custom.CustomBot,
+        tile_id: int
+    ) -> tuple[int, int, dict]:
     """Unticks a tile on the 5x5 board, takes a tile id.
     
     Returns a tuple of:
@@ -327,7 +373,11 @@ def untick_5x5(database: u_files.DatabaseInterface, bot: u_custom.CustomBot, til
     # Return an integer version of the objective id of the ticked tile.
     return (pre_tick, post_tick, new_live)
 
-def tick_9x9(database: u_files.DatabaseInterface, bot: u_custom.CustomBot, tile_id: int) -> tuple[int, int, int, dict]:
+def tick_9x9(
+        database: u_files.DatabaseInterface,
+        bot: u_custom.CustomBot,
+        tile_id: int
+    ) -> tuple[int, int, int, dict]:
     """Ticks a tile on the 9x9 board, takes a tile id.
     
     Returns a tuple of:
@@ -356,7 +406,11 @@ def tick_9x9(database: u_files.DatabaseInterface, bot: u_custom.CustomBot, tile_
     # Return an integer version of the objective id of the ticked tile.
     return (pre_tick, post_tick, int(split_tile_string[tile_id]), new_live)
 
-def untick_9x9(database: u_files.DatabaseInterface, bot: u_custom.CustomBot, tile_id: int) -> tuple[int, int, dict]:
+def untick_9x9(
+        database: u_files.DatabaseInterface,
+        bot: u_custom.CustomBot,
+        tile_id: int
+    ) -> tuple[int, int, dict]:
     """Unticks a tile on the 9x9 board, takes a tile id.
     
     Returns a tuple of:

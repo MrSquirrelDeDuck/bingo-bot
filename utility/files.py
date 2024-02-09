@@ -14,9 +14,7 @@ class DatabaseInterface:
 
     database = {}
 
-    def __init__(
-            self: typing.Self
-        ) -> None:
+    def __init__(self: typing.Self) -> None:
         """Interface that deals with the database.
     
         An instance of this class should be set to an attribute of the bot so the cogs can use it."""
@@ -105,7 +103,7 @@ class DatabaseInterface:
 
         Args:
             *keys (str): The key(s) to fetch. Provide multiple keys to get nested values. Example: `database.load('key', 'nested_key', 'double_nested_key')`
-            default (typing.Any, optional): What to return if any key does not exist. Defaults to None.
+            default (typing.Any, optional): What to return if any key does not exist. This argument must be provided as a keyword argument. Defaults to None.
 
         Returns:
             dict | list: The value from the database.
@@ -128,8 +126,8 @@ class DatabaseInterface:
         """Saves a dict or list to the database.
 
         Args:
-            data (dict | list): The data to save.
             *keys (str): The key(s) of the path to save to. Provide multiple keys to save nested values. Example: `database.save('key', 'nested_key', 'double_nested_key', data=['example'])`
+            data (dict | list): The data to save. This argument must be provided as a keyword argument.
         """
         if len(keys) == 1:
             self.database[keys[0]] = data
@@ -156,15 +154,13 @@ class DatabaseInterface:
         """Loads a json file and returns the contents.
 
         Args:
-            file_path (str): The path to the file.
-            default (typing.Any, optional): The value to return if the file does not exist. Defaults to None.
-            replace_slash (bool, optional): Whether to replace all slashes in the given path with os.path.sep. Defaults to False.
+            *file_path (str): The path to the file.
+            default (typing.Any, optional): The value to return if the file does not exist. This argument must be provided as a keyword argument. Defaults to None.
+            replace_slash (bool, optional): Whether to replace all slashes in the given path with os.path.sep. This argument must be provided as a keyword argument. Defaults to False.
 
         Returns:
             list | dict: The contents of the file.
         """
-        # if join_file_path:
-        #     file_path = file_path.replace("/", SLASH)
 
         if join_file_path:
             file_path = os.path.join(*file_path)
@@ -188,8 +184,8 @@ class DatabaseInterface:
 
         Args:
             *file_path (str): The path to the file to save as multiple strings for parameters. If join_file_path is True it will join it, otherwise it will go with the first item here. Like `"folder1", "folder2", "file.json"`.
-            data (dict | list): The data to save.
-            join_file_path (bool, optional): Whether to use os.path.join to join what's provided in file_path. Defaults to True.
+            data (dict | list): The data to save. This argument must be provided as a keyword argument.
+            join_file_path (bool, optional): Whether to use os.path.join to join what's provided in file_path. This argument must be provided as a keyword argument. Defaults to True.
         """
 
         if join_file_path:
@@ -273,9 +269,7 @@ class DatabaseInterface:
     ##### Ping lists. ####################################################################################################################################
     ######################################################################################################################################################
     
-    def get_ping_list_file(
-            self: typing.Self
-        ) -> dict[str, list[typing.Optional[int]]]:
+    def get_ping_list_file(self: typing.Self) -> dict[str, list[typing.Optional[int]]]:
         """Returns the raw ping list data.
 
         Returns:
@@ -374,15 +368,15 @@ class DatabaseInterface:
     
     def get_ouija_data(
             self: typing.Self,
-            channel_id: typing.Union[str, int]
-        ) -> dict[str, typing.Union[str, int, bool]]:
+            channel_id: str | int
+        ) -> dict[str, str | int | bool]:
         """Gets ouija data.
 
         Args:
-            channel_id (typing.Union[str, int]): Channel id, as a string or an int.
+            channel_id (str | int): Channel id, as a string or an int.
 
         Returns:
-            dict[str, typing.Union[str, int, bool]]: The found data.
+            dict[str, str | int | bool]: The found data.
         """
         ouija_data = self.load("askouija", default={})
 
@@ -390,23 +384,23 @@ class DatabaseInterface:
     
     def set_ouija_data(
             self: typing.Self,
-            channel_id: typing.Union[str, int],
+            channel_id: str | int,
             active: bool = None,
             letters: str = None,
             message_id: int = None,
             author_id: int = None
-        ) -> dict[str, typing.Union[str, int, bool]]:
+        ) -> dict[str, str | int | bool]:
         """Modifies a piece of ouija data.
 
         Args:
-            channel_id (typing.Union[str, int]): The channel id, as a string or an int.
+            channel_id (str | int): The channel id, as a string or an int.
             active (bool, optional): New active setting. Defaults to None.
             letters (str, optional): New letters. Defaults to None.
             message_id (int, optional): New message id. Defaults to None.
             author_id (int, optional): New author id. Defaults to None.
 
         Returns:
-            dict[str, typing.Union[str, int, bool]]: The updated dict for the channel.
+            dict[str, str | int | bool]: The updated dict for the channel.
         """
         ouija_data = self.load("askouija", default={})
 
@@ -442,15 +436,15 @@ class DatabaseInterface:
     
     def get_counting_data(
             self: typing.Self,
-            channel_id: typing.Union[str, int]
-        ) -> dict[str, typing.Union[str, int, bool]]:
+            channel_id: str | int
+        ) -> dict[str, str | int | bool]:
         """Gets counting data.
 
         Args:
-            channel_id (typing.Union[str, int]): Channel id, as a string or an int.
+            channel_id (str | int): Channel id, as a string or an int.
 
         Returns:
-            dict[str, typing.Union[str, int, bool]]: The found data.
+            dict[str, str | int | bool]: The found data.
         """
         counting_data = self.load("counting_data", default={})
 
@@ -458,19 +452,19 @@ class DatabaseInterface:
     
     def set_counting_data(
             self: typing.Self, 
-            channel_id: typing.Union[str, int],
+            channel_id: str | int,
             count: int = None,
             sender: int = None
-        ) -> dict[str, typing.Union[str, int, bool]]:
+        ) -> dict[str, str | int | bool]:
         """Modifies a piece of counting data.
 
         Args:
-            channel_id (typing.Union[str, int]): The channel id, as a string or an int.
+            channel_id (str | int): The channel id, as a string or an int.
             count (int, optional): New count. Defaults to None.
             sender (int, optional): New sender id. Defaults to None.
 
         Returns:
-            dict[str, typing.Union[str, int, bool]]: The updated dict for the channel.
+            dict[str, str | int | bool]: The updated dict for the channel.
         """
         counting_data = self.load("counting_data", default={})
 
@@ -505,15 +499,13 @@ def load(
     """Loads a json file.
 
     Args:
-        path (str): The path to the file to load.
-        default (typing.Any, optional): What to return if the file does not exist. Defaults to None.
-        replace_slash (bool, optional): Whether to replace all slashes in the given path with os.path.sep. Defaults to False.
+        *path (str): The path to the file to load.
+        default (typing.Any, optional): What to return if the file does not exist. This argument must be provided as a keyword argument. Defaults to None.
+        replace_slash (bool, optional): Whether to replace all slashes in the given path with os.path.sep. This argument must be provided as a keyword argument. Defaults to False.
 
     Returns:
         dict | list: The data inside the loaded file.
     """
-    # if replace_slash:
-    #     path = path.replace("/", SLASH)
 
     if join_file_path:
         path = os.path.join(*path)
@@ -534,12 +526,10 @@ def save(
     """Saves a dict or list to a file. Will create a file if it does not already exist.
 
     Args:
-        path (str): The path to save the file to.
-        data (dict | list): The list or dict to save.
-        replace_slash (bool, optional): Whether to replace all slashes in the given path with os.path.sep. Defaults to False.
+        *path (str): The path to save the file to.
+        data (dict | list): The list or dict to save. This argument must be provided as a keyword argument.
+        replace_slash (bool, optional): Whether to replace all slashes in the given path with os.path.sep. This argument must be provided as a keyword argument. Defaults to False.
     """
-    # if join_file_path:
-    #     path = path.replace("/", SLASH)
 
     if join_file_path:
         path = os.path.join(*path)

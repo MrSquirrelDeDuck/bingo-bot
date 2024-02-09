@@ -10,16 +10,17 @@ from discord.ext import commands
 import utility.files as u_files
 
 class Item:
-    def __init__(self: typing.Self,
-                name: str,
-                internal_name: str,
-                internal_emoji: str,
-                emoji: str = None,
-                attributes: list[str] = [],
-                gambit_bonus: int = None,
-                aliases: list[str] = [],
-                gamble_multiplier: int = None
-            ) -> None:
+    def __init__(
+            self: typing.Self,
+            name: str,
+            internal_name: str,
+            internal_emoji: str,
+            emoji: str = None,
+            attributes: list[str] = [],
+            gambit_bonus: int = None,
+            aliases: list[str] = [],
+            gamble_multiplier: int = None
+        ) -> None:
         """Generic Bread Game item object.
 
         Args:
@@ -71,18 +72,19 @@ class Item:
         return attribute in self.attributes
 
 class StonkItem(Item):
-    def __init__(self: typing.Self,
-                name: str,
-                internal_name: str,
-                internal_emoji: str,
-                base_value: int,
-                emoji: str = None,
-                attributes: list[str] = [],
-                gambit_bonus: int = None,
-                aliases: list[str] = [],
-                graph_color: str = None,
-                gamble_multiplier: int = None
-            ) -> None:
+    def __init__(
+            self: typing.Self,
+            name: str,
+            internal_name: str,
+            internal_emoji: str,
+            base_value: int,
+            emoji: str = None,
+            attributes: list[str] = [],
+            gambit_bonus: int = None,
+            aliases: list[str] = [],
+            graph_color: str = None,
+            gamble_multiplier: int = None
+        ) -> None:
         """Object specifcially for stonks.
 
         Args:
@@ -110,17 +112,18 @@ class StonkItem(Item):
         return current_values.get(self.internal_name, self.base_value)
 
 class ChessItem(Item):
-    def __init__(self: typing.Self,
-                name: str,
-                internal_name: str,
-                internal_emoji: str,
-                is_white: bool,
-                emoji: str = None,
-                attributes: list[str] = [],
-                gambit_bonus: int = None,
-                aliases: list[str] = [],
-                gamble_multiplier: int = None
-            ) -> None:
+    def __init__(
+            self: typing.Self,
+            name: str,
+            internal_name: str,
+            internal_emoji: str,
+            is_white: bool,
+            emoji: str = None,
+            attributes: list[str] = [],
+            gambit_bonus: int = None,
+            aliases: list[str] = [],
+            gamble_multiplier: int = None
+        ) -> None:
         """Object specifically for chess pieces.
 
         Args:
@@ -658,7 +661,7 @@ bling_items = [gem_red, gem_blue, gem_purple, gem_green, gem_gold, anarchy_chess
 ##### UTILITY FUNCTIONS #####
 #############################
 
-def attribute_item_list(attributes: typing.Union[str, list[str]]) -> list[type[Item]]:
+def attribute_item_list(attributes: str | list[str]) -> list[type[Item]]:
     """Returns a list of BaseItem and/or StonkItem objects that have any attribute that matches with `attribute`.
     
     If a string is passed to `attribute` the item must have that attribute to be included. If a list is passed the item must have any attribute in common in order to be included."""
@@ -677,7 +680,10 @@ def attribute_item_list(attributes: typing.Union[str, list[str]]) -> list[type[I
     
     return found_items
 
-def get_item(item_identifier: str, attributes: typing.Union[str, list[str]] = None) -> typing.Union[None, type[Item]]:
+def get_item(
+        item_identifier: str,
+        attributes: str | list[str] = None
+    ) -> None | type[Item]:
     """Attempts to get an item from a string. Returns None if no item is found.
     
     If an attribute (or multiples attributes) is provided the item must fall into one or more of the provided attributes."""
@@ -707,7 +713,7 @@ def get_item(item_identifier: str, attributes: typing.Union[str, list[str]] = No
     
     return None
 
-def convert_dict(item_dict: dict[str, int]) -> dict[type[Item] | str, int]:
+def convert_dict(item_dict: dict[str, int]) -> dict[typing.Type[Item] | str, int]:
     """Converts the keys in a dict to Item objects (or subclasses) while ignoring the values that aren't items.
 
     Args:
@@ -733,7 +739,7 @@ class ItemConverter(commands.Converter):
 
     attributes = None
 
-    def __init__(self, attributes: typing.Union[str, list[str]] = None) -> None:
+    def __init__(self, attributes: str | list[str] = None) -> None:
         super().__init__()
         self.attributes = attributes
 

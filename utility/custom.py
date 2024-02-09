@@ -16,10 +16,16 @@ everyone_prevention = discord.AllowedMentions(everyone=False)
 class CustomCog(commands.Cog):
     """Custom discord.ext.commands cog that is used by the cog files to allow for universal code."""
 
-    def __init__(self, **kwargs) -> None:
+    def __init__(
+            self: typing.Self,
+            **kwargs: typing.Any
+        ) -> None:
         super().__init__(**kwargs)
     
-    def _reload_module(self, module_name: str) -> bool:
+    def _reload_module(
+            self: typing.Self,
+            module_name: str
+        ) -> bool:
         """Reloads a module by name.
         For imports that are in a folder, the folder name must be included. For instance: `utility.files` would reload the utility.files code.
         Returns a bool for whether anything was reloaded, so the number of reloads can be counted."""
@@ -55,7 +61,10 @@ class CustomCog(commands.Cog):
         # Return True, since it has been reloaded in theory.
         return True
     
-    async def on_stonk_tick(self: typing.Self, message: discord.Message) -> None:
+    async def on_stonk_tick(
+            self: typing.Self,
+            message: discord.Message
+        ) -> None:
         """Code that runs for every stonk tick."""
         pass
     
@@ -76,17 +85,29 @@ class CustomCog(commands.Cog):
         pass
 
 class CustomContext(commands.Context):    
-    async def safe_reply(ctx, content: str = "", **kwargs) -> discord.Message:        
+    async def safe_reply(
+            self: typing.Self,
+            content: str = "",
+            **kwargs
+        ) -> discord.Message:        
         kwargs["allowed_mentions"] = everyone_prevention
 
         return await super().reply(content, **kwargs)
     
-    async def send(ctx, content: str = "", **kwargs) -> discord.Message:
+    async def send(
+            self: typing.Self,
+            content: str = "",
+            **kwargs
+        ) -> discord.Message:
         kwargs["allowed_mentions"] = everyone_prevention
 
         return await super().send(content, **kwargs)
     
-    async def reply(self, content: str = "", **kwargs) -> discord.Message:
+    async def reply(
+            self: typing.Self,
+            content: str = "",
+            **kwargs
+        ) -> discord.Message:
         try:
             return await self.safe_reply(content, **kwargs)
         except discord.HTTPException:
@@ -99,17 +120,24 @@ class CustomContext(commands.Context):
 class CustomBot(commands.Bot):
     # THIS CAN ONLY BE RELOADED BY RESTARTING THE ENTIRE BOT.
     
-    async def get_context(self, message: discord.Message, *, cls=CustomContext):
+    async def get_context(
+            self: typing.Self,
+            message: discord.Message,
+            *,
+            cls=CustomContext):
         return await super().get_context(message, cls=cls)
     
-    def update_bingo_cache(self, live_data: dict) -> None:
+    def update_bingo_cache(
+            self: typing.Self,
+            live_data: dict
+        ) -> None:
         """Updates the bingo cache in all the cogs that have the bingo_cache attribute."""
         for cog in self.cogs.values():
             if hasattr(cog, "bingo_cache"):
                 cog.bingo_cache = live_data
                 cog.bingo_cache_updated()
     
-    def save_all_data(self) -> None:
+    def save_all_data(self: typing.Self) -> None:
         """Runs save_all_data() in all the cogs.."""
         for cog in self.cogs.values():
             try:

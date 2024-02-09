@@ -46,8 +46,10 @@ eleven_plus_messages = {
 ######################################################################################################################################################
 
 class AutoDetection():
-    def __init__(self,
-            *, objectives: dict[int, str]
+    def __init__(
+            self: typing.Self,
+            *,
+            objectives: dict[int, str]
         ) -> None:
         """Decorates a function to be used for auto-detection.
 
@@ -57,7 +59,10 @@ class AutoDetection():
         self.objectives = objectives
         self.detection_type = "main"
 
-    def __call__(self, f) -> typing.Callable:
+    def __call__(
+            self: typing.Self,
+            f: typing.Callable
+        ) -> typing.Callable:
 
         async def wrapped(
             bot: u_custom.CustomBot,
@@ -95,7 +100,10 @@ class AutoDetection():
         return wrapped
 
 class StonkDetection():
-    def __call__(self, f) -> typing.Callable:
+    def __call__(
+            self: typing.Self,
+            f: typing.Callable
+        ) -> typing.Callable:
 
         async def wrapped(
             stonk_data: dict[str, list[int]],
@@ -2244,7 +2252,7 @@ main_detection_dict = {}
 stonk_detection_dict = {}
 all_detection = {}
 
-def prep():
+def prep() -> None:
     global autodetection_dict, stonk_detection_dict, all_detection
 
     global_copy = globals().copy()
@@ -2274,7 +2282,7 @@ def prep():
     all_detection = main_detection_dict.copy()
     all_detection.update(stonk_detection_dict)
 
-def on_reload():
+def on_reload() -> None:
     importlib.reload(u_values)
 
     for module_name, module in sys.modules.copy().items():
