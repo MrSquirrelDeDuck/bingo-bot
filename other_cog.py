@@ -235,6 +235,7 @@ class Other_cog(u_custom.CustomCog, name="Other", description="Commands that don
 
     @commands.command(
         name = "avatar",
+        aliases = ["pfp"],
         brief = "Get someone's avatar.",
         description = "Get someone's avatar.\nThis will use their global avatar, however the `display` parameter can be used to fetch server-specific avatars."
     )
