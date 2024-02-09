@@ -1705,7 +1705,7 @@ class Other_cog(
             title = "Role leaderboard",
             description = "*This is excluding self-selectable roles.*",
             fields = fields,
-            footer_text = "You can use '%role_leaderboard <member>' to highlight someone else.\nYou can also use `%role_leaderboard <member> -list` to get a list of the counted roles for the highlighted member."
+            footer_text = "You can use '%role_leaderboard <member>' to highlight someone else.\nYou can also use '%role_leaderboard <member> -list' to get a list of the counted roles for the highlighted member."
         )
         
         await ctx.reply(embed=embed)
