@@ -1570,6 +1570,10 @@ class Other_cog(
             member: typing.Optional[discord.Member] = commands.parameter(description = "The member to view."),
             *, modifiers: typing.Optional[str] = commands.parameter(description = "Optional modifiers, see above for modifier list.")
         ):
+        if ctx.guild is None:
+            await ctx.reply("This command can only be used in servers.")
+            return
+
         if member is None:
             member = ctx.author
 
