@@ -23,7 +23,7 @@ import importlib
 importlib.reload(u_values)
 
 # If the "alternate" value is set to True in the tile list, it'll send the completion message here instead of where it was completed.
-ALTERNATE_CHANNEL = 1196865970355052644#958705808860921906
+ALTERNATE_CHANNEL = 958705808860921906
 
 # If the "alternate" value is set to True in the tile list, and the objective was completed in the alternate channel, send it here.
 FINAL_BACKUP_CHANNEL = 1138583859508813955
