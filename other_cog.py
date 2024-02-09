@@ -1586,7 +1586,7 @@ class Other_cog(
 
         selectable = [
             # Pronoun roles:
-            959254553562349608, 980602604847501362, 980602604847501362, 959247044701216848, 958920201557119036, 958920265792892938, 958920155025539132, 959220485672026142, 958920124314816532,
+            959254553562349608, 980602604847501362, 980602604847501362, 959247044701216848, 958920201557119036, 958920265792892938, 958920155025539132, 959220485672026142, 958920124314816532, 958920326006308914,
             
             # "No <channel>" roles:
             1177067684744142888, 1177067733695864942, 1177067611348008970,
@@ -1660,21 +1660,49 @@ class Other_cog(
             lines.append(f"{index + 1}. {bold}{display_name}: {data[1]}{bold}")
             last = index
         
+        fields = [("", "\n".join(lines), False)]
+
+        if list_roles:
+            title = "Role list:"
+
+            character_count = 0
+            data_add = []
+            for role_id in role_data[member.id]:
+                if role_id in prune_ids:
+                    continue
+                ping = f"<@&{role_id}>"
+
+                character_count += len(ping)
+
+                if character_count >= 1024:
+                    fields.append(
+                        (
+                            title,
+                            "".join(data_add),
+                            False
+                        )
+                    )
+                    title = ""
+                    data_add = []
+                    character_count = len(ping)
+
+                data_add.append(ping)
+            
+            if len(data_add) >= 1:
+                fields.append(
+                    (
+                        title,
+                        "".join(data_add),
+                        False
+                    )
+                )
+        
         embed = u_interface.gen_embed(
             title = "Role leaderboard",
             description = "*This is excluding self-selectable roles.*",
-            fields = [("", "\n".join(lines), False)],
+            fields = fields,
             footer_text = "You can use '%role_leaderboard <user>' to highlight someone else."
         )
-
-        if list_roles:
-            embed.add_field(
-                name = "Role list:",
-                value = "List of roles the highlighted person has:\n{role_list}".format(
-                    role_list = ", ".join([f"<@&{role_id}>" for role_id in role_data[member.id] if role_id not in prune_ids])
-                ),
-                inline = False
-            )
         
         await ctx.reply(embed=embed)
 
