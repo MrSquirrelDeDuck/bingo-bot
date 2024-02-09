@@ -529,6 +529,7 @@ class Bingo_cog(u_custom.CustomCog, name="Bingo", description="Commands for runn
     
     @commands.group(
         name = "board",
+        aliases = ["daily"],
         brief = "Shows the current 5x5 bingo board.",
         description = "Shows the current 5x5 bingo board.",
         pass_context = True,
