@@ -119,8 +119,8 @@ class Bingo_cog(u_custom.CustomCog, name="Bingo", description="Commands for runn
 
     @commands.group(
         name = "objective",
-        brief = "Get information about an objective.",
-        description = "Get information about an objective.\nTo search for an objective, use '%objective search [daily|weekly] [search term]'\nTo get a list of objectives, use '%objective list [daily|weekly]'",
+        brief = "Get an objective from a tile list.",
+        description = "Get information about an objective.\nTo see the information about an objective on the current board, use '%[board|weekly] stats'.\nTo search for an objective, use '%objective search [daily|weekly] [search term]'\nTo get a list of objectives, use '%objective list [daily|weekly]'",
         pass_context = True,
         invoke_without_command = True
     )
@@ -158,7 +158,7 @@ class Bingo_cog(u_custom.CustomCog, name="Bingo", description="Commands for runn
 
         embed = u_interface.gen_embed(
             title = objective_data["name"],
-            description = f"Objective {objective} on the {board} board.\n\nDescription:\n{objective_data['description']}\n\nCenter objective: {center}\nSolo objective: {solo}\nDisabled: {disabled}\nHas auto detection: {auto_detection}\n\nYou can use `%objective search [daily|weekly] [search term]` to search for an objective.\nYou can also use `%objective list [daily|weekly]` to get a list of the possible objectives.",
+            description = f"Objective {objective} on the {board} board.\n\nDescription:\n{objective_data['description']}\n\nCenter objective: {center}\nSolo objective: {solo}\nDisabled: {disabled}\nHas auto detection: {auto_detection}\n\nYou can use `%[board|weekly] stats` to see information about the objectives on the current board.\nYou can use `%objective search [daily|weekly] [search term]` to search for an objective.\nYou can also use `%objective list [daily|weekly]` to get a list of the possible objectives.",
         )
 
         await ctx.reply(embed=embed)
