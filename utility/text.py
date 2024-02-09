@@ -1,5 +1,7 @@
 """Functions for working with/formatting text."""
 
+from __future__ import annotations
+
 from discord.ext import commands
 import typing
 import re
