@@ -22,6 +22,12 @@ import importlib
 
 importlib.reload(u_values)
 
+# If the "alternate" value is set to True in the tile list, it'll send the completion message here instead of where it was completed.
+ALTERNATE_CHANNEL = 1196865970355052644#958705808860921906
+
+# If the "alternate" value is set to True in the tile list, and the objective was completed in the alternate channel, send it here.
+FINAL_BACKUP_CHANNEL = 1138583859508813955
+
 eleven_plus_messages = {
     11: "Eleven breads? How strange.",
     12: "TWELVE BREADS??",
@@ -1890,18 +1896,19 @@ async def handle_completed(
 
     if len(daily_lines) + len(weekly_lines) == 0:
         # Nothing to send, the objective(s) completed were likely silent ones.
-        print("Nothing to send.")
         return
     
+    content_lines = []
+
     if u_checks.sensitive_check(message.channel) or alternate:
-        if message.channel.id == 958705808860921906 or (isinstance(message.channel, discord.Thread) and message.channel.parent.id == 958705808860921906):
-            reference = await bot.fetch_channel(1138583859508813955)
+        content_lines.append(f"{message.jump_url}\n") # `\n` added between each item, so this'll end up being two linebreaks.
+
+        if message.channel.id == ALTERNATE_CHANNEL or (isinstance(message.channel, discord.Thread) and message.channel.parent.id == ALTERNATE_CHANNEL):
+            reference = await bot.fetch_channel(FINAL_BACKUP_CHANNEL)
         else:
-            reference = await bot.fetch_channel(958705808860921906)
+            reference = await bot.fetch_channel(ALTERNATE_CHANNEL)
     else:
         reference = message
-
-    content_lines = []
 
     if len(daily_lines) > 0:
         if len(daily_lines) == 1:
@@ -1918,8 +1925,6 @@ async def handle_completed(
             content_lines.append(f"{len(weekly_lines)} weekly bingo objectives completed!")
         
         content_lines += weekly_lines
-    
-    print("\n".join(content_lines))
 
     try:
         if isinstance(reference, discord.Message):
@@ -2123,21 +2128,31 @@ async def chains_detection(
 
     triggered = []
 
-    if "105" in bingo_data.get("daily_tile_string", list()): # The same message is sent 30+ times in a row in #chains
-        if message.channel.id == 1020394850463531019 and chain_data.get("count", 0) >= 30:
-            triggered.append("d105")
+    daily_string = bingo_data.get("daily_tile_string", list())
+    weekly_string = bingo_data.get("weekly_tile_string", list())
 
-    if "161" in bingo_data.get("daily_tile_string", list()): # A chain of 10+ messages occurs outside of #chains
-        if message.channel.id != 1020394850463531019 and chain_data.get("count", 0) >= 10:
-            triggered.append("d161")
+    daily_enabled = bingo_data.get("daily_enabled", list())
+    weekly_enabled = bingo_data.get("weekly_enabled", list())
 
-    if "039" in bingo_data.get("weekly_tile_string", list()): # The same message is sent 60+ times in a row in #chains
-        if message.channel.id == 1020394850463531019 and chain_data.get("count", 0) >= 60:
-            triggered.append("w39")
+    if "105" in daily_string: # The same message is sent 30+ times in a row in #chains
+        if not daily_enabled[daily_string.index("105")]:
+            if message.channel.id == 1020394850463531019 and chain_data.get("count", 0) >= 30:
+                triggered.append("d105")
 
-    if "071" in bingo_data.get("weekly_tile_string", list()): # A chain of 30+ messages occurs outside of #chains
-        if message.channel.id != 1020394850463531019 and chain_data.get("count", 0) >= 30:
-            triggered.append("w71")
+    if "161" in daily_string: # A chain of 10+ messages occurs outside of #chains
+        if not daily_enabled[daily_string.index("161")]:
+            if message.channel.id != 1020394850463531019 and chain_data.get("count", 0) >= 10:
+                triggered.append("d161")
+
+    if "039" in weekly_string: # The same message is sent 60+ times in a row in #chains
+        if not weekly_enabled[weekly_string.index("039")]:
+            if message.channel.id == 1020394850463531019 and chain_data.get("count", 0) >= 60:
+                triggered.append("w39")
+
+    if "071" in weekly_string: # A chain of 30+ messages occurs outside of #chains
+        if not weekly_enabled[weekly_string.index("071")]:
+            if message.channel.id != 1020394850463531019 and chain_data.get("count", 0) >= 30:
+                triggered.append("w71")
     
     if len(triggered) >= 1:
         await handle_completed(
