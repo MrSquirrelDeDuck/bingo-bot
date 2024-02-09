@@ -1667,7 +1667,7 @@ class Other_cog(
         fields = [("", "\n".join(lines), False)]
 
         if list_roles:
-            title = "Role list:"
+            title = "Counted roles:"
 
             character_count = 0
             data_add = []
