@@ -1,3 +1,3 @@
 # The Bingo-Bot
 
-Running on Python 3.11.0.
+Running on Python 3.11.7.
