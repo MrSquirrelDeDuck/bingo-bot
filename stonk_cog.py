@@ -628,7 +628,7 @@ class Stonk_cog(
     
     @stonk.command(
         name = "graph",
-        description = "Graphs of stonk values.\n\nParameters:\n- The stonks you want to use, you can use an emoji or their name. You can also use 'all' to use all the stonks. Putting an exclamation mark before a stonk will remove it. If none are provided it will use them all.\n- To mark the start of the graph, use 'start <start point>'. If none is provided it will use 0.\n- To mark the end, 'end <end point>'. If none is provided it will use the current tick.\n- 'log' can be used to set the Y axis to a log scale.",
+        description = "Graphs of stonk values.\n\nParameters:\n- The stonks you want to use, you can use an emoji or their name. You can also use 'all' to use all the stonks. Putting an exclamation mark before a stonk will remove it. If none are provided it will use them all.\n- To mark the start of the graph, use '-start <start point>'. If none is provided it will use 0.\n- To mark the end, '-end <end point>'. If none is provided it will use the current tick.\n- '-log' can be used to set the Y axis to a log scale.",
         brief = "Graphs of stonk values."
     )
     async def stonk_graph(
@@ -655,11 +655,11 @@ class Stonk_cog(
                     stonks = copy.deepcopy(u_values.stonks)
                     continue
 
-                if param == "log":
+                if param == "-log":
                     log_scale = True
                     continue
 
-                if param == "start":
+                if param == "-start":
                     if param_id == len(parameters) - 1:
                         continue # "start" is not going to be the name of a stonk, and does not start with an exclamation mark.
                     
@@ -668,7 +668,7 @@ class Stonk_cog(
 
                     continue
 
-                if param == "end":
+                if param == "-end":
                     if param_id == len(parameters) - 1:
                         continue # "end" is not going to be the name of a stonk, and does not start with an exclamation mark.
                     
@@ -1023,7 +1023,7 @@ class Stonk_cog(
     @stonk_algorithms.command(
         name = "graph",
         description = "Graphs of algorithm performances.",
-        brief = "Graphs of algorithm performances."
+        brief = "Graphs of algorithm performances.\nYou can also use 'all' to use all the algorithms. Putting an exclamation mark before an algorithm will remove it from the graph. If none are provided it will use them all.\n- To mark the start of the graph, use '-start <start point>'. If none is provided it will use 2,000.\n- To mark the end, '-end <end point>'. If none is provided it will use the current tick.\n- '-log' can be used to set the Y axis to a log scale."
     )
     async def stonk_algorithm_graph(
             self: typing.Self,
@@ -1051,11 +1051,11 @@ class Stonk_cog(
                     algorithms = copy.deepcopy(u_algorithms.all_live_algorithms(database=database, filter_list=["hide_graph"]))
                     continue
 
-                if param == "log":
+                if param == "-log":
                     log_scale = True
                     continue
 
-                if param == "start":
+                if param == "-start":
                     if param_id == len(parameters) - 1:
                         continue # "start" is not going to be the name of a stonk algorithm, and does not start with an exclamation mark.
                     
@@ -1064,7 +1064,7 @@ class Stonk_cog(
 
                     continue
 
-                if param == "end":
+                if param == "-end":
                     if param_id == len(parameters) - 1:
                         continue # "end" is not going to be the name of a stonk algorithm, and does not start with an exclamation mark.
                     
