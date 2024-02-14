@@ -141,8 +141,9 @@ def solver_wrapper(
                 recipes.remove(recipe_name)
                 break
     
-    final_replacements = [ # type: list[tuple[str, str]], (<old pattern>, <replacement pattern>)
-        (r"\$bread \w+ (\d+) chessatron .+", r"$bread chessatron \1")
+    final_replacements: list[tuple[str, str]] = [ # (<old pattern>, <replacement pattern>)
+        (r"\$bread \w+ (\d+) chessatron 1 .+", r"$bread chessatron \1"),
+        (r"\$bread \w+ (\d+) chessatron 2 .+", r"$bread gem_chessatron \1")
     ]
 
     for old, new in final_replacements:

@@ -1355,11 +1355,12 @@ class Bread_cog(
         name = "solve",
         aliases = ["solver"],
         brief = "The chessatron solver.",
-        description = "The chessatron solver.\nThis does require storing data with the `%bread data` feature."
+        description = "The chessatron solver.\nThis does require storing data with the `%bread data` feature.\n\nModifier list:\n- '-gems' will include gems in the solving."
     )
     async def bread_chessatron_solve(
             self: typing.Self,
-            ctx: commands.Context | u_custom.CustomContext
+            ctx: commands.Context | u_custom.CustomContext,
+            *, modifiers: typing.Optional[str] = commands.parameter(description = "Optional modifiers, see above for modifier list.")
         ):
         stored_data = u_bread.get_stored_data(
             database = database,
@@ -1369,6 +1370,15 @@ class Bread_cog(
         if stored_data is None:
             await ctx.reply("You do not have any stored data.\nUse `%bread data` to get more information on how to store data.")
             return
+
+        ################
+
+        if modifiers is None:
+            modifiers = ""
+
+        modifier_list = modifiers.split(" ")
+
+        ################
         
         items = {}
 
@@ -1378,6 +1388,11 @@ class Bread_cog(
                 items[item] = stored_data.get(item, 0)
 
         items[u_values.bread] = stored_data.get(u_values.bread, 0) # Bread has no attributes we can search for :(
+        
+        if "-gems" in modifier_list:
+            for gem in u_values.all_shiny:
+                items[gem] = stored_data.get(gem, 0)
+        
         items[u_values.chessatron] = stored_data.get(u_values.chessatron, 0)
 
         # Run the solver.
