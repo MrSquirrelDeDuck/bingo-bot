@@ -870,10 +870,39 @@ class Bread_cog(
         gem_sum = sum([red_gems, blue_gems, purple_gems, green_gems, gold_gems * 4])
 
         possible_trons = gem_sum // 32
+
+        # Generate the commands list.
+        command_list = []
+
+        gem_amounts = {
+            u_values.gem_red: red_gems,
+            u_values.gem_blue: blue_gems,
+            u_values.gem_purple: purple_gems,
+            u_values.gem_green: green_gems,
+            u_values.gem_gold: gold_gems * 4
+        }
+        gem_raw = list(gem_amounts.values())
         
+        for iterator, gem in reversed(list(enumerate(gem_amounts.keys()))):
+            if sum(gem_raw[iterator + 1:]) == 0:
+                continue
+
+            command_list.append("$bread distill {amount} {gem} {recipe} y".format(
+                amount = sum(gem_raw[iterator + 1:]) // (4 if gem == u_values.gem_green else 1),
+                gem = gem.internal_name,
+                recipe = 1 if gem == u_values.gem_red else 2
+            ))
+        
+        command_list.append(f"$bread gem_chessatron {possible_trons}")
+        
+        # Generate the embed to send.
         embed = u_interface.gen_embed(
             title = "Gem Value",
-            description = f"- {u_values.gem_red.internal_emoji}: {u_text.smart_number(red_gems)}\n- {u_values.gem_blue.internal_emoji}: {u_text.smart_number(blue_gems)}\n- {u_values.gem_purple.internal_emoji}: {u_text.smart_number(purple_gems)}\n- {u_values.gem_green.internal_emoji}: {u_text.smart_number(green_gems)}\n- {u_values.gem_gold.internal_emoji}: {u_text.smart_number(gold_gems)} -> {u_text.smart_number(gold_gems * 4)} (x4 recipe to greens)\nGem sum: {u_text.smart_number(gem_sum)}.\nPossible trons: {u_text.smart_number(possible_trons)}.\nAt a rate of {u_text.smart_number(tron_value)} per tron: **{u_text.smart_number(tron_value * possible_trons)} dough**."
+            description = f"- {u_values.gem_red.internal_emoji}: {u_text.smart_number(red_gems)}\n- {u_values.gem_blue.internal_emoji}: {u_text.smart_number(blue_gems)}\n- {u_values.gem_purple.internal_emoji}: {u_text.smart_number(purple_gems)}\n- {u_values.gem_green.internal_emoji}: {u_text.smart_number(green_gems)}\n- {u_values.gem_gold.internal_emoji}: {u_text.smart_number(gold_gems)} -> {u_text.smart_number(gold_gems * 4)} (x4 recipe to greens)\nGem sum: {u_text.smart_number(gem_sum)}.\nPossible trons: {u_text.smart_number(possible_trons)}.\nAt a rate of {u_text.smart_number(tron_value)} per tron: **{u_text.smart_number(tron_value * possible_trons)} dough**.",
+            fields = [
+                ("Commands:", "\n".join(command_list), False)
+            ],
+            footer_text = "On mobile you can tap and hold on the commands section to copy it."
         )
 
         await ctx.reply(embed=embed)

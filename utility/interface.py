@@ -347,13 +347,21 @@ def resolve_conflict(
     
     replied_to = replying_mm_checks(message, require_reply=True, return_replied_to=True)
 
+    def fill_none():
+        nonlocal user_provided
+        for index, item in enumerate(user_provided):
+            if item is None:
+                user_provided[index] = 0
+        
+        return user_provided
+
     if not replied_to:
-        return False
+        return fill_none()
     
     parsed = u_bread.parse_stats(replied_to)
 
     if parsed.get("stats_type") != stats_type: # If the parse was unsuccessful, then the .get will be None.
-        return False
+        return fill_none()
     
     parsed = parsed["stats"]
 
@@ -364,7 +372,7 @@ def resolve_conflict(
         user_provided[index] = parsed.get(stat_keys[index], 0)
     
     if None in user_provided:
-        return False
+        return fill_none()
     
     return user_provided
 
