@@ -622,7 +622,8 @@ async def handle_wiki_search(
                 "action": "query",
                 "format": "json",
                 "list": "search",
-                "srsearch": search_term
+                "srsearch": search_term,
+                "srlimit": 3
             }
             async with session.get(wiki_api_url, params=json_args) as resp:
                 if resp.status != 200:
