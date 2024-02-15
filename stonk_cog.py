@@ -698,7 +698,7 @@ class Stonk_cog(
                     stonks.remove(stonk)
         
         if end_tick <= start_tick:
-            await ctx.reply("The end must be before the start.")
+            await ctx.reply("The start must be before the end.")
             return
         
         start_tick = max(start_tick, 0)
@@ -1092,7 +1092,7 @@ class Stonk_cog(
                     algorithms.remove(algorithm)
         
         if end_tick <= start_tick:
-            await ctx.reply("The end must be before the start.")
+            await ctx.reply("The start must be before the end.")
             return
         
         if start_tick < 2000:
