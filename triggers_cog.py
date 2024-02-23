@@ -649,7 +649,15 @@ class Triggers_cog(
             )
 
             if channel_data["count"] >= 3:
-                await message.add_reaction("<a:you_broke_the_chain:1064349721361133608>")
+                # If the hugging emoji was in the chain, or in the message that broke the chain, react with 🫂 to give the person a hug.
+                if any(search in message.content or search in channel_data["message"] for search in [":people_hugging:", "🫂"]):
+                    # Hug <3
+                    await message.add_reaction("🫂")
+                elif message.channel.id == 958542943625556038:
+                    # Capybara <3
+                    await message.add_reaction("<:capybara:971174918840549418>")
+                else:
+                    await message.add_reaction("<a:you_broke_the_chain:1064349721361133608>")
             return
         
         if channel_data["sender"] == message.author.id:
@@ -747,6 +755,10 @@ class Triggers_cog(
             message: discord.Message
         ):
         if u_checks.sensitive_check(message.channel):
+            return
+        
+        # Prevent accounts with a bot tag from contributing to the counting.
+        if message.author.bot:
             return
         
         sent_number = u_converters.parse_int(message.content)
