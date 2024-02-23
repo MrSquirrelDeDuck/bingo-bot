@@ -1121,14 +1121,16 @@ async def stonk_change(
             stonk_data[stonk][index - 1] = corrected[stonk]
 
     # Now for the actual detection.
-            
+    
+    # Pretzels suck, again
     if objective_id in ["d4", "w0"]:
         data = stonk_data.get(u_values.pretzel, [])
         try:
             return data[-3] >= data[-2] >= data[-1]
         except IndexError:
             return False
-        
+    
+    # All stonks go down in one tick
     elif objective_id in ["d46", "w19"]:
         return all([
             stonk_data[stonk][-2] > stonk_data[stonk][-1]
@@ -1136,38 +1138,44 @@ async def stonk_change(
             if len(stonk_data[stonk]) >= 2
         ])
     
+    # A stonk goes up for 3 ticks in a row
     elif objective_id in ["d63", "w24"]:
         for stonk in stonk_data:
-            if len(stonk_data[stonk]) < 3:
+            if len(stonk_data[stonk]) <= 3:
                 continue
             
-            if stonk_data[stonk][-3] < stonk_data[stonk][-2] < stonk_data[stonk][-1]:
+            if stonk_data[stonk][-4] < stonk_data[stonk][-3] < stonk_data[stonk][-2] < stonk_data[stonk][-1]:
                 return True
-            
+
+    # Fortune cookies suffer a sizable drop (over -30 dough in one tick)      
     elif objective_id in ["d78", "w27"]:
         data = stonk_data.get(u_values.fortune_cookie, [])
         try:
             return data[-1] - data[-2] < -30
         except IndexError:
             return False
-        
+    
+    # Fortune cookies increases by 80+ dough in one tick
     elif objective_id in ["d103", "w38"]:
         data = stonk_data.get(u_values.fortune_cookie, [])
         try:
             return data[-1] - data[-2] >= 80
         except IndexError:
             return False
-        
+    
+    # A stonk gets split
     elif objective_id in ["d137", "w57"]:
         return "Split!" in message.content
-        
+    
+    # Cookies change by a total of 1
     elif objective_id in ["d181", "w80"]:
         data = stonk_data.get(u_values.cookie, [])
         try:
             return abs(data[-1] - data[-2]) == 1
         except IndexError:
             return False
-        
+    
+    # Cookies stagnate for 2+ ticks in a row
     elif objective_id in ["d182", "w81"]:
         data = stonk_data.get(u_values.cookie, [])
         try:
@@ -1175,6 +1183,7 @@ async def stonk_change(
         except IndexError:
             return False
     
+    # A stonk goes down 2 ticks in a row
     if objective_id == "d186":
         for stonk in stonk_data:
             data = stonk_data.get(stonk, [])
@@ -1184,6 +1193,7 @@ async def stonk_change(
             except IndexError:
                 return False
     
+    # A stonk goes down 3 ticks in a row
     if objective_id == "w84":
         for stonk in stonk_data:
             data = stonk_data.get(stonk, [])
@@ -1193,6 +1203,7 @@ async def stonk_change(
             except IndexError:
                 return False
     
+    # Pancakes go up 500 dough in one tick
     if objective_id == "d193":
         data = stonk_data.get(u_values.pancakes, [])
         try:
@@ -1200,6 +1211,7 @@ async def stonk_change(
         except IndexError:
             return False
     
+    # Pancakes rise more than 1,500 dough in 3 ticks
     if objective_id in ["d195", "w86"]:
         data = stonk_data.get(u_values.pancakes, [])
         try:
