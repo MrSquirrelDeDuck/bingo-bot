@@ -39,7 +39,33 @@ class Bread_cog(
     bread_wiki_searching = False
 
     # This is a list of unix timestamps, such that if you use <t:time_keys[0]> it'll be the right time.
-    time_keys = ["1648850700", "1648854300", "1648857900", "1648861500", "1648865100", "1648868700", "1648785900", "1648789500", "1648793100", "1648796700", "1648800300", "1648803900", "1648807500", "1648811100", "1648814700", "1648818300", "1648821900", "1648825500", "1648829100", "1648832700", "1648836300", "1648839900", "1648843500", "1648847100"]
+    # time_keys = ["1648850700", "1648854300", "1648857900", "1648861500", "1648865100", "1648868700", "1648785900", "1648789500", "1648793100", "1648796700", "1648800300", "1648803900", "1648807500", "1648811100", "1648814700", "1648818300", "1648821900", "1648825500", "1648829100", "1648832700", "1648836300", "1648839900", "1648843500", "1648847100"]
+    time_keys = {
+        0: "<t:1648850700:t>",
+        1: "<t:1648854300:t>",
+        2: "<t:1648857900:t>",
+        3: "<t:1648861500:t>",
+        4: "<t:1648865100:t>",
+        5: "<t:1648868700:t>",
+        6: "<t:1648785900:t>",
+        7: "<t:1648789500:t>",
+        8: "<t:1648793100:t>",
+        9: "<t:1648796700:t>",
+        10: "<t:1648800300:t>",
+        11: "<t:1648803900:t>",
+        12: "<t:1648807500:t>",
+        13: "<t:1648811100:t>",
+        14: "<t:1648814700:t>",
+        15: "<t:1648818300:t>",
+        16: "<t:1648821900:t>",
+        17: "<t:1648825500:t>",
+        18: "<t:1648829100:t>",
+        19: "<t:1648832700:t>",
+        20: "<t:1648836300:t>",
+        21: "<t:1648839900:t>",
+        22: "<t:1648843500:t>",
+        23: "<t:1648847100:t>"
+    }
 
     ######################################################################################################################################################
     ##### UTILITY FUNCTIONS ##############################################################################################################################
@@ -71,7 +97,7 @@ class Bread_cog(
 
         for reminder in reminder_data["reminder_list"]:
             if reminder["user"] == target.id:
-                reminder_list.append("At {} (<t:{}:t>): {}".format(reminder["hour"], self.time_keys[reminder["hour"]], reminder["text"]))
+                reminder_list.append("At {} ({}): {}".format(reminder["hour"], self.time_keys.get(reminder["hour"], "error"), reminder["text"]))
         
         if len(reminder_list) == 0:
             reminder_list = "You don't have any reminders set!\nTo add reminders, use `%bread reminder add`."
@@ -309,6 +335,14 @@ class Bread_cog(
             await ctx.reply("You need to provide the text for the reminder.")
             return
         
+        if hour < 0 or hour > 23:
+            await ctx.reply("The hour must be between 0 and 23.")
+            return
+        
+        if len(reminder_text) > 128:
+            await ctx.reply("That text is a little too long, please make it 128 characters or fewer.")
+            return
+        
         reminder_data = self._get_reminder_data()
 
         for reminder in reminder_data["reminder_list"]:
@@ -326,7 +360,7 @@ class Bread_cog(
 
         embed = u_interface.gen_embed(
             title = "Reminder added!",
-            description = "Added reminder for {} (<t:{}:t>) with the text:\n{}".format(hour, self.time_keys[hour], reminder_text)
+            description = "Added reminder for {} ({}) with the text:\n{}".format(hour, self.time_keys.get(hour, "error"), reminder_text)
         )
 
         await ctx.reply(embed = embed)
@@ -369,7 +403,7 @@ class Bread_cog(
 
         embed = u_interface.gen_embed(
             title = "Reminder removed!",
-            description = "Removed reminder for {} (<t:{}:t>) that had the text:\n{}".format(remove_data["hour"], self.time_keys[remove_data["hour"]], remove_data["text"])
+            description = "Removed reminder for {} ({}) that had the text:\n{}".format(remove_data["hour"], self.time_keys.get(remove_data["hour"], "error"), remove_data["text"])
         )
 
         await ctx.reply(embed=embed)
@@ -660,7 +694,7 @@ class Bread_cog(
                     if stonk not in attempted_parse["stats"]:
                         continue
 
-                    dough += stonk.value() * attempted_parse["stats"][stonk]
+                    dough += stonk.value(database=database) * attempted_parse["stats"][stonk]
         
         SYNTAX = "Syntax: `%bread loaf_converter dough <amount of dough you have> <the current number of lcs> <scy level>`. You can reply to a stats message to automatically parse the stats, if this is done the amount of dough will be determinized, but an amount of dough can still be provided."
         
