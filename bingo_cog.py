@@ -1136,7 +1136,7 @@ class Bingo_cog(
         brief = "Renders a custom 9x9 board.",
         description = "Renders a custom 9x9 board.\nYou can get a random tile string using the '%weekly generate' command."
     )
-    async def board_render(
+    async def weekly_render(
             self: typing.Self,
             ctx: commands.Context | u_custom.CustomContext,
             tile_string: typing.Optional[str] = commands.parameter(description = "A 243 character string that says what's on each tile."),
