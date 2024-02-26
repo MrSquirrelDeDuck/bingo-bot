@@ -1033,6 +1033,14 @@ class Other_cog(
         gold = parsed["brick_gold"]
         total = parsed["total_bricks"]
 
+        # Fix if any of the stats are None.
+        if bricks is None:
+            bricks = 0
+        if gold is None:
+            gold = 0
+        if total is None:
+            total = 0
+
         # Timeout information
         total_timeout = parsed["total_timeout"]
         extra_timeout = parsed["total_timeout"] - parsed["total_bricks"]
