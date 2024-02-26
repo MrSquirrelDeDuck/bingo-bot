@@ -1064,6 +1064,25 @@ class Triggers_cog(
         
         # Save the updated stats.
         database.save("bread", "day_stats", data=stats)
+    
+    async def mm_offline(
+            self: typing.Self,
+            message: discord.Message
+        ):
+        modified_content = f"{message.content} "
+
+        if not(modified_content.startswith("$bread ") or modified_content.startswith("$brick ")):
+            return
+        
+        mm_member = discord.utils.find(lambda m: m.id == 960869046323134514, message.guild.members)
+
+        if mm_member is None:
+            return
+        
+        if mm_member.raw_status == "offline":
+            await message.reply("Machine-Mind is currently listed as offline, so bread rolling and bricking is impossible.")
+        
+        return
 
             
             
@@ -1129,6 +1148,10 @@ class Triggers_cog(
         # 727 pings.
         if "727" in message.content:
             await self.seven_twenty_seven(message)
+        
+        # If Machine-Mind is offline.
+        if not message.author.bot and message.content.startswith("$br"):
+            await self.mm_offline(message)
 
 
 
