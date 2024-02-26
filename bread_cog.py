@@ -434,9 +434,12 @@ class Bread_cog(
             if target is None:
                 target = ctx.author
             else:
-                reminder_hour = int(copy.copy(modification_type))
-                modification_type = copy.copy(new_information)
-                new_information = u_text.after_parameter(ctx, modification_type)
+                if modification_type is not None:
+                    reminder_hour = int(copy.copy(modification_type))
+                if new_information is not None:
+                    modification_type = copy.copy(new_information)
+                if modification_type is not None:
+                    new_information = u_text.after_parameter(ctx, modification_type)
 
 
         reminder_data = self._get_reminder_data()
