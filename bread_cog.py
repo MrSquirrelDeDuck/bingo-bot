@@ -1102,22 +1102,24 @@ class Bread_cog(
             blue_gems: typing.Optional[u_converters.parse_int] = commands.parameter(description = "The amount of blue gems you have."),
             purple_gems: typing.Optional[u_converters.parse_int] = commands.parameter(description = "The amount of purple gems you have."),
             green_gems: typing.Optional[u_converters.parse_int] = commands.parameter(description = "The amount of green gems you have."),
-            gold_gems: typing.Optional[u_converters.parse_int] = commands.parameter(description = "Optional amount of gold gems you have.")
+            gold_gems: typing.Optional[u_converters.parse_int] = commands.parameter(description = "Optional amount of gold gems you have."),
+            ascension: typing.Optional[u_converters.parse_int] = commands.parameter(description = "The ascension number you're on.")
         ):
 
         ISSUE_TEXT = "If not replying to a stats message, provide the quantity of each gem you have aside from gold gems. Reply to a stats message to parse the stats. You can also specify the quantity of each gem you possess to override the stats parser."      
 
-        async def determine_gems() -> bool | None:
-            nonlocal red_gems, blue_gems, purple_gems, green_gems, gold_gems
-            if None not in [red_gems, blue_gems, purple_gems, green_gems, gold_gems]:
-                return
+        async def determine_gems() -> bool:
+            nonlocal red_gems, blue_gems, purple_gems, green_gems, gold_gems, ascension
+
+            if None not in [red_gems, blue_gems, purple_gems, green_gems, gold_gems, ascension]:
+                return False
             
             replied_to = u_interface.replying_mm_checks(ctx.message, require_reply=True, return_replied_to=True)
 
             if not replied_to:
-                if gold_gems is None and all([red_gems, blue_gems, purple_gems, green_gems]):
+                if gold_gems is None and not None in [red_gems, blue_gems, purple_gems, green_gems]:
                     gold_gems = 0
-                    return
+                    return False
                 
                 await ctx.reply(ISSUE_TEXT)
                 return True
@@ -1127,7 +1129,7 @@ class Bread_cog(
             if parsed.get("stats_type") != "main":
                 if gold_gems is None:
                     gold_gems = 0
-                    return
+                    return False
                 
                 await ctx.reply(ISSUE_TEXT)
                 return True
@@ -1142,11 +1144,18 @@ class Bread_cog(
                 green_gems = parsed["stats"].get(u_values.gem_green, 0)
             if gold_gems is None:
                 gold_gems = parsed["stats"].get(u_values.gem_gold, 0)
+            if ascension is None:
+                ascension = parsed["stats"].get("prestige_level", 0)
+            
+            return False
         
         determined = await determine_gems()
 
         if determined: # True is only returned if a message is sent.
             return
+        
+        if ascension is None:
+            ascension = 0
 
         if gold_gems is None:
             gold_gems = 0
@@ -1164,14 +1173,16 @@ class Bread_cog(
             return
 
         command_list, post_alchemy, solver_result = u_solvers.solver_wrapper(items = gems, maximize = u_values.gem_gold)
+
+        ascension_multiplier = 1 + (0.1 * ascension)
         
         embed = u_interface.gen_embed(
             title = "Gold gem solver",
             description = "{}\nYou should be able to make **{}**.\nDough gain: {} ({} with [Gold Ring](<https://bread.miraheze.org/wiki/Gold_Ring>).)".format(
                 "\n".join([f"{gem}: {u_text.smart_number(gems[gem])} -> {u_text.smart_number(post_alchemy[gem])}" for gem in gems]),
                 u_text.smart_text(solver_result["gem_gold_total"], "gold gem"),
-                u_text.smart_number(round(solver_result["gem_gold_total"] * 5000)),
-                u_text.smart_number(round(solver_result["gem_gold_total"] * 10000))
+                u_text.smart_number(round(solver_result["gem_gold_total"] * 5000 * ascension_multiplier)),
+                u_text.smart_number(round(solver_result["gem_gold_total"] * 10000 * ascension_multiplier))
             ),
             fields = [
                 ("Commands:", "\n".join(command_list), False)
