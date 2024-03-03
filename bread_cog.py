@@ -343,6 +343,10 @@ class Bread_cog(
             await ctx.reply("That text is a little too long, please make it 128 characters or fewer.")
             return
         
+        if u_text.has_ping(reminder_text):
+            await ctx.reply("Reminders cannot contain pings.")
+            return
+        
         reminder_data = self._get_reminder_data()
 
         for reminder in reminder_data["reminder_list"]:
