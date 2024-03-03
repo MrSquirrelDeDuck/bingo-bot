@@ -298,7 +298,7 @@ class BlackjackPlayer:
             card, deck = self.double_down(deck=deck)
 
             if self.hand_value > 21:
-                text = self.hand_value_formatted
+                text = self.formatted_allowed
             else:
                 text = "As a result from the double down you are forced to stand."
 
