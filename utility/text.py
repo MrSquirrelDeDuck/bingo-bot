@@ -10,6 +10,8 @@ import utility.interface as u_interface
 import utility.converters as u_converters
 import utility.custom as u_custom
 
+T = typing.TypeVar('T')
+
 def rreplace(
         string: str,
         old: str,
@@ -126,16 +128,22 @@ def after_parameter(
     """
     return u_interface.msg_content(ctx).split(str(parameter_text), 1)[-1].lstrip('"\'').strip()
 
-def return_numeric(text: str) -> int:
+def return_numeric(text: str, return_type: typing.Any = None) -> typing.Union[T, int]:
     """Returns just all the nubmer in a string as an integer, ignoring all other characters.
 
     Args:
         text (str): The string to get the numbers from.
+        return_type (typing.Any, optional): The type to return. If nothing or None is passed it will convert to an integer before returning. Defaults to None.
 
     Returns:
-        int: An integer of all the numbers in the string.
+        Any, int: An integer of all the numbers in the string. However, if return_type is passed, it will be converted to the type passed to return_type.
     """
-    return int("".join([i for i in str(text) if i.isdigit()]))
+    out = "".join([i for i in str(text) if i.isdigit()])
+    
+    if return_type is None:
+        return int(out)
+    
+    return return_type(out)
 
 def return_alphanumeric(text: str) -> str:
     """Returns just all the letters, numbers, spaces, dashes, and underscores in a string, ignoring all other characters.

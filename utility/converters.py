@@ -14,8 +14,12 @@ def parse_percent(argument: str) -> float:
     - input: 0.45%, output: 0.0045"""
     if argument.endswith("%"):
         return float(u_text.rreplace(argument, "%", "", 1).replace(",", "")) / 100
-    else:
-        return float(str(argument).replace(",", ""))
+    # else:
+    regex_search = re.match("^([\d,]+)\/([\d,]+)$", argument)
+    if regex_search is not None:
+        return u_text.return_numeric(regex_search.group(1), float) / u_text.return_numeric(regex_search.group(2), float)
+    
+    return float(str(argument).replace(",", ""))
 
 def parse_float(argument: str) -> float:
     """Converts an argument to an float, will remove commas along the way."""
