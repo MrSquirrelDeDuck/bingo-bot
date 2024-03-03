@@ -39,7 +39,8 @@ class Admin_cog(
         "bingo_cog",
         "bread_cog",
         "stonk_cog",
-        "secret_cog"
+        "secret_cog",
+        "games_cog"
     ]
 
 

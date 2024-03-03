@@ -6,8 +6,6 @@ import typing
 import random
 import copy
 import re
-import asyncio
-import traceback
 import time
 import datetime
 import os
@@ -51,7 +49,11 @@ import utility.images as u_images
 
 database = None # type: u_files.DatabaseInterface
 
+######################################################################################
+##### Truth or dare
+
 class TruthOrDare_Buttons(discord.ui.View):
+
     def __init__(
             self: typing.Self,
             timeout: float = 3600.0
@@ -220,10 +222,6 @@ class Other_cog(
     minecraft_wiki_searching = False
     vdc_wiki_searching = False
     lichess_cooldown = 0
-
-    traitor_game_going = False
-
-    card_keys = card_keys = {'c1': '<a:ace_clubs:1122942670793363466>', 'd1': '<a:ace_diamonds:1122943540549386360>', 'h1': '<a:ace_hearts:1122943541379874838>', 's1': '<a:ace_spades:1122943543472820285>', 'c10': '<:10_clubs:1122941731319582720>', 'd10': '<:10_diamonds:1122941732728873041>', 'h10': '<:10_hearts:1122941734461112320>', 's10': '<:10_spades:1122941735190925496>', 'c2': '<:2_clubs:1122930420158312448>', 'd2': '<:2_diamonds:1122930421043318814>', 'h2': '<:2_hearts:1122930422934945932>', 's2': '<:2_spades:1122930424088379441>', 'c3': '<:3_clubs:1122930451246481458>', 'd5': '<:5_diamonds:1122930499887833160>', 'c5': '<:5_clubs:1122930498860220479>', 's4': '<:4_spades:1122930475414065185>', 'h4': '<:4_hearts:1122930474214510703>', 'd4': '<:4_diamonds:1122930471878271198>', 'c4': '<:4_clubs:1122930470653526066>', 's3': '<:3_spades:1122930454878769283>', 'h3': '<:3_hearts:1122930454044094484>', 'd3': '<:3_diamonds:1122930452416700548>', 'h5': '<:5_hearts:1122930501230006302>', 's5': '<:5_spades:1122930502458953889>', 'c6': '<:6_clubs:1122930520041455666>', 'd6': '<:6_diamonds:1122930521446567936>', 'h6': '<:6_hearts:1122930523145261167>', 's6': '<:6_spades:1122930524072198154>', 'c7': '<:7_clubs:1122930541327560752>', 'd7': '<:7_diamonds:1122930543139487814>', 'h7': '<:7_hearts:1122930544087408660>', 's9': '<:9_spades:1122941711438589952>', 'h9': '<:9_hearts:1122941710473904168>', 'd9': '<:9_diamonds:1122941709169463387>', 'c9': '<:9_clubs:1122941708125081762>', 's8': '<:8_spades:1122941690697748510>', 'h8': '<:8_hearts:1122941689271701664>', 'd8': '<:8_diamonds:1122930562777239674>', 'c8': '<:8_clubs:1122930561133072555>', 's7': '<:7_spades:1122930545043722342>', 'c11': '<:jack_clubs:1122941753759125525>', 'd11': '<:jack_diamonds:1122941755776569464>', 'h11': '<:jack_hearts:1122941756841926757>', 's11': '<:jack_spades:1122941757856952350>', 's12': '<:queen_spades:1122941804036239553>', 'h12': '<:queen_hearts:1122941803272884334>', 'd12': '<:queen_diamonds:1122941802442407936>', 'c12': '<:queen_clubs:1122941800722726992>', 's13': '<:king_spades:1122941784465608724>', 'h13': '<:king_hearts:1123679597188354208>', 'd13': '<:king_diamonds:1122941782028734484>', 'c13': '<:king_clubs:1122941779776381028>'}
     
     ######################################################################################################################################################
     ##### UTILITY FUNCTIONS ##############################################################################################################################
@@ -438,47 +436,6 @@ class Other_cog(
         except discord.Forbidden:
             # Missing permissions to delete the command message, oh well.
             pass
-    
-
-
-        
-        
-            
-
-        
-    ######################################################################################################################################################
-    ##### CARD ###########################################################################################################################################
-    ######################################################################################################################################################
-    
-    @commands.group(
-        name = "card",
-        brief = "Pick a card, any card.",
-        description = "Pick a card, any card.",
-        invoke_without_command = True,
-        pass_context = True
-    )
-    @commands.check(u_checks.hide_from_help)
-    async def card_command(
-            self: typing.Self,
-            ctx: commands.Context | u_custom.CustomContext,
-            card: typing.Optional[str] = commands.parameter(description = "The key of the card.")
-        ):
-        if ctx.invoked_subcommand is not None:
-            return
-        
-        if card not in self.card_keys:
-            await ctx.reply("https://cdn.discordapp.com/attachments/1032117556154204180/1122750787588730890/image.png")
-            return
-        
-        await ctx.reply(self.card_keys[card])
-        
-    @card_command.command(
-        name = "random",
-        brief = "A random card, because why not?",
-        description = "A random card, because why not?"
-    )
-    async def card_random(self, ctx):
-        await ctx.reply(self.card_keys[random.choice(list(self.card_keys.keys()))])
 
 
         
@@ -1284,139 +1241,6 @@ class Other_cog(
             return
         
         await ctx.reply("The current count is {}.".format(u_text.smart_number(counting_data["count"])))
-        
-
-
-        
-            
-
-        
-    ######################################################################################################################################################
-    ##### TRAITOR #######################################################################################################################################
-    ######################################################################################################################################################
-        
-    @commands.command(
-        name = "traitor",
-        brief = "Starts a game of Traitor.",
-        description = "Starts a game of Traitor, a game where one player is the traitor and everyone else is innocent.\nThis will DM players involved whether they are the traitor or not 2 minutes after the game starts."
-    )
-    @commands.check(u_checks.hide_from_help)
-    async def traitor(
-            self: typing.Self,
-            ctx: commands.Context | u_custom.CustomContext
-        ):
-        if self.traitor_game_going:
-            await ctx.reply("I am sorry, but there is already a game going.")
-            return
-        
-        # Everything is in a big try except to catch any errors and reset self.traitor_game_going so another game can be started.
-        try:
-            # So new games can't be started.
-            self.traitor_game_going = True
-
-            # Setup a few things that will be used later.
-            players_participating = [ctx.author]
-            last_join_timestamp = time.time()
-
-            # Get the time of the start, so we know how long is 2 minutes after.
-            start_time = time.time()
-
-            # Check that's used for bot.wait_for.
-            def player_check(message):
-                return message.author not in players_participating and message.content == "join" and message.channel == ctx.channel and hasattr(message, "webhook_id") and message.webhook_id is None
-            
-            # Useful function that generates the initial message, since it's edited whenever a player joins.
-            def generate_initial():
-                return "You have started a game of Traitor.\nThe game will start 60 seconds after the last player joined.\n\nCurrent players:\n{}\n\nTo join, say \"join\".\nThe game will start <t:{}:R>.".format("\n".join([f"- {user.mention}" for user in players_participating]), round(last_join_timestamp + 60))
-            
-            # Send the "You've started a game" message.
-            initial_message = await ctx.reply(generate_initial())
-            
-            # Main player join loop.
-            print("Starting Tratior Company game.")
-            print(f"- {ctx.author} has joined.")
-            while True:
-                # Catch any timeout errors, which are the indicator that the time is up.
-                try:
-                    # Wait for a message that passes the check in player_check().
-                    message = await self.bot.wait_for('message', check = player_check, timeout = 60.0)
-
-                    # Add the player that just joined to the list of players, and update the timestamp of the last join.
-                    players_participating.append(message.author)
-                    last_join_timestamp = time.time()
-                    print(f"- {message.author} has joined.")
-                    
-                    # Edit the initial message using generate_initial(), and send a message saying you've joined.
-                    await initial_message.edit(content=generate_initial())
-                    await message.reply("You have joined the game of Traitor.\nThe game will start <t:{}:R>.".format(round(last_join_timestamp + 60)))
-                except asyncio.TimeoutError:
-                    # The wait time is up, so break out of the while loop.
-                    break
-            
-            # Get the current time, so we can get
-            current_time = time.time()
-
-            # Get the time until 2 minutes after the start.
-            time_wait = (start_time + 120) - current_time
-            
-            # Announce that the game has started, and wait for 120 seconds (2 minutes.)
-            print(f"Announcing Traitor Company game, time to wait is {time_wait}.")
-            print("Player list:\n- {}".format("\n- ".join([str(user) for user in players_participating])))
-            await ctx.send("{}\nThe game is starting!\nYou will recieve your role <t:{}:R>.".format("".join([user.mention for user in players_participating]), round(time_wait + current_time)))
-            await asyncio.sleep(round(time_wait))
-            print("Time to wait is up.")
-
-            # Setup the messages that will be sent. The index of each item here will line up with the indices of the players in players_participaring.
-            # The first item is the message to send, the second item is what to print to the console.
-            messages = [
-                ("You are a great asset to the company.", "Normal")
-            ]
-            
-            # List of extra roles, formatted as dicts, containing 'data', the tuples like in the `messages` list, and 'chance' which is the percent chance of it being included..
-            all_roles = [
-                {
-                    "data": ("You are a super great asset the company.\nYou are required to make at least 2 trips to the base.", "Super"),
-                    "chance": 25
-                },
-                {
-                    "data": ("You are *not* a great asset to the company. <:shock:1026568812507701259>", "Traitor"),
-                    "chance": 80
-                }
-            ]
-
-            # Shuffle list of extra roles, so they'll be included in a random order.
-            random.shuffle(all_roles)
-
-            # Go through the roles.
-            for role_data in all_roles:
-                # If a random number between 1 and 100 is less than or equal to the chance, then it'll be added.
-                if random.randint(1, 100) <= role_data["chance"]:
-                    # Insert the item in slot 0 of the messages list.
-                    messages.insert(0, role_data["data"])
-
-            # 10% chance of shuffling the messages list.
-            if random.randint(1, 10) == 1:
-                random.shuffle(messages)
-            
-            # Shuffle players_participating, which will mean it will choose a random person to be the traitor due to the `messages` list.
-            random.shuffle(players_participating)
-
-            # Send the messages.
-            print("Sending Traitor Company messages:")
-            for user_id, user in enumerate(players_participating):
-                # Send a message as listed in `messages`. The index of the item in `messages` is capped at the last one.
-                message_id = min(user_id, len(messages) - 1)
-                print(f"- {user}: {messages[message_id][1]}")
-                await user.send(messages[message_id][0])
-            
-            # Allow another game to be started.
-            self.traitor_game_going = False
-            return
-        except:
-            # If something went wrong anywhere in the code, set traitor_game_going to False so another game can start.
-            self.traitor_game_going = False
-            await ctx.reply("Something went wrong, sorry.")
-            print(f"Traitor went wrong :(.\n{traceback.format_exc()}")
 
         
             
@@ -1457,49 +1281,6 @@ class Other_cog(
             ctx: commands.Context | u_custom.CustomContext
         ):
         await ctx.reply(datetime.datetime.today().astimezone(pytz.timezone("US/Eastern")).strftime('%A') + ".")
-
-        
-            
-
-        
-    ######################################################################################################################################################
-    ##### TRUTH OR DARE ##################################################################################################################################
-    ######################################################################################################################################################
-    
-    @commands.command(
-        name = "truth_or_dare",
-        brief = "Truth or dare?",
-        description = "Truth or dare?"
-    )
-    async def truth_or_dare(
-            self: typing.Self,
-            ctx: commands.Context | u_custom.CustomContext
-        ):
-        await send_truth_or_dare(ctx, "random")
-    
-    @commands.command(
-        name = "truth",
-        brief = "The truth part of Truth or Dare.",
-        description = "The truth part of Truth or Dare."
-    )
-    @commands.check(u_checks.hide_from_help)
-    async def truth(
-            self: typing.Self,
-            ctx: commands.Context | u_custom.CustomContext
-        ):
-        await send_truth_or_dare(ctx, "truth")
-
-    @commands.command(
-        name = "dare",
-        brief = "The dare part of Truth or Dare.",
-        description = "The dare part of Truth or Dare."
-    )
-    @commands.check(u_checks.hide_from_help)
-    async def dare(
-            self: typing.Self,
-            ctx: commands.Context | u_custom.CustomContext
-        ):
-        await send_truth_or_dare(ctx, "dare")
 
         
             
@@ -2025,89 +1806,6 @@ class Other_cog(
 
             # After ensuring minecraft_wiki_searching has been reset, reraise the exception so the "Something went wrong processing that command." message is still sent.
             raise
-
-        
-            
-
-        
-    ######################################################################################################################################################
-    ##### D&D ######################################################################################################################################
-    ######################################################################################################################################################
-    
-    @commands.group(
-        name = "dnd",
-        aliases = ["d&d", "DnD", "D&D", "DND"],
-        brief = "A few utility commands for D&D.",
-        description = "A few utility commands for Dungeons and Dragons.",
-        invoke_without_command = True,
-        pass_context = True
-    )
-    async def dnd_command(
-            self: typing.Self,
-            ctx: commands.Context | u_custom.CustomContext
-        ):
-        if ctx.invoked_subcommand is not None:
-            return
-        
-        await ctx.send_help(self.dnd_command)
-    
-    @dnd_command.command(
-        name = "roll",
-        brief = "Roll some dice.",
-        description = "Roll some dice."
-    )
-    async def dnd_roll(
-            self: typing.Self,
-            ctx: commands.Context | u_custom.CustomContext,
-            dice: typing.Optional[str] = commands.parameter(description = "The number of dice and number of sides, like '2d6'.")
-        ):
-        if dice is None:
-            await ctx.reply("You must provide some dice to roll, like `2d6` or `3d4`.")
-            return
-        
-        matched = re.match(r"([\d,]+)d([\d,]+)", dice)
-
-        if matched is None:
-            await ctx.reply("You must provide some dice to roll, like `2d6` or `3d4`.")
-            return
-        
-        dice_amount = int(matched.group(1))
-        dice_sides = int(matched.group(2))
-
-        if dice_amount == 0:
-            await ctx.reply("Oddly enough, rolling 0 dice has a total of 0.")
-            return
-        
-        if dice_sides == 0:
-            await ctx.reply("How would a 0-sided die even work?")
-            return
-
-        if dice_amount > 1000:
-            await ctx.reply("That is an unreasonable amount of dice to roll.")
-            return
-        
-        if dice_sides > 100:
-            await ctx.reply("That is an unreasonable amount of sides for a die.")
-            return
-
-        rolled = []
-
-        for _ in range(dice_amount):
-            rolled.append(random.randint(1, int(dice_sides)))
-
-        roll_distribution = [(i, rolled.count(i)) for i in range(1, int(dice_sides) + 1)]
-
-        image_path = u_images.generate_bar_graph(roll_distribution, x_label="Roll result", y_label="Number of rolls")
-        
-        embed = u_interface.gen_embed(
-            title = "{}d{}".format(dice_amount, dice_sides),
-            description = "Total: **{}**\n\n**Roll distribution:**\n{}".format(
-                u_text.smart_number(sum(rolled)),
-                " | ".join(["{}: {}".format(u_text.smart_number(i), u_text.smart_number(rolled.count(i))) for i in range(1, int(dice_sides) + 1) if i in rolled]),
-            ),
-            image_link = "attachment://graph.png"
-        )
-        await ctx.reply(embed=embed, file=discord.File(image_path, filename="graph.png"))
 
 async def setup(bot: commands.Bot):
     global database
