@@ -1051,6 +1051,10 @@ class Admin_cog(
             self: typing.Self,
             ctx: commands.Context | u_custom.CustomContext
         ):
+        if ctx.guild is None:
+            await ctx.reply("This command cannot be used in DMs.")
+            return
+        
         length_maximums = [0, 0, 0, 0, 0]
 
         role_data = []
