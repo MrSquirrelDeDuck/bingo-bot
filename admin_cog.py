@@ -933,6 +933,12 @@ class Admin_cog(
             await ctx.reply("You must provide a member to restore the roles from.\nThis can be done via a username, id, mention, or any other identification method.")
             return
         
+        # Attempt to add a reaction, but if that fails, oh well.
+        try:
+            await ctx.message.add_reaction("✅")
+        except:
+            pass
+        
         snapshot_list = [item.replace(".json", "") for item in os.listdir(f"data{SLASH}role_snapshots{SLASH}snapshots{SLASH}") if item.endswith(".json")]
         snapshot_list_sorted = list(sorted(snapshot_list, reverse=True)) # Goes newest to oldest.
 
@@ -1023,6 +1029,111 @@ class Admin_cog(
             ]
         )
         await ctx.reply(embed=embed)
+            
+
+        
+        
+        
+            
+
+        
+    ######################################################################################################################################################
+    ##### ADMIN DUMP ROLES ###############################################################################################################################
+    ######################################################################################################################################################
+        
+    @admin.command(
+        name="dump_roles",
+        brief = "Dumps the role data in this server.",
+        description = "Dumps the role data in this server.\nThe role data includes:\n- Role hierarchy\n- Role id\n- Role color\n- The amount of people with the role\n- The role name"
+    )
+    @commands.check(u_checks.in_authority)
+    async def admin_dump_roles(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext
+        ):
+        length_maximums = [0, 0, 0, 0, 0]
+
+        role_data = []
+        for index, role in enumerate(reversed(ctx.guild.roles), start=1):
+            if role.color.value == 0:
+                role_color = "[None]"
+            else:
+                role_color = "#{:06x}".format(role.color.value)
+
+            data = (
+                index,
+                role.id,
+                role_color,
+                len(role.members),
+                role.name,
+            )
+
+            for check_index, item in enumerate(data):
+                if len(str(item)) > length_maximums[check_index]:
+                    length_maximums[check_index] = len(str(item))
+
+            role_data.append(data)
+
+        column_titles = [
+            "Position",
+            "Role id",
+            "Color",
+            "Member count",
+            "Name"
+        ]
+
+        for index, title in enumerate(column_titles):
+            if length_maximums[index] < len(title):
+                length_maximums[index] = len(title)
+        
+        lines = []
+
+        gap_line = "".join(
+                [
+                    "+{}".format(
+                        "-" * (length + 2)
+                    )
+                    for length in length_maximums
+                ]
+            ) + "+"
+
+        lines.append(gap_line)
+
+        lines.append(
+            "| " + " | ".join(
+                [
+                    title.center(length)
+                    for title, length in zip(column_titles, length_maximums)
+                ]
+            ) + " |"
+        )
+
+        lines.append(gap_line)
+
+        for data in role_data:
+            lines.append(
+                "| " + " | ".join(
+                    [
+                        str(item).rjust(length)
+                        for item, length in zip(
+                            data,
+                            length_maximums
+                        )
+                    ]
+                ) + " |"
+            )
+
+        lines.append(gap_line)
+
+        # Now that we have all the lines in the text, create the file.
+        file_path = os.path.join("data", "misc", "role_dump.txt")
+
+        with open(file_path, "w+") as file_write:
+            file_write.write("\n".join(lines))
+            file_write.close()
+        
+        await ctx.reply("Here you go:", file=discord.File(file_path))
+
             
 
         
