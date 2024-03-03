@@ -833,6 +833,7 @@ class Games_cog(
         brief = "Blackjack.",
         description = "Blackjack."
     )
+    @commands.check(u_checks.hide_from_help)
     async def blackjack(
         self: typing.Self,
         ctx: commands.Context | u_custom.CustomContext,
