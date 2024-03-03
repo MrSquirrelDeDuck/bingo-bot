@@ -324,9 +324,17 @@ class Other_cog(
             avatar_url = target.display_avatar
         else:
             avatar_url = target.avatar
+
+        # Setup the embed to send.
+        title = "Display avatar" if display else "Avatar"
+        embed = u_interface.gen_embed(
+            title = title,
+            description = "{} for {}:".format(title, target.mention),
+            image_link = avatar_url
+        )
         
-        # Send the url.
-        await ctx.reply(avatar_url)
+        # Send the embed.
+        await ctx.reply(embed=embed)
 
         
             
