@@ -42,6 +42,74 @@ class Admin_cog(
         "secret_cog",
         "games_cog"
     ]
+        
+    # This is a list of roles that the bot either can't add or shouldn't be adding to people.
+    role_filter_list = [
+        # Pronoun roles:
+        959254553562349608, # Rather not say
+        958920326006308914, # Any pronouns
+        980602604847501362, # Ask pronouns
+        959247044701216848, # it/it's
+        958920201557119036, # They/Them
+        958920265792892938, # He/Him
+        958920155025539132, # She/Her
+        959220485672026142, # Bread/Breads
+        958920124314816532, # Fae/Faer
+
+        # Channel removal roles:
+        1177067684744142888, # No MH
+        1177067733695864942, # No General
+        1177067611348008970, # No NSFW
+
+        # Rating roles:
+        970619771374690345, # Just here for the memes
+        960928696368259113, # Literally Alphazero
+        961216939198410792, # 161660 rated
+        960928234273394689, # 2000+??? rated
+        958737602859655178, # 1660-2000 rated
+        958737525139177492, # 1300-1660 rated
+        958737469635981362, # 1000-1300 rated
+        958737300236406905, # 800-1000 rated
+        958737243885932564, # 400-800 rated
+        958736931246706698, # 00-100 rated
+
+        # Platform roles:
+        970574059727380520, # Discord chess
+        958736670323269742, # lichess.org 😎
+        958736276415205436, # chess.c*m 🤮
+
+        # Announcement roles:
+        982060564077498418, # Literally Does Care
+        970550144477040650, # Server Talk
+        962130208700379216, # Game Night Group
+        1058812522507026493, # Minecraft Server Announcements
+
+        # Color roles:
+        1118418774966665276, # Pink
+        1118415419125026857, # Purple
+        1118415313277558794, # Blue
+        1118415111124701184, # Teal
+        1138140416064102410, # Green
+        1118415718065635329, # Yellow
+        1118415622599098390, # Orange
+        1118415511752024105, # Red
+
+        # Moderation roles:
+        970549665055522850, # Trusted
+        1119445209923723396, # deputized
+        958512048306815056, # moderator
+        1066596562165301248, # Founder
+        968431452993769502, # the abyss comes for us all.
+        978381737442820096, # Pure Vanity
+        963542265870053427, # admin but colorful
+        958515508905406464, # Overlord of Newspapers
+        970510247372394517, # Bot
+        958755031820161025, # admin
+        961202779072909312, # Server Mom
+
+        # Miscellaneous roles:
+        958774733225230397, # Based
+    ]
 
 
 
@@ -971,12 +1039,7 @@ class Admin_cog(
             await send_list()
             return
         
-        filter_list = [ # This is a list of roles that the bot either can't add or shouldn't be adding.
-            961202779072909312, 958755031820161025, 970510247372394517, 958515508905406464, 963542265870053427, 978381737442820096,
-            958774733225230397, 968431452993769502, 1066596562165301248, 958512048306815056, 1119445209923723396, 970549665055522850,
-            958392331671830579, 958920124314816532, 959220485672026142, 958920155025539132, 958920265792892938, 958920201557119036,
-            959247044701216848, 980602604847501362, 958920326006308914, 959254553562349608
-        ]
+        filter_list = self.role_filter_list.copy()
 
         if ctx.guild.id not in filter_list:
             filter_list.append(ctx.guild.id)
@@ -998,6 +1061,12 @@ class Admin_cog(
             
             try:
                 role = ctx.guild.get_role(role_id)
+                
+                # If the role is managed by an integration, like a bot.
+                if role.managed:
+                    blacklisted_roles.append(role.id)
+                    continue
+
                 if role is not None:
                     roles_added.append(role_id)
                     await member.add_roles(role)
@@ -1029,6 +1098,103 @@ class Admin_cog(
             ]
         )
         await ctx.reply(embed=embed)
+
+        
+            
+
+
+
+        
+    ######################################################################################################################################################
+    ##### ADMIN TRANSFER ROLES ###########################################################################################################################
+    ######################################################################################################################################################
+
+    @admin.command(
+        name="transfer_roles",
+        brief = "Copies the roles of one account to another.",
+        description = "Copies the roles of one account to another."
+    )
+    @commands.check(u_checks.in_authority)
+    async def admin_from_snapshot(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext,
+            source_member: typing.Optional[discord.Member],
+            destination_member: typing.Optional[discord.Member]
+        ):
+        if ctx.guild is None:
+            await ctx.reply("This can't be run in DMs.")
+            return
+        
+        if None in [source_member, destination_member]:
+            await ctx.reply("You must provide two members, the member to copy the roles from, and the member to copy the roles to.")
+            return
+        
+        # Attempt to add a reaction, but if that fails, oh well.
+        try:
+            await ctx.message.add_reaction("✅")
+        except:
+            pass
+        
+        filter_list = self.role_filter_list.copy()
+
+        if ctx.guild.id not in filter_list:
+            filter_list.append(ctx.guild.id)
+
+        added_roles = []
+        blacklisted_roles = []
+        already_has = []
+
+        existing_roles = [role.id for role in destination_member.roles]
+
+        for role in source_member.roles:
+            if role.id in filter_list:
+                blacklisted_roles.append(role.id)
+                continue
+
+            if role.id in existing_roles:
+                already_has.append(role.id)
+                continue
+            
+            # If the role is managed by an integration, like a bot.
+            if role.managed:
+                blacklisted_roles.append(role.id)
+                continue
+
+            try:
+                await destination_member.add_roles(role)
+                added_roles.append(role.id)
+            except discord.Forbidden:
+                print(traceback.format_exc())
+                await ctx.reply("I don't have the permissions to give people roles.")
+                return
+            except discord.HTTPException:
+                pass
+        
+        embed = u_interface.gen_embed(
+            title = "Role transfer",
+            description = "Transferred roles from {} to {}.\n\nNumber of added roles: {}\nNumber of roles in blacklist: {}\nNumber of roles the member already had: {}".format(
+                source_member.mention,
+                destination_member.mention,
+                len(added_roles),
+                len(blacklisted_roles),
+                len(already_has)
+            ),
+            fields = [
+                ("Added roles:", ", ".join(
+                    [f"<@&{item}>" for item in added_roles]
+                ), False),
+                ("Blacklisted roles:", "These are roles that are in the blacklist, but the member had them in the snapshot.\n\n" + ", ".join(
+                    [f"<@&{item}>" for item in blacklisted_roles]
+                ), False),
+                ("Already had:", "These are roles that the member had in the snapshot and already had when the command was run.\n\n" + ", ".join(
+                    [f"<@&{item}>" for item in already_has]
+                ), False)
+            ]
+        )
+
+        await ctx.reply(embed=embed)
+        
+
             
 
         
