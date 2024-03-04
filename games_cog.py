@@ -911,6 +911,9 @@ class Games_cog(
                 
                 if msg.author.id in [player.member_id for player in players]:
                     return False
+                
+                if msg.author.bot:
+                    return False
 
                 matched = join_pattern.match(msg.content)
                 if matched is None:
@@ -1039,6 +1042,9 @@ class Games_cog(
                             return False
                         
                         if msg.author.id != player.member_id:
+                            return False
+                
+                        if msg.author.bot:
                             return False
                         
                         if msg.content not in options:
