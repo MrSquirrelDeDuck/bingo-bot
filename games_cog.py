@@ -81,18 +81,22 @@ class BlackjackPlayer:
     @property
     def hand_value(self: typing.Self) -> int:
         total = 0
+        ace_count = 0
 
         for card in self.hand:
             # If it's not an ace.
             if card.value != 1:
                 total += card.game_value
                 continue # Comment this out to restore the hand summing to the broken state it was early in development lol.
-            
-            # If it is an ace.
-            if total + 11 > 21:
-                total += 1
-            else:
-                total += 11
+
+            ace_count += 1
+        
+        if ace_count >= 1:
+            for _ in range(ace_count):
+                if total + 11 > 21:
+                    total += 1
+                else:
+                    total += 11
         
         return total
     
@@ -108,16 +112,22 @@ class BlackjackPlayer:
     @property
     def soft_hand(self: typing.Self) -> bool:
         total = 0
+        ace_count = 0
 
         for card in self.hand:
+            # If it's not an ace.
             if card.value != 1:
                 total += card.game_value
                 continue # Comment this out to restore the hand summing to the broken state it was early in development lol.
-            
-            if total + 11 > 21:
-                total += 1
-            else:
-                return True
+
+            ace_count += 1
+        
+        if ace_count >= 1:
+            for _ in range(ace_count):
+                if total + 11 > 21:
+                    total += 1
+                else:
+                    return True
         
         return False
     
