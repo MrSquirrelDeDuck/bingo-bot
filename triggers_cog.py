@@ -636,6 +636,9 @@ class Triggers_cog(
         if u_checks.sensitive_check(message.channel):
             return
         
+        if message.channel.id == 958679256156749866: # new-members
+            return
+        
         channel_data = self._get_channel_chain(message.channel.id).copy()
 
         if channel_data["message"] != message.content:
