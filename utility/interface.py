@@ -323,58 +323,72 @@ def remove_starting_ping(content: str) -> str:
     return content
 
 def resolve_conflict(
-        message: discord.Message,
-        stats_type: str,
-        user_provided: list[typing.Any],
-        stat_keys: list[typing.Type[u_values.Item] | str]
-    ) -> list[typing.Any] | bool:
-    """
-    Resolves conflicts between user-provided input and the stats parser.
-    The method behind this is very simple, if it's provided by the user, use it, otherwise use the output from the stats parser.
+        database: u_files.DatabaseInterface,
+        ctx: commands.Context | u_custom.CustomContext,
+        resolve_keys: list[str | typing.Type[u_values.Item]],
+        command_provided: list[int | None]
+    ) -> tuple[bool, ...]:
+    """Resolves the conflict of user-provided parameters, the stats parser, or stored data.
 
     Args:
-        message (discord.Message): The user's message.
-        stats_type (str): The type of stats to look for. A list of acceptable ones are in the parse_stats() in utility.bread.
-        user_provided (list[typing.Any]): A list of the user-provided values, where None is unprovided.
-        stat_keys (list[typing.Type[u_values.Item] | str]): A list of keys to look for in the parsed stats, in the same order as user_provided.
+        database (u_files.DatabaseInterface): The database.
+        ctx (commands.Context | u_custom.CustomContext): The context this is needed in.
+        resolve_keys (list[str  |  typing.Type[u_values.Item]]): A list of keys to look for in the stats parser and stored data.
+        command_provided (list[int | None]): The user-provided parameters. It's fine if this is just a list of None.
 
     Returns:
-        list[typing.Any] | bool: The list of resolved values, or False if it failed.
+        tuple[bool, ...]: A tuple containing a boolean for whether stored data was used, following by the resolved data, in the order it is provided.
     """
+    using_stored_data = False
 
-    if None not in user_provided:
-        return user_provided
+    parsed_data = None
+    stored_data = None
+
+    def get_parsed():
+        nonlocal parsed_data
+        if parsed_data is None:
+            replied = replying_mm_checks(
+                message = ctx.message,
+                require_reply = True,
+                return_replied_to = True
+            )
+
+            if not replied:
+                parsed_data = {}
+                return parsed_data
+
+            parsed_data = u_bread.parse_stats(replied)
+
+            if parsed_data.get("parse_successful"):
+                parsed_data = parsed_data.get("stats")
+            else:
+                parsed_data = {}
+
+        return parsed_data
+
+    def get_stored(database: u_files.DatabaseInterface) -> u_bread.BreadDataAccount:
+        nonlocal stored_data, using_stored_data
+        if stored_data is None:
+            stored_data = u_bread.get_stored_data(
+                database = database,
+                user_id = ctx.author.id
+            )
+            using_stored_data = True
+        return stored_data
     
-    replied_to = replying_mm_checks(message, require_reply=True, return_replied_to=True)
-
-    def fill_none():
-        nonlocal user_provided
-        for index, item in enumerate(user_provided):
-            if item is None:
-                user_provided[index] = 0
-        
-        return user_provided
-
-    if not replied_to:
-        return fill_none()
+    resolve = dict(zip(resolve_keys, command_provided))
     
-    parsed = u_bread.parse_stats(replied_to)
-
-    if parsed.get("stats_type") != stats_type: # If the parse was unsuccessful, then the .get will be None.
-        return fill_none()
+    for stat in resolve:
+        if resolve[stat] is None:
+            if parsed_data is None:
+                get_parsed()
+            
+            if stat in parsed_data:
+                resolve[stat] = parsed_data[stat]
+            else:
+                resolve[stat] = get_stored(database).get(stat, 0)
     
-    parsed = parsed["stats"]
-
-    for index, item in enumerate(user_provided):
-        if item is not None:
-            continue
-
-        user_provided[index] = parsed.get(stat_keys[index], 0)
-    
-    if None in user_provided:
-        return fill_none()
-    
-    return user_provided
+    return (using_stored_data,) + tuple(resolve.values())
 
 def get_role_list(guild: discord.Guild) -> dict[str, list[int]]:
     """Generates a list of member ids, each with a list of the roles they have.

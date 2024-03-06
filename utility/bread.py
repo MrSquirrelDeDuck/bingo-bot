@@ -13,10 +13,267 @@ import utility.text as u_text
 import utility.values as u_values
 import utility.interface as u_interface
 import utility.files as u_files
+import utility.solvers as u_solvers
 
 import importlib
 
 importlib.reload(u_values)
+
+class BreadDataAccount:
+    def __init__(
+            self: typing.Self,
+            user_id: int,
+            database: u_files.DatabaseInterface
+        ) -> None:
+        self.loaded = False
+        self.data = {}
+        
+        self.user_id = user_id
+        
+        stored_data = database.load("bread", "data_storage", default={})
+
+        if str(user_id) not in stored_data:
+            return None
+        
+        stored_data = stored_data.get(str(user_id))
+
+        self.update_from_dict(
+            data = stored_data
+        )
+
+        self.loaded = True
+
+        return None
+        
+    
+
+    ###############################################################
+    ## Utility methods.
+    
+    def has(
+            self: typing.Self,
+            key: typing.Type[u_values.Item] | str,
+            minimum: int = 1
+        ) -> bool:
+        return self.data.get(key, 0) >= minimum
+
+    
+    def get(
+            self: typing.Self,
+            item: typing.Type[u_values.Item],
+            default: typing.Any = 0
+        ) -> int | typing.Any:
+        if item in self.data:
+            return self.data.get(item, default)
+
+        if isinstance(item, u_values.Item):
+            item = item.internal_name
+
+        return self.data.get(item, default)
+    
+    def set(
+            self: typing.Self,
+            item: typing.Type[u_values.Item],
+            value: int | typing.Any
+        ) -> None:
+
+        self.data[item] = value
+    
+    def solver(
+            self: typing.Self,
+            goal_item: typing.Type[u_values.Item],
+            given_items: dict[typing.Type[u_values.Item], int] = None
+        ) -> tuple[list[str], dict[u_values.Item, int], dict[str, int]]:
+        """Runs the item solver to maximize the amount of an item.
+
+        Args:
+            goal_item (typing.Type[u_values.Item]): The item to maximize.
+            given_items (dict[typing.Type[u_values.Item], int], optional): A list of items to give to the solver to use. If nothing is provided it will use all items stored in the account. Defaults to None.
+
+        Returns:
+            tuple[list[str], dict[u_values.Item, int], dict[str, int]]: The command list, post-alchemy version of the items, and the dict version of the solver.
+        """
+        if given_items is None:
+            given_items = {}
+
+            for item in u_values.all_items:
+                given_items[item] = self.get(item, 0)
+        
+        solver = u_solvers.solver_wrapper(
+            items = given_items,
+            maximize = goal_item
+        )
+
+        return solver
+    
+    def update_from_dict(
+            self: typing.Self,
+            data: dict
+        ) -> None:
+        for key in data.copy():
+            item = u_values.get_item(key)
+
+            if item is None:
+                continue
+
+            data[item] = data.pop(key)
+
+        self.data.update(data)
+    
+    def convert_to_dict(
+            self: typing.Self
+        ) -> dict:
+        return self.data
+
+
+        
+    
+
+    ###############################################################
+    ## Methods for dealing with the database.
+
+    def refresh_data(
+            self: typing.Self,
+            database: u_files.DatabaseInterface
+        ) -> None:
+        self.__init__(
+            user_id = self.user_id,
+            database = database
+        )
+    
+    def update_stored_data(
+            self: typing.Self,
+            database: u_files.DatabaseInterface
+        ) -> None:
+        stored_data = database.load("bread", "data_storage", default={})
+
+        string_user_id = str(self.user_id)
+
+        if string_user_id not in stored_data:
+            stored_data[string_user_id] = {}
+        
+        def sanitize_list(list_data: list) -> list:
+            for index, value in enumerate(list_data.copy()):
+                try:
+                    list_data[index] = value.internal_name
+                except AttributeError:
+                    pass # If the value is not an item, do nothing.
+            return list_data
+        
+        def sanitize_dict(dict_data: dict) -> dict:
+            for key in dict_data.copy():
+                if isinstance(dict_data[key], list):
+                    dict_data[key] = sanitize_list(dict_data[key])
+                    continue
+                if isinstance(dict_data[key], dict):
+                    dict_data[key] = sanitize_dict(dict_data[key]) # recursion go brrrrrrrrr
+                    continue
+
+                try:
+                    dict_data[key.internal_name] = dict_data.pop(key)
+                except AttributeError:
+                    pass # If the key is not an item, do nothing.
+
+            return dict_data
+
+        data = sanitize_dict(self.data.copy())
+        
+        stored_data[string_user_id].update(data)
+
+        database.save("bread", "data_storage", data=stored_data)
+    
+    def clear_stored_data(
+            self: typing.Self,
+            database: u_files.DatabaseInterface
+        ) -> None:
+        self.data = {}
+
+        stored_data = database.load("bread", "data_storage", default={})
+        
+        stored_data.pop(str(self.user_id))
+
+        database.save("bread", "data_storage", data=stored_data)
+        
+    
+
+    ###############################################################
+    ## Properties.
+        
+    @property
+    def ascension_boost(self: typing.Self) -> float:
+        return self.get("prestige_level") * 0.1 + 1
+        
+    @property
+    def ascension(self: typing.Self) -> float:
+        return self.get("prestige_level")
+    
+    @property
+    def active_shadowmegas(self: typing.Self) -> int:
+        return min(self.get(u_values.shadowmega_chessatron), self.get("chessatron_shadow_boost") * 5)
+
+    @property
+    def active_shadow_gold_gems(self: typing.Self) -> int:
+        return min(self.get(u_values.shadow_gold_gems), self.get("shadow_gold_gem_luck_boost") * 10)
+    
+    @property
+    def tron_value(self: typing.Self) -> int:
+        omegas = self.get(u_values.omega_chessatron)
+        ascension = self.ascension
+        shadowmegas = self.active_shadowmegas
+
+        return calculate_tron_value(
+            ascension = ascension,
+            omega_count = omegas,
+            active_shadowmegas = shadowmegas,
+        )
+
+    @property
+    def all_items(self: typing.Self) -> list[typing.Type[u_values.Item]]:
+        out = []
+
+        for item in self.data.keys:
+            if isinstance(item, u_values.Item):
+                out.append(item)
+        
+        return out
+
+    @property
+    def item_generator(self: typing.Self):
+        for item in self.data.keys:
+            if isinstance(item, u_values.Item):
+                yield item
+        
+    
+
+    ###############################################################
+    ## Getters that can't be properties for varius reasons.
+                
+    def portfolio_value(
+            self: typing.Self,
+            current_data: dict
+        ) -> int:
+        value = 0
+        current_data = current_data["values"]
+
+        for stonk in u_values.stonks:
+            if self.has(stonk):
+                value += self.get(stonk) * current_data.get(stonk.internal_name)
+        
+        return value
+    
+
+        
+
+
+
+
+
+
+
+
+######################################################################################################################################################
+##### UTILITY FUNCTONS ###############################################################################################################################
+######################################################################################################################################################
 
 def bread_time() -> datetime.timedelta:
     """Returns a datetime.timedelta representing the time since the last Bread o' Clock.
@@ -143,13 +400,24 @@ def parse_attempt(
             return False
                     
     return parse_stats(message.reference.resolved)
+    
 
+
+
+
+
+
+
+
+###############################################################
+##### STATS PARSER ############################################
+###############################################################
 
 def parse_stats(message: discord.Message) -> dict[str | typing.Type[u_values.Item], int | dict[str, bool] | bool]:
     """Parses a Machine-Mind message and returns a dict of as many stats as it can figure out, both user stats and internal stats, like stonks, will be returned in the `stats` dict.
     
     The following messages can be parsed:
-    - $bread stats (Both main and continued.)
+    - $bread stats (Main, individual items if it's split, and continued.)
     - $bread stats chess
     - $bread stats gambit
     - $bread portfolio
@@ -293,33 +561,43 @@ def parse_stats(message: discord.Message) -> dict[str | typing.Type[u_values.Ite
                     "stats": stats
                 }
         
-        alternate_style = [u_values.bread]
+        if "Individual stats" in message.content:
+            # If the item stats are in this message.
+        
+            alternate_style = [u_values.bread]
 
-        for item in alternate_style:
-            if item in u_values.all_chess_pieces:
-                continue
+            for item in alternate_style:
+                if item in u_values.all_chess_pieces:
+                    continue
 
-            direct(
-                item,
-                "&& - ##",
-                emoji_discord = item.internal_emoji,
-                emoji_ascii = item.emoji,
-                default = 0
-            )
+                direct(
+                    item,
+                    "&& - ##",
+                    emoji_discord = item.internal_emoji,
+                    emoji_ascii = item.emoji,
+                    default = 0
+                )
 
-        for item in u_values.all_items:
-            if item in u_values.all_chess_pieces:
-                continue
-            if item in alternate_style:
-                continue
+            for item in u_values.all_items:
+                if item in u_values.all_chess_pieces:
+                    continue
+                if item in alternate_style:
+                    continue
 
-            direct(
-                item,
-                "## &&",
-                emoji_discord = item.internal_emoji,
-                emoji_ascii = item.emoji,
-                default = 0
-            )
+                direct(
+                    item,
+                    "## &&",
+                    emoji_discord = item.internal_emoji,
+                    emoji_ascii = item.emoji,
+                    default = 0
+                )
+            
+            if content.startswith("Stats continued:"):
+                return {
+                    "parse_successful": True,
+                    "stats_type": "main_items",
+                    "stats": stats
+                }
         
         parse_list = {
             "total_dough": "You have **## dough.**",
@@ -351,7 +629,7 @@ def parse_stats(message: discord.Message) -> dict[str | typing.Type[u_values.Ite
         ethereal_shine = extract("With level ## of Ethereal Shine", default = 0)
         first_catch_of_the_day = extract("With First Catch of the Day, your first ## special item", default = 0)
 
-        ascension_number = get_ascension(stats[u_values.ascension_token], daily_discount_card, self_converting_yeast, moak_booster, chess_piece_equalizer, high_roller_table, chessatron_contraption, ethereal_shine, first_catch_of_the_day)
+        ascension_number = extract("**##**\u2b50:", default=0) # \u2b50 is the star emoji.
 
         append = {
             "prestige_level": ascension_number,
@@ -378,13 +656,6 @@ def parse_stats(message: discord.Message) -> dict[str | typing.Type[u_values.Ite
             stats["bling"] = bling
         else:
             stats["bling"] = 0
-        
-        stats["tron_value"] = calculate_tron_value(
-            ascension = ascension_number,
-            omega_count = stats[u_values.omega_chessatron],
-            shadowmegas = stats[u_values.shadowmega_chessatron],
-            chessatron_contraption = chessatron_contraption
-        )
         
         return {
             "parse_successful": True,
@@ -795,110 +1066,16 @@ def parse_stats(message: discord.Message) -> dict[str | typing.Type[u_values.Ite
 def get_stored_data(
         database: u_files.DatabaseInterface,
         user_id: int
-    ) -> dict[str | typing.Type[u_values.Item], int] | None:
+    ) -> BreadDataAccount:
     """Gets a piece of stored data.
 
     Args:
         user_id (int): The user id to look up.
 
     Returns:
-        dict[str | typing.Type[u_values.Item], int] | None: The returned data, with items replaced with u_values.Item objects. None will be returned if the user id is not in the data.
+        BreadDataAccount: A BreadDataAccount object representing the data.
     """
-    stored_data = database.load("bread", "data_storage", default={})
-    
-    user_id = str(user_id)
-
-    if user_id not in stored_data:
-        return None
-    
-    data = stored_data[user_id]
-    
-    for key in data.copy():
-        item = u_values.get_item(key)
-
-        if not item:
-            continue
-
-        data[item] = data.pop(key)
-    
-    return data
-
-def update_stored_data(
-        database: u_files.DatabaseInterface,
-        user_id: int | str,
-        data: dict[str | typing.Type[u_values.Item], int]
-    ) -> dict[str | typing.Type[u_values.Item], int]:
-    """Updates a piece of stored data.
-
-    Args:
-        user_id (int): The user id to update.
-        data (dict[str | typing.Type[u_values.Item], int]): The data to update, preferably the raw data from the parser.
-
-    Returns:
-        dict[str | typing.Type[u_values.Item], int]: The updated data.
-    """
-    stored_data = database.load("bread", "data_storage", default={})
-
-    user_id = str(user_id)
-
-    if user_id not in stored_data:
-        stored_data[user_id] = {}
-    
-    def sanitize_list(list_data: list) -> list:
-        for index, value in enumerate(list_data.copy()):
-            try:
-                list_data[index] = value.internal_name
-            except AttributeError:
-                print(value)
-                pass # If the value is not an item, do nothing.
-        return list_data
-    
-    def sanitize_dict(dict_data: dict) -> dict:
-        for key in dict_data.copy():
-            if isinstance(dict_data[key], list):
-                dict_data[key] = sanitize_list(dict_data[key])
-                continue
-            if isinstance(dict_data[key], dict):
-                dict_data[key] = sanitize_dict(dict_data[key]) # recursion go brrrrrrrrr
-                continue
-
-            try:
-                dict_data[key.internal_name] = dict_data[key]
-                del dict_data[key]
-            except AttributeError:
-                print(key)
-                pass # If the key is not an item, do nothing.
-
-        return dict_data
-
-    data = sanitize_dict(data)
-    
-    stored_data[user_id].update(data)
-
-    database.save("bread", "data_storage", data=stored_data)
-
-    return stored_data[user_id]
-
-def clear_stored_data(
-        database: u_files.DatabaseInterface,
-        user_id: int | str
-    ) -> None:
-    """Clears someone's stored data.
-
-    Args:
-        database (u_files.DatabaseInterface): The database.
-        user_id (int | str): The user id to clear.
-    """
-    stored_data = database.load("bread", "data_storage", default={})
-    
-    user_id = str(user_id)
-
-    if user_id not in stored_data:
-        return
-    
-    stored_data.pop(user_id)
-
-    database.save("bread", "data_storage", data=stored_data)
+    return BreadDataAccount(user_id, database)
 
 def parse_gamble(message: discord.Message | str) -> list[typing.Type[u_values.Item]] | None:
     """Parses a gamble message to determine the items it contains. This will check if the message is a gamble via `utility.interface.is_gamble()`.

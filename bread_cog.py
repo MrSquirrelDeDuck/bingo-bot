@@ -893,20 +893,93 @@ class Bread_cog(
             green_gems: typing.Optional[u_converters.parse_int] = commands.parameter(description = "The amount of green gems you have."),
             gold_gems: typing.Optional[u_converters.parse_int] = commands.parameter(description = "The amount of gold gems you have.")
         ):
-        ISSUE_TEXT = "If not replying to a stats message, provide the amount of dough per tron and the quantity of each gem. Reply to a stats message for automatic information retrieval. You can also specify the dough per tron to override the stats parser, as well as the quantity of each gem you possess."
+        # Okay, so here's how the parameters need to work for the gems:
+        # - If anything is provided in the command parameters, use it.
+        # - If the user replies to a stats message that has the individual items, use that for any item not covered by parameters.
+        # - If the user has stored data, use that for any items not already determined.
 
-        resolved_conflict = u_interface.resolve_conflict(
-            message = ctx.message,
-            stats_type = "main",
-            user_provided = [tron_value, red_gems, blue_gems, purple_gems, green_gems, gold_gems],
-            stat_keys = ["tron_value", u_values.gem_red, u_values.gem_blue, u_values.gem_purple, u_values.gem_green, u_values.gem_gold]
-            )
-        
-        if not resolved_conflict:
-            await ctx.reply(ISSUE_TEXT)
-            return
-        
-        tron_value, red_gems, blue_gems, purple_gems, green_gems, gold_gems = resolved_conflict
+        # If the tron value is not provided in the command, if it's in the replied-to stats message, use that. Use the stored data as a backup if those two fail.
+
+        resolve_values = {
+            u_values.gem_red: red_gems,
+            u_values.gem_blue: blue_gems,
+            u_values.gem_purple: purple_gems,
+            u_values.gem_green: green_gems,
+            u_values.gem_gold: gold_gems
+        }
+
+        using_stored_data = False
+
+        parsed_data = None
+        stored_data = None
+
+        def get_parsed():
+            nonlocal parsed_data
+            if parsed_data is None:
+                replied = u_interface.replying_mm_checks(
+                    message = ctx.message,
+                    require_reply = True,
+                    return_replied_to = True
+                )
+
+                if not replied:
+                    parsed_data = {}
+                    return parsed_data
+
+                parsed_data = u_bread.parse_stats(replied)
+
+                if parsed_data.get("parse_successful"):
+                    parsed_data = parsed_data.get("stats")
+                else:
+                    parsed_data = {}
+
+            return parsed_data
+
+        def get_stored():
+            nonlocal stored_data, using_stored_data
+            if stored_data is None:
+                stored_data = u_bread.get_stored_data(
+                    database = database,
+                    user_id = ctx.author.id
+                )
+                using_stored_data = True
+            return stored_data
+
+        for gem in u_values.all_shiny:
+            if resolve_values.get(gem) is None:
+                if parsed_data is None:
+                    parsed_data = get_parsed()
+                
+                if gem in parsed_data:
+                    resolve_values[gem] = parsed_data[gem]
+                    continue
+
+                if stored_data is None:
+                    stored_data = get_stored()
+
+                resolve_values[gem] = stored_data.get(gem, 0)
+
+        if tron_value is None:
+            if parsed_data is None:
+                parsed_data = get_parsed()
+
+            if "prestige_level" in parsed_data and \
+               "chessatron_shadow_boost" in parsed_data and \
+               u_values.omega_chessatron in parsed_data and \
+               u_values.shadowmega_chessatron in parsed_data:
+                tron_value = u_bread.calculate_tron_value(
+                    ascension = parsed_data["prestige_level"],
+                    omega_count = parsed_data[u_values.omega_chessatron],
+                    shadowmegas = parsed_data[u_values.shadowmega_chessatron],
+                    chessatron_contraption = parsed_data["chessatron_shadow_boost"]
+                )
+            else:
+                if stored_data is None:
+                    stored_data = get_stored()
+                
+                tron_value = stored_data.tron_value
+
+        red_gems, blue_gems, purple_gems, green_gems, gold_gems = resolve_values.values()
         
         gem_sum = sum([red_gems, blue_gems, purple_gems, green_gems, gold_gems * 4])
 
@@ -935,11 +1008,16 @@ class Bread_cog(
             ))
         
         command_list.append(f"$bread gem_chessatron {possible_trons}")
+
+        if using_stored_data:
+            using_stored_data = "(Using stored data, use `%bread data` for more info.)\n"
+        else:
+            using_stored_data = str()
         
         # Generate the embed to send.
         embed = u_interface.gen_embed(
             title = "Gem Value",
-            description = f"- {u_values.gem_red.internal_emoji}: {u_text.smart_number(red_gems)}\n- {u_values.gem_blue.internal_emoji}: {u_text.smart_number(blue_gems)}\n- {u_values.gem_purple.internal_emoji}: {u_text.smart_number(purple_gems)}\n- {u_values.gem_green.internal_emoji}: {u_text.smart_number(green_gems)}\n- {u_values.gem_gold.internal_emoji}: {u_text.smart_number(gold_gems)} -> {u_text.smart_number(gold_gems * 4)} (x4 recipe to greens)\nGem sum: {u_text.smart_number(gem_sum)}.\nPossible trons: {u_text.smart_number(possible_trons)}.\nAt a rate of {u_text.smart_number(tron_value)} per tron: **{u_text.smart_number(tron_value * possible_trons)} dough**.",
+            description = f"{using_stored_data}- {u_values.gem_red.internal_emoji}: {u_text.smart_number(red_gems)}\n- {u_values.gem_blue.internal_emoji}: {u_text.smart_number(blue_gems)}\n- {u_values.gem_purple.internal_emoji}: {u_text.smart_number(purple_gems)}\n- {u_values.gem_green.internal_emoji}: {u_text.smart_number(green_gems)}\n- {u_values.gem_gold.internal_emoji}: {u_text.smart_number(gold_gems)} -> {u_text.smart_number(gold_gems * 4)} (x4 recipe to greens)\nGem sum: {u_text.smart_number(gem_sum)}.\nPossible trons: {u_text.smart_number(possible_trons)}.\nAt a rate of {u_text.smart_number(tron_value)} per tron: **{u_text.smart_number(tron_value * possible_trons)} dough**.",
             fields = [
                 ("Commands:", "\n".join(command_list), False)
             ],
@@ -970,47 +1048,43 @@ class Bread_cog(
             cc_level: typing.Optional[u_converters.parse_int] = commands.parameter(description = "The level of Chessatron Contraption you have."),
             ascension: typing.Optional[u_converters.parse_int] = commands.parameter(description = "The ascension you're on.")
         ):
-        def generate_embed(omega, shadow, cc, a):
-            return u_interface.gen_embed(
-                title = "Chessatron value",
-                description = "With {}, {}, and {} of Chessatron Contraption on a{}, you would make **{} dough** from each Chessatron.".format(
-                    u_text.smart_text(omega, "Omega Chessatron"),
-                    u_text.smart_text(shadow, "Shadowmega Chessatron"),
-                    u_text.smart_text(cc, "level"),
-                    u_text.smart_number(a),
-                    u_text.smart_number(u_bread.calculate_tron_value(ascension=a, omega_count=omega, shadowmegas=shadow, chessatron_contraption=cc))
-                )
+        
+        # This needs to be in the same order as the command parameters.
+        resolve_values = {
+            u_values.omega_chessatron: omegas,
+            u_values.shadowmega_chessatron: shadowmegas,
+            "chessatron_shadow_boost": cc_level,
+            "prestige_level": ascension
+        }
+
+        resolved = u_interface.resolve_conflict(
+            database = database,
+            ctx = ctx,
+            resolve_keys = list(resolve_values.keys()),
+            command_provided = list(resolve_values.values())
+        )
+        
+        using_stored_data, omegas, shadowmegas, cc_level, ascension = resolved
+
+        tron_value = u_bread.calculate_tron_value(
+            ascension = ascension,
+            omega_count = omegas,
+            shadowmegas = shadowmegas,
+            chessatron_contraption = cc_level
+        )
+        
+        embed = u_interface.gen_embed(
+            title = "Chessatron value",
+            description = "{}With {}, {}, and {} of Chessatron Contraption on a{}, you would make **{} dough** from each Chessatron.".format(
+                "(Using stored data, use `%bread data` for more info.)\n" if using_stored_data else "",
+                u_text.smart_text(omegas, "Omega Chessatron"),
+                u_text.smart_text(shadowmegas, "Shadowmega Chessatron"),
+                u_text.smart_text(cc_level, "level"),
+                u_text.smart_number(ascension),
+                u_text.smart_number(tron_value)
             )
-    
-        if None not in [omegas, shadowmegas, cc_level, ascension]:
-            embed = generate_embed(omegas, shadowmegas, cc_level, ascension)
-            await ctx.reply(embed=embed)
-            return
-        
-        replied_to = u_interface.replying_mm_checks(ctx.message, require_reply=True, return_replied_to=True)
+        )
 
-        if not replied_to:
-            if omegas is None: omegas = 0
-            if shadowmegas is None: shadowmegas = 0
-            if cc_level is None: cc_level = 0
-            if ascension is None: ascension = 0
-
-            embed = generate_embed(omegas, shadowmegas, cc_level, ascension)
-            await ctx.reply(embed=embed)
-            return
-        
-        parsed = u_bread.parse_stats(replied_to)
-
-        if parsed.get("stats_type") != "main":
-            await ctx.reply("You must reply to bread stats, or provide the amount of each item you have.")
-            return
-        
-        if omegas is None: omegas = parsed["stats"][u_values.omega_chessatron]
-        if shadowmegas is None: shadowmegas = parsed["stats"][u_values.shadowmega_chessatron]
-        if cc_level is None: cc_level = parsed["stats"]["chessatron_shadow_boost"]
-        if ascension is None: ascension = parsed["stats"]["prestige_level"]
-
-        embed = generate_embed(omegas, shadowmegas, cc_level, ascension)
         await ctx.reply(embed=embed)
 
         
@@ -1109,54 +1183,24 @@ class Bread_cog(
             gold_gems: typing.Optional[u_converters.parse_int] = commands.parameter(description = "Optional amount of gold gems you have."),
             ascension: typing.Optional[u_converters.parse_int] = commands.parameter(description = "The ascension number you're on.")
         ):
+        # This needs to be in the same order as the command parameters.
+        resolve_values = {
+            u_values.gem_red: red_gems,
+            u_values.gem_blue: blue_gems,
+            u_values.gem_purple: purple_gems,
+            u_values.gem_green: green_gems,
+            u_values.gem_gold: gold_gems,
+            "prestige_level": ascension
+        }
 
-        ISSUE_TEXT = "If not replying to a stats message, provide the quantity of each gem you have aside from gold gems. Reply to a stats message to parse the stats. You can also specify the quantity of each gem you possess to override the stats parser."      
-
-        async def determine_gems() -> bool:
-            nonlocal red_gems, blue_gems, purple_gems, green_gems, gold_gems, ascension
-
-            if None not in [red_gems, blue_gems, purple_gems, green_gems, gold_gems, ascension]:
-                return False
-            
-            replied_to = u_interface.replying_mm_checks(ctx.message, require_reply=True, return_replied_to=True)
-
-            if not replied_to:
-                if gold_gems is None and not None in [red_gems, blue_gems, purple_gems, green_gems]:
-                    gold_gems = 0
-                    return False
-                
-                await ctx.reply(ISSUE_TEXT)
-                return True
-            
-            parsed = u_bread.parse_stats(replied_to)
-
-            if parsed.get("stats_type") != "main":
-                if gold_gems is None:
-                    gold_gems = 0
-                    return False
-                
-                await ctx.reply(ISSUE_TEXT)
-                return True
-            
-            if red_gems is None:
-                red_gems = parsed["stats"].get(u_values.gem_red, 0)
-            if blue_gems is None:
-                blue_gems = parsed["stats"].get(u_values.gem_blue, 0)
-            if purple_gems is None:
-                purple_gems = parsed["stats"].get(u_values.gem_purple, 0)
-            if green_gems is None:
-                green_gems = parsed["stats"].get(u_values.gem_green, 0)
-            if gold_gems is None:
-                gold_gems = parsed["stats"].get(u_values.gem_gold, 0)
-            if ascension is None:
-                ascension = parsed["stats"].get("prestige_level", 0)
-            
-            return False
+        resolved = u_interface.resolve_conflict(
+            database = database,
+            ctx = ctx,
+            resolve_keys = list(resolve_values.keys()),
+            command_provided = list(resolve_values.values())
+        )
         
-        determined = await determine_gems()
-
-        if determined: # True is only returned if a message is sent.
-            return
+        using_stored_data, red_gems, blue_gems, purple_gems, green_gems, gold_gems, ascension = resolved
         
         if ascension is None:
             ascension = 0
@@ -1182,7 +1226,8 @@ class Bread_cog(
         
         embed = u_interface.gen_embed(
             title = "Gold gem solver",
-            description = "{}\nYou should be able to make **{}**.\nDough gain: {} ({} with [Gold Ring](<https://bread.miraheze.org/wiki/Gold_Ring>).)".format(
+            description = "{}{}\nYou should be able to make **{}**.\nDough gain: {} ({} with [Gold Ring](<https://bread.miraheze.org/wiki/Gold_Ring>).)".format(
+                "(Using stored data, use `%bread data` for more info.)\n" if using_stored_data else "",
                 "\n".join([f"{gem}: {u_text.smart_number(gems[gem])} -> {u_text.smart_number(post_alchemy[gem])}" for gem in gems]),
                 u_text.smart_text(solver_result["gem_gold_total"], "gold gem"),
                 u_text.smart_number(round(solver_result["gem_gold_total"] * 5000 * ascension_multiplier)),
@@ -1205,7 +1250,9 @@ class Bread_cog(
     
     bread_data_usage = [
         "%bread tron solve",
-        "%bread tron quick"
+        "%bread tron quick",
+        "%bread tron_value",
+        "%bread gem_value"
     ]
     
     @bread.group(
@@ -1227,7 +1274,7 @@ class Bread_cog(
             user_id = ctx.author.id
         )
 
-        stored_message = "You do not have any stored data." if stored is None else "You have stored data!"
+        stored_message = "You have stored data!" if stored.loaded else "You do not have any stored data."
 
         embed = u_interface.gen_embed(
             title = "Stored data",
@@ -1264,10 +1311,17 @@ class Bread_cog(
             await ctx.reply("You must reply to stats message.")
             return
         
-        u_bread.update_stored_data(
+        existing = u_bread.get_stored_data(
             database = database,
-            user_id = ctx.author.id,
-            data = parsed["stats"]
+            user_id = ctx.author.id
+        )
+
+        existing.update_from_dict(
+            parsed["stats"]
+        )
+
+        existing.update_stored_data(
+            database = database
         )
 
         embed = u_interface.gen_embed(
@@ -1304,13 +1358,13 @@ class Bread_cog(
             user_id = ctx.author.id
         )
 
-        if stored is None:
+        if not stored.loaded:
             await ctx.reply("You do not have any stored data.\nUse `%bread data` to get more information on how to store data.")
             return
         
         PAGE_SIZE = 20 # How many items to show on each page.
 
-        data_keys = list(stored.keys())
+        data_keys = list(stored.data.keys())
         max_page = math.ceil(len(data_keys) / PAGE_SIZE)
 
         page = min(page, max_page - 1)
@@ -1323,7 +1377,7 @@ class Bread_cog(
         lines = []
 
         for key in keys_show:
-            value = stored[key]
+            value = stored.get(key)
             if isinstance(value, dict):
                 lines.append("{}: {}".format(
                     key,
@@ -1331,7 +1385,7 @@ class Bread_cog(
                 ))
                 continue
 
-            lines.append(f"{key}: {u_text.smart_number(stored[key])}")
+            lines.append(f"{key}: {u_text.smart_number(value)}")
         
         embed = u_interface.gen_embed(
             title = "Stored data inventory",
@@ -1352,6 +1406,7 @@ class Bread_cog(
     
     @bread_data.command(
         name = "clear",
+        aliases = ["clean"],
         brief = "Clears your current stored data.",
         description = "Clears your current stored data.\n\nTo get a list of all the command that use the stored data feature, use '%help bread data'"
     )
@@ -1359,9 +1414,13 @@ class Bread_cog(
             self: typing.Self,
             ctx: commands.Context | u_custom.CustomContext
         ):
-        u_bread.clear_stored_data(
+        existing = u_bread.get_stored_data(
             database = database,
             user_id = ctx.author.id
+        )
+
+        existing.clear_stored_data(
+            database = database
         )
         
         embed = u_interface.gen_embed(
@@ -1419,7 +1478,7 @@ class Bread_cog(
             user_id = ctx.author.id
         )
 
-        if stored_data is None:
+        if not stored_data.loaded:
             await ctx.reply("You do not have any stored data.\nUse `%bread data` to get more information on how to store data.")
             return
 
@@ -1462,12 +1521,7 @@ class Bread_cog(
                 "\n".join([f"{item}: {u_text.smart_number(items[item])} -> {u_text.smart_number(post_alchemy[item])}" for item in items]),
                 u_text.smart_number(solver_result["chessatron_total"]),
                 u_values.chessatron,
-                u_text.smart_number(round(solver_result["chessatron_total"] * u_bread.calculate_tron_value(
-                    ascension = stored_data.get("prestige_level"),
-                    omega_count = stored_data.get(u_values.omega_chessatron),
-                    shadowmegas = stored_data.get(u_values.shadowmega_chessatron),
-                    chessatron_contraption = stored_data.get("chessatron_shadow_boost")
-                )))
+                u_text.smart_number(round(solver_result["chessatron_total"] * stored_data.tron_value))
             ),
             fields = [
                 ("Commands:", "\n".join(command_list), False)
@@ -1498,7 +1552,7 @@ class Bread_cog(
             user_id = ctx.author.id
         )
 
-        if stored_data is None:
+        if not stored_data.loaded:
             await ctx.reply("You do not have any stored data.\nUse `%bread data` to get more information on how to store data.")
             return
         
@@ -1510,12 +1564,7 @@ class Bread_cog(
         addition = first_division + wpawn
         final_division = addition / 8
 
-        tron_value = u_bread.calculate_tron_value(
-            ascension = stored_data.get("prestige_level"),
-            omega_count = stored_data.get(u_values.omega_chessatron),
-            shadowmegas = stored_data.get(u_values.shadowmega_chessatron),
-            chessatron_contraption = stored_data.get("chessatron_shadow_boost")
-        )
+        tron_value = stored_data.tron_value
 
         embed = u_interface.gen_embed(
             title = "Quick chessatrons",
@@ -1551,7 +1600,7 @@ class Bread_cog(
             user_id = ctx.author.id
         )
 
-        if stored is None:
+        if not stored.loaded:
             await ctx.reply("You do not have any stored data.\nUse `%bread data` to get more information on how to store data.")
             return
         
@@ -1560,12 +1609,7 @@ class Bread_cog(
             return
         
         if tron_value is None:
-            tron_value = u_bread.calculate_tron_value(
-                ascension = stored.get("prestige_level"),
-                omega_count = stored.get(u_values.omega_chessatron),
-                shadowmegas = stored.get(u_values.shadowmega_chessatron),
-                chessatron_contraption = stored.get("chessatron_shadow_boost")
-            )
+            tron_value = stored.tron_value
         
         if percentage is None:
             percentage = 1
