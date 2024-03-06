@@ -1252,7 +1252,8 @@ class Bread_cog(
         "%bread tron solve",
         "%bread tron quick",
         "%bread tron_value",
-        "%bread gem_value"
+        "%bread gem_value",
+        "%bread gold_gem"
     ]
     
     @bread.group(
