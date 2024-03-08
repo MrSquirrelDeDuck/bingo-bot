@@ -12368,5 +12368,47 @@
         "cookie": 31,
         "fortune_cookie": 669,
         "pancakes": 3959
+    },
+    {
+        "pretzel": 154,
+        "cookie": 28,
+        "fortune_cookie": 619,
+        "pancakes": 4039
+    },
+    {
+        "pretzel": 153,
+        "cookie": 30,
+        "fortune_cookie": 566,
+        "pancakes": 3647
+    },
+    {
+        "pretzel": 162,
+        "cookie": 32,
+        "fortune_cookie": 628,
+        "pancakes": 3601
+    },
+    {
+        "pretzel": 177,
+        "cookie": 29,
+        "fortune_cookie": 667,
+        "pancakes": 3948
+    },
+    {
+        "pretzel": 189,
+        "cookie": 32,
+        "fortune_cookie": 709,
+        "pancakes": 3898
+    },
+    {
+        "pretzel": 207,
+        "cookie": 31,
+        "fortune_cookie": 773,
+        "pancakes": 4280
+    },
+    {
+        "pretzel": 202,
+        "cookie": 31,
+        "fortune_cookie": 711,
+        "pancakes": 4227
     }
 ]
