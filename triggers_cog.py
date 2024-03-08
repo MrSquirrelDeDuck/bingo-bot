@@ -1086,6 +1086,41 @@ class Triggers_cog(
             await message.reply("Machine-Mind is currently listed as offline, so bread rolling and bricking is impossible.")
         
         return
+    
+    async def pk_filter(
+            self: typing.Self,
+            message: discord.Message
+        ):
+        # If the message does not have a webhook id, then it's probably the first message of a thread.
+        # If the message does have the webhook id attribute and it's None, then it's not a proxied message.
+        try:
+            if message.webhook_id is None:
+                return
+        except AttributeError:
+            return
+        
+        async with aiohttp.ClientSession() as session:
+            # Make the request to the PluralKit API to try and get information about author of this message.
+            async with session.get(f"https://api.pluralkit.me/v2/messages/{message.id}") as resp:
+                # If the status code is not 200, then the message wasn't proxied by PluralKit or something went wrong, either way stop execution.
+                if resp.status != 200:
+                    return
+                
+                return_json = await resp.json()
+
+        filter_data = database.load("pk_filter", default={})
+        
+        filter_ids = filter_data.get("member_ids", [])
+
+        member_id = return_json.get("member", {}).get("id", None)
+
+        if member_id in filter_ids:
+            try:
+                await message.delete()
+            except discord.NotFound:
+                pass
+            except discord.Forbidden:
+                pass
 
             
             
@@ -1120,6 +1155,10 @@ class Triggers_cog(
         # PluralKit replies.
         if u_interface.is_reply(message, allow_ping=False):
             await self.pk_reply(message)
+        
+        # PluralKit filter.
+        if message.author.bot:
+            await self.pk_filter(message)
         
         # PluralKit explanation.
         await self.pk_explanation(message)

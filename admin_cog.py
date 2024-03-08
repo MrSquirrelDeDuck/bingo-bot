@@ -9,6 +9,7 @@ import os
 from os.path import sep as SLASH
 import random
 import re
+import aiohttp
 
 import sys
 
@@ -1520,6 +1521,87 @@ class Admin_cog(
         database.save("command_toggle", data=current)
 
         await ctx.reply("Done, command '{}' is now {}.".format(command_name, "enabled" if new_state else "disabled"))
+
+        
+            
+
+        
+    ######################################################################################################################################################
+    ##### ADMIN TOGGLE COMMAND ###########################################################################################################################
+    ######################################################################################################################################################
+        
+    @admin.command(
+        name="pluralkit_filter",
+        aliases = ["pk_filter"],
+        brief = "Configure the PluralKit filter.",
+        description = "Configure the PluralKit filter."
+    )
+    @commands.check(u_checks.in_authority)
+    async def admin_pluralkit_filter(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext,
+            action: typing.Optional[typing.Literal["add", "remove"]] = commands.parameter(description = "The action to perform, 'add' or 'remove'."),
+            identifier: typing.Optional[str] = commands.parameter(description = "The member identifier. This can be a message link.")
+        ):
+        filter_data = database.load("pk_filter", default={})
+        filter_list = filter_data.get("member_ids", [])
+
+        if action is None or identifier is None:
+            embed = u_interface.gen_embed(
+                title = "PluralKit filter",
+                description = "To add or remove someone from the filter, use the `add` or `remove` parameter.\nCommand syntax: `%admin pk_filter <add|remove> <member id>`.\nNote that you can provide a message link for the member id parameter to have it automatically determine the member id.",
+                fields = [("Filtered member ids:", "\n".join(
+                    [f"- {item}" for item in filter_list]
+                ), False)]
+            )
+            await ctx.reply(embed=embed)
+            return
+        
+        try:
+            identifier = u_converters.parse_message_link(identifier)
+
+            async with aiohttp.ClientSession() as session:
+                # Make the request to the PluralKit API to try and get information about author of this message.
+                async with session.get(f"https://api.pluralkit.me/v2/messages/{identifier.get('message')}") as resp:
+                    # If the status code is not 200, then the message wasn't proxied by PluralKit or something went wrong, either way stop execution.
+                    if resp.status != 200:
+                        await ctx.reply("Something went wrong with the request to the PluralKit API.\nIf possible please provide the member id manually and not a message link.")
+                        return
+                    
+                    return_json = await resp.json()
+
+            identifier = return_json.get("member", {}).get("id", None)
+        except commands.BadArgument:
+            # If it failed to convert the argument to a message.
+            pass
+
+        if action == "add":
+            if identifier in filter_list:
+                await ctx.reply("The member is already in the filter.")
+                return
+            
+            filter_list.append(identifier)
+
+            database.save("pk_filter", data={"member_ids": filter_list})
+
+            await ctx.reply("Done. That member is now in the filter.")
+        elif action == "remove":
+            if identifier not in filter_list:
+                await ctx.reply("The member isn't in the filter.")
+                return
+            
+            filter_list.remove(identifier)
+
+            database.save("pk_filter", data={"member_ids": filter_list})
+
+            await ctx.reply("Done. That member is no longer in the filter.")
+        else:
+            await ctx.reply("The action must be 'add' or 'remove'.")
+
+
+
+        
+
 
 
 
