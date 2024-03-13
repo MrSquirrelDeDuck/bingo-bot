@@ -296,7 +296,7 @@ def bread_time() -> datetime.timedelta:
     timestamp = datetime.datetime.utcnow().replace(microsecond=0, tzinfo=None)
 
     if apply_dst:
-        timestamp = timestamp + datetime.timedelta(hour=1)
+        timestamp = timestamp + datetime.timedelta(hours=1)
     
     breadoclock = datetime.datetime(timestamp.year, timestamp.month, timestamp.day, 23, 5, 0).replace(tzinfo=None)
     
