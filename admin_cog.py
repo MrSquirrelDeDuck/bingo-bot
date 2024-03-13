@@ -1116,7 +1116,7 @@ class Admin_cog(
         description = "Copies the roles of one account to another."
     )
     @commands.check(u_checks.in_authority)
-    async def admin_from_snapshot(
+    async def admin_transfer_roles(
             self: typing.Self,
             ctx: commands.Context | u_custom.CustomContext,
             source_member: typing.Optional[discord.Member],
