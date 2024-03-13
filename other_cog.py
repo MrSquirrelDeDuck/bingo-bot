@@ -1856,6 +1856,35 @@ class Other_cog(
             hours = relative_delta.hours,
             minutes = relative_delta.minutes
         ))
+
+        
+            
+
+        
+    ######################################################################################################################################################
+    ##### LILLY ##########################################################################################################################################
+    ######################################################################################################################################################
+    
+    @commands.command(
+        name = "lilly",
+        brief = "Lilly.",
+        description = "Lilly."
+    )
+    @commands.check(u_checks.hide_from_help)
+    async def lilly(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext
+        ):
+        lilly_timestamp = datetime.datetime.fromtimestamp(1095408240)
+        relative_delta = dateutil.relativedelta.relativedelta(datetime.datetime.now(), lilly_timestamp)
+
+        await ctx.reply("Years: {years}\nMonths: {months}\nDays: {days}\nHours: {hours}\nMinutes: {minutes}".format(
+            years = relative_delta.years,
+            months = relative_delta.months,
+            days = relative_delta.days,
+            hours = relative_delta.hours,
+            minutes = relative_delta.minutes
+        ))
     
 
 
