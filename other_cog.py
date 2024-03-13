@@ -12,6 +12,9 @@ import os
 from os.path import sep as SLASH
 import difflib
 
+# pip install python-dateutil
+import dateutil
+
 # pip install CairoSVG
 import cairosvg
 
@@ -1824,6 +1827,37 @@ class Other_cog(
 
             # After ensuring minecraft_wiki_searching has been reset, reraise the exception so the "Something went wrong processing that command." message is still sent.
             raise
+
+        
+            
+
+        
+    ######################################################################################################################################################
+    ##### PIGUY ##########################################################################################################################################
+    ######################################################################################################################################################
+    
+    @commands.command(
+        name = "piguy",
+        brief = "Piguy.",
+        description = "Piguy."
+    )
+    @commands.check(u_checks.hide_from_help)
+    async def piguy(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext
+        ):
+        piguy_timestamp = datetime.datetime.fromtimestamp(1095880500)
+        relative_delta = dateutil.relativedelta.relativedelta(datetime.datetime.now(), piguy_timestamp)
+
+        await ctx.reply("Years: {years}\nMonths: {months}\nDays: {days}\nHours: {hours}\nMinutes: {minutes}".format(
+            years = relative_delta.years,
+            months = relative_delta.months,
+            days = relative_delta.days,
+            hours = relative_delta.hours,
+            minutes = relative_delta.minutes
+        ))
+    
+
 
 async def setup(bot: commands.Bot):
     global database
