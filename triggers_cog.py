@@ -177,6 +177,21 @@ class Triggers_cog(
     ##### VERY FEW COMMANDS ##############################################################################################################################
     ######################################################################################################################################################
         
+    @commands.command(
+        name = "daily_loop",
+        description = "Runs the daily loop.",
+        brief = "Runs the daily loop.",
+        aliases = ["daily_task"],
+        hidden = True
+    )
+    @commands.is_owner()
+    async def daily_loop_command(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext
+        ):
+        await self.daily_loop()
+        await ctx.reply("Done.")
+        
     @commands.group(
         name = "pk",
         description = "Provides a more tailored PluralKit description.",
