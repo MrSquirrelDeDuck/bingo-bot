@@ -12,6 +12,7 @@ import re
 import random
 import time
 import typing
+import pytz
 
 # pip install aiohttp
 import aiohttp
@@ -42,8 +43,18 @@ except:
     print(traceback.format_exc())
     UPDATE_GIT = False
 
+def in_dst():
+    dt = datetime.datetime.now()
+    timezone = pytz.timezone("US/Pacific")
+    timezone_aware_date = timezone.localize(dt, is_dst=None)
+    return timezone_aware_date.tzinfo._dst.seconds != 0
+
+bingo_hour = 23
+if in_dst():
+    bingo_hour = 0
+
 bingo_time = datetime.time(
-    hour = 23,
+    hour = bingo_hour,
     minute = 0,
     tzinfo = datetime.timezone.utc
 )

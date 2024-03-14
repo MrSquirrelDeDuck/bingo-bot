@@ -286,14 +286,14 @@ def bread_time() -> datetime.timedelta:
 
     def is_dst(dt=None, timezone="UTC"):
         if dt is None:
-            dt = datetime.datetime.utcnow()
+            dt = datetime.datetime.now(tz=datetime.UTC)
         timezone = pytz.timezone(timezone)
         timezone_aware_date = timezone.localize(dt, is_dst=None)
         return timezone_aware_date.tzinfo._dst.seconds != 0
 
     apply_dst = is_dst(datetime.datetime.now(), timezone="US/Pacific")
 
-    timestamp = datetime.datetime.utcnow().replace(microsecond=0, tzinfo=None)
+    timestamp = datetime.datetime.now(tz=datetime.UTC).replace(microsecond=0, tzinfo=None)
 
     if apply_dst:
         timestamp = timestamp + datetime.timedelta(hours=1)
