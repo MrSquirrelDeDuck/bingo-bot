@@ -51,7 +51,7 @@ def in_dst():
 
 bingo_hour = 23
 if in_dst():
-    bingo_hour = 0
+    bingo_hour = 22
 
 bingo_time = datetime.time(
     hour = bingo_hour,
