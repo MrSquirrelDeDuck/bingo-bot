@@ -1134,6 +1134,7 @@ class Bread_cog(
     
     @bread.command(
         name = "percent",
+        aliases = ["percentage"],
         brief = "Calculates percentages of values.",
         description = "Calculates percentages of values.\nAccepted percentage formats are 0.## or ##%, with ## being the number, of course."
     )
