@@ -480,13 +480,13 @@ def stonk_report(database: u_files.DatabaseInterface) -> None:
         day_percent_list = get_data_list(
             key = lambda x, y: (y / x) ** (1 / 4),
             stonk = stonk,
-            offset = 3
+            offset = 4
         )
 
         three_days_percent_list = get_data_list(
             key = lambda x, y: (y / x) ** (1 / 12),
             stonk = stonk,
-            offset = 11
+            offset = 12
         )
 
         change = current_tick.get(stonk, stonk.base_value) - previous_tick.get(stonk, stonk.base_value)

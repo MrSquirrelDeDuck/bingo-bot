@@ -51,7 +51,7 @@ def in_dst():
 
 bingo_hour = 23
 if in_dst():
-    bingo_hour = 0
+    bingo_hour = 22
 
 bingo_time = datetime.time(
     hour = bingo_hour,
@@ -176,6 +176,21 @@ class Triggers_cog(
     ######################################################################################################################################################
     ##### VERY FEW COMMANDS ##############################################################################################################################
     ######################################################################################################################################################
+        
+    @commands.command(
+        name = "daily_loop",
+        description = "Runs the daily loop.",
+        brief = "Runs the daily loop.",
+        aliases = ["daily_task"],
+        hidden = True
+    )
+    @commands.is_owner()
+    async def daily_loop_command(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext
+        ):
+        await self.daily_loop()
+        await ctx.reply("Done.")
         
     @commands.group(
         name = "pk",
