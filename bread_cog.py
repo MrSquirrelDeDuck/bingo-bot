@@ -495,6 +495,15 @@ class Bread_cog(
             if new_information == reminder_modify["text"]:
                 await ctx.reply("The reminder text is already that.")
                 return
+            
+            if u_text.has_ping(new_information):
+                await ctx.reply("Reminder text cannot contain pings.")
+                return
+            
+            if len(new_information) > 128:
+                await ctx.reply("That text is a little too long, please shorten it to 128 characters or fewer.")
+                return
+            
             new_information = u_text.after_parameter(ctx, modification_type)
 
             reminder_modify["text"] = new_information
