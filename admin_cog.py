@@ -10,6 +10,7 @@ from os.path import sep as SLASH
 import random
 import re
 import aiohttp
+import datetime
 
 import sys
 
@@ -1527,7 +1528,7 @@ class Admin_cog(
 
         
     ######################################################################################################################################################
-    ##### ADMIN TOGGLE COMMAND ###########################################################################################################################
+    ##### ADMIN PLURALKIT FILTER #########################################################################################################################
     ######################################################################################################################################################
         
     @admin.command(
@@ -1598,6 +1599,70 @@ class Admin_cog(
         else:
             await ctx.reply("The action must be 'add' or 'remove'.")
 
+        
+            
+
+        
+    ######################################################################################################################################################
+    ##### ADMIN PURGE CHANNEL ############################################################################################################################
+    ######################################################################################################################################################
+        
+    @admin.command(
+        name="purge_channel",
+        brief = "Delete a member's messages within a timeframe.",
+        description = "Delete a member's messages within a timeframe."
+    )
+    @commands.check(u_checks.sub_admin_check)
+    async def admin_purge_channel(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext,
+            channel: typing.Optional[discord.TextChannel] = commands.parameter(description = "The channel to delete messages in."),
+            member: typing.Optional[discord.Member] = commands.parameter(description = "The member to delete messages from."),
+            minutes: typing.Optional[int] = commands.parameter(description = "The number of minutes back in time to delete messages from."),
+            timeout: typing.Optional[u_converters.extended_bool] = commands.parameter(description = "Boolean for whether to time the member out as well."),
+            timeout_time: typing.Optional[int] = commands.parameter(description = "How long to timeout.")
+        ):
+        if channel is None:
+            await ctx.reply("You must provide the channel to delete messages in.")
+            return
+        
+        if member is None:
+            await ctx.reply("You must provide one or more members.")
+            return
+        
+        if minutes is None:
+            await ctx.reply("You must provide the amount of messages to delete.")
+            return
+
+        def check(message: discord.Message) -> bool:
+            if message.channel.id != channel.id:
+                return False
+            
+            if message.author.id != member.id:
+                return False
+            
+            return True
+        
+        if timeout:
+            if timeout_time is None:
+                timeout_time = 10
+            
+            try:
+                await member.timeout(datetime.timedelta(minutes=timeout_time), reason=f"Bingo-Bot purge_channel command run by {ctx.author}.")
+            except:
+                await ctx.reply("Timing out the member failed, will still attempt to delete messages.")
+            
+
+        after = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(minutes = minutes)
+
+        deleted = await channel.purge(
+            limit = 31004150,
+            check = check,
+            after = after,
+            reason = f"Bingo-Bot admin purge_channel command run by {ctx.author}."
+        )
+
+        await ctx.reply(f"Done, deleted {len(deleted)} messages.")
 
 
         
