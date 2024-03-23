@@ -100,6 +100,17 @@ def ping_filter(text: str) -> str:
     text = re.sub("@(everyone|here)", "@\u200b\\1", text)
     return text
 
+def backtick_filter(text: str) -> str:
+    """Puts invisible characters after backticks.
+
+    Args:
+        text (str): The text to filter.
+
+    Returns:
+        str: The filtered text.
+    """
+    return text.replace("`", "`\u200b")
+
 def has_ping(text: str) -> bool:
     """Uses RegEx to check if a piece of text contains a ping.
 

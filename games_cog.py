@@ -10,6 +10,7 @@ import time
 import traceback
 import asyncio
 import copy
+import os
 
 import sys
 
@@ -499,8 +500,52 @@ async def send_truth_or_dare(
         await clear(buttons.interaction.message)
         await send_truth_or_dare(ctx, "random", interaction=buttons.interaction)
             
+class StoryWritingGamePlayer():
+    def __init__(
+            self: typing.Self,
+            member: discord.Member,
+            thread: discord.Thread
+        ) -> None:
+        self.member = member
+        self.thread = thread
 
+class StoryWritingGameBook():
+    def __init__(
+            self: typing.Self,
+            player_order: list[StoryWritingGamePlayer]
+        ) -> None:
+        self.player_order = player_order
+
+        self.text = []
+        self.round_current = 0
+        self.round_contributed = False
+    
+    @property
+    def number_of_rounds(self: typing.Self) -> int:
+        return len(self.player_order) + 1
+    
+    @property
+    def current_player(self: typing.Self) -> int:
+        if self.round_current < len(self.player_order):
+            return self.player_order[self.round_current]
+
+        return self.player_order[0]
+    
+    async def send_message(
+            self: typing.Self,
+            ending_time: int
+        ) -> discord.Message:
+        player = self.current_player
+
+        message = player.member.mention
+        if len(self.text) == 0:
+            message += f"\nIt is time for you to start the story!\nThis round will end <t:{ending_time}:R>\nWhen you're ready, send the entire text of what you've written.\nMake sure to cut your story off mid sentence (with no period at the end), and make sure to use puctuation so I can determine where the sentence ends.\nI'll confirm when the message is recieved."
+        elif self.round_current == self.number_of_rounds:
+            message += f"\nIt is the final round!\nThis round will end <t:{ending_time}:R>.\nIt's time to end this story, and this is what you're given: ```{u_text.backtick_filter(self.text[-1])}```"
+        else:
+            message += f"\nNext round!\nThis round will end <t:{ending_time}:R>\nThis is round {self.round_current + 1} of {self.number_of_rounds}.\nYou do not need to cut off a sentence this time, you can bring the story to a close.\nI'll confirm when the message is recieved.\nDo not include the prompt in your message, here's your prompt: ```{u_text.backtick_filter(self.text[-1])}```"
         
+        return await player.thread.send(message)
 
 
 
@@ -514,9 +559,95 @@ class Games_cog(
         name="Games",
         description="Game related commands!\n\nSome of these commands are miscellaneous game related utility commands, and some commands are games themselves!"
     ):
+    story_game_going = False
     blackjack_going = False
 
     traitor_game_going = False
+
+    async def waiting_room(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext,
+            game_name: str
+        ) -> list[typing.Any]:
+        players = []
+        try:
+            
+            players.append(ctx.author)
+
+            seconds_to_wait = 60
+
+            end_time = time.time() + seconds_to_wait
+
+            def gen_message(
+                    player_list: list[BlackjackPlayer],
+                    end_time = int | float
+                ) -> str:
+                out = f"🟦🟦 {game_name} started! 🟦🟦\n    Current players:"
+
+                for player in player_list:
+                    out += "\n- {}".format(player.mention)
+                
+                out += "\n\nTo join, say \"join\"! The game will start <t:{}:R>.".format(int(end_time))
+
+                return out
+            
+            announcement_message = await ctx.reply(
+                gen_message(
+                    player_list=players,
+                    end_time = end_time
+                )
+            )
+            
+            def ping_list(players: list[discord.Member]) -> str:
+                return ", ".join([player.mention for player in players])
+
+            waiting_for_players = True
+
+            def join_check(msg: discord.Message) -> bool:
+                if msg.channel.id != ctx.channel.id:
+                    return False
+                
+                if msg.author.id in [player.id for player in players]:
+                    return False
+                
+                if msg.author.bot:
+                    return False
+                
+                if msg.content != "join":
+                    return False
+                
+                return True
+
+            while waiting_for_players:
+                try:
+                    join_message = await self.bot.wait_for(
+                        "message",
+                        check = join_check,
+                        timeout = end_time - time.time()
+                    )
+
+                    players.append(join_message.author)
+
+                    end_time = time.time() + seconds_to_wait
+
+                    await join_message.reply(f"You have joined!\nThe game will start <t:{int(end_time)}:R>")
+
+                    await announcement_message.edit(
+                        content = gen_message(
+                            player_list=players,
+                            end_time=end_time
+                        )
+                    )
+                except asyncio.TimeoutError:
+                    waiting_for_players = False
+                    await ctx.send("{}\nThe time is up!\nLet the game commence!".format(ping_list(players)))
+                    break
+        except:
+            print(traceback.format_exc())
+            pass
+
+        return players
+            
 
     @commands.command(
         name = "games",
@@ -841,7 +972,7 @@ class Games_cog(
         name = "blackjack",
         aliases = ["bradjack"],
         brief = "Blackjack.",
-        description = "Blackjack."
+        description = "Blackjack.\n\nTime estimate: 1 to 2 minutes."
     )
     @commands.check(u_checks.hide_from_help)
     async def blackjack(
@@ -1156,6 +1287,179 @@ class Games_cog(
         except:
             self.blackjack_going = False
             raise
+
+        
+            
+
+        
+    ######################################################################################################################################################
+    ##### STORY GAME #####################################################################################################################################
+    ######################################################################################################################################################
+    
+    @commands.command(
+        name = "story_game",
+        brief = "Story writing game.",
+        description = "Story writing game.\nEveryone starts writing a story, and then cuts it off mid sentence and the last sentence is given to the next player to continue.\n\nTime estimate: 10 to 20 minutes, it mostly depends on the number of players."
+    )
+    @commands.check(u_checks.hide_from_help)
+    async def story_game(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext
+        ):
+        if self.story_game_going:
+            await ctx.reply("I am sorry, but this is already going somewhere. Please wait until it finishes to start another game.")
+            return
+        
+        if isinstance(ctx.channel, discord.ForumChannel) or \
+            isinstance(ctx.channel, discord.Thread) or \
+            isinstance(ctx.channel, discord.VoiceChannel) or \
+            isinstance(ctx.channel, discord.StageChannel) or \
+            isinstance(ctx.channel, discord.DMChannel) or \
+            isinstance(ctx.channel, discord.GroupChannel) or \
+            isinstance(ctx.channel, discord.WelcomeChannel) or \
+            isinstance(ctx.channel, discord.WidgetChannel):
+            await ctx.reply("This game cannot be started here.")
+            return
+        
+        try:
+            self.story_game_going = True
+
+            player_members = await self.waiting_room(ctx, "Story Writing Game")
+            
+            player_count = len(player_members)
+
+            if player_count <= 1:
+                await ctx.reply("Unfortunately, this game cannot be played solo :(")
+                self.story_game_going = False
+                return
+
+            players = []
+            threads = []
+
+            books: list[StoryWritingGameBook] = []
+
+            player_order = [[None for _2 in range(player_count)] for _ in range(player_count)]
+
+            for player_id, player in enumerate(player_members):
+                thread = await ctx.channel.create_thread(
+                    name = f"Story Writing Game Thread #{player_id + 1}",
+                    invitable = False,
+                    reason = "Story Writing Game auto-thread creation."
+                )
+
+                threads.append(thread)
+
+                players.append(StoryWritingGamePlayer(
+                    member = player,
+                    thread = thread
+                ))
+
+            zero_position = [0] + list(range(1, player_count))
+            random.shuffle(zero_position)
+
+            for round_id in range(player_count):
+                for player_id, player in enumerate(players):
+                    player_order[round_id][zero_position[round_id] - player_id] = player
+            
+
+            for book_order in player_order:
+                books.append(StoryWritingGameBook(
+                    player_order = book_order
+                ))
+            
+            #####################
+                
+            def get_book_from_member(member: discord.Member) -> StoryWritingGameBook | None:
+                for book in books:
+                    if book.current_player.member.id == member.id:
+                        return book
+                    
+                return None
+                
+            def message_check(message: discord.Message) -> bool:
+                if message.author not in player_members:
+                    return False
+                
+                if message.channel not in threads:
+                    return False
+
+                return True
+            
+            # Round length in minutes.
+            ROUND_LENGTH = 5
+            
+            for round_number in range(player_count + 1):
+                ending_time = int(time.time()) + ROUND_LENGTH * 60
+                for book in books:
+                    book.round_current = round_number
+                    book.round_contributed = False
+                    await book.send_message(ending_time)
+
+                finished = 0
+                
+                while time.time() < ending_time:
+                    try:
+                        msg = await self.bot.wait_for(
+                            "message",
+                            check = message_check,
+                            timeout = ending_time - time.time() + 1
+                        )
+                    except asyncio.TimeoutError:
+                        break
+
+                    book = get_book_from_member(msg.author)
+
+                    if book.round_contributed:
+                        continue
+
+                    content = msg.content
+
+                    if "." not in content:
+                        await msg.reply("You must complete at least one sentence.")
+                        continue
+
+                    # If it's the last round.
+                    if round_number == player_count:
+                        book.text.append(content)
+                    else:
+                        main, end = content.rsplit(".", 1)
+
+                        book.text.append(main + ".")
+                        book.text.append(end)
+
+                    book.round_contributed = True
+
+                    await msg.reply("Perfect! Time to wait for the next round to finish.")
+                    finished += 1
+
+                    if finished == player_count:
+                        break
+
+                await asyncio.sleep(1)
+            
+            await ctx.reply("{pings}\n\nThe game is over! Pretty soon I will be sending everyone's books!".format(pings=", ".join([m.mention for m in player_members])))
+            
+            file_path = os.path.join("data", "misc", "book.txt")
+            for book in books:
+                book_player = book.player_order[0]
+
+                name = u_interface.get_display_name(book_player.member)
+                
+                with open(file_path, "w+") as file_write:
+                    file_write.write(f"### {name}'s book: ###\n\n" + " ".join(book.text))
+                
+
+                await book_player.thread.delete()
+                
+                await ctx.send(f"{book_player.member.mention}, this is your book!", file=discord.File(file_path))
+
+                await asyncio.sleep(1.2831853071) # τ - 5
+
+            self.story_game_going = False
+        except:
+            self.story_game_going = False
+            raise
+        
 
 
 
