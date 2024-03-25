@@ -1306,6 +1306,9 @@ class Games_cog(
             self: typing.Self,
             ctx: commands.Context | u_custom.CustomContext
         ):
+        await ctx.reply("This is disabled due to many bugs.")
+        return
+    
         if self.story_game_going:
             await ctx.reply("I am sorry, but this is already going somewhere. Please wait until it finishes to start another game.")
             return
