@@ -712,6 +712,35 @@ class Admin_cog(
 
         
     ######################################################################################################################################################
+    ##### ADMIN RUN ALGORITHM ############################################################################################################################
+    ######################################################################################################################################################
+    
+    @admin.command(
+        name="run_algorithm",
+        brief = "Runs a stonk algorithm and saves it.",
+        description = "Runs a stonk algorithm and saves it."
+    )
+    @commands.is_owner()
+    async def admin_run_algorithm(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext,
+            algorithm_name: typing.Optional[str] = commands.parameter(description = "The name of the algorithm to run.")
+        ):
+        await ctx.reply("Starting simulation.")
+
+        try:
+            u_algorithms.full_save(database, algorithm_name)
+        except ValueError:
+            await ctx.reply("That algorithm does not exist.")
+            return
+
+        await ctx.reply("Done.")
+
+        
+            
+
+        
+    ######################################################################################################################################################
     ##### ADMIN GENERATE REPORT ##########################################################################################################################
     ######################################################################################################################################################
     
