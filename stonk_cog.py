@@ -903,17 +903,20 @@ class Stonk_cog(
 
         converted_current = u_stonks.convert_tick(algorithm_info["data"]["current_portfolio"]["portfolio"])
 
-        portfolio_section = ["{} -- {}, worth **{} dough**".format(stonk, u_text.smart_text(converted_current[stonk], 'stonk'), u_text.smart_number(converted_current[stonk] * algorithms.current[stonk.internal_name])) for stonk in u_values.stonks]
+        if algorithm_info["func"].hide_portfolio:
+            portfolio_section = ["*Portfolio hidden to avoid influencing the market.*\n"]
+        else:
+            portfolio_section = ["Dough -- **{} dough**".format(u_text.smart_number(algorithm_info["data"]["current_portfolio"]["extra_dough"]))]
+            portfolio_section.extend("{} -- {}, worth **{} dough**".format(stonk, u_text.smart_text(converted_current[stonk], 'stonk'), u_text.smart_number(converted_current[stonk] * algorithms.current[stonk.internal_name])) for stonk in u_values.stonks)
 
         embed = u_interface.gen_embed(
             title = "Stonk algorithm {}:".format(title),
-            description = "*Created by {}*\n\nDough -- **{} dough**\n{}\nIn total, {} has **{} dough**, and in the last tick it's portfolio changed by **{} dough**.".format(
-                algorithm_info["creator"],
-                u_text.smart_number(algorithm_info["data"]["current_portfolio"]["extra_dough"]),
-                "\n".join(portfolio_section),
-                title,
-                u_text.smart_number(algorithm_info["data"]["current_total"]),
-                u_text.smart_number(algorithm_info["data"]["dough_difference"])
+            description = "*Created by {}*\n\n{}\nIn total, {} has **{} dough**, and in the last tick it's portfolio changed by **{} dough**.".format(
+                    algorithm_info["creator"],
+                    "\n".join(portfolio_section),
+                    title,
+                    u_text.smart_number(algorithm_info["data"]["current_total"]),
+                    u_text.smart_number(algorithm_info["data"]["dough_difference"])
                 ),
             fields = [
                 ("", algorithm_info["description"], False)
