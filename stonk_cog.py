@@ -1088,7 +1088,7 @@ class Stonk_cog(
                 algorithms = copy.deepcopy(u_algorithms.all_live_algorithms(database=database, filter_list=["hide_graph"]))
             
             for algorithm in negated:
-                if algorithms in algorithms:
+                if algorithm in algorithms:
                     algorithms.remove(algorithm)
         
         if end_tick <= start_tick:

@@ -31,6 +31,7 @@ import utility.algorithms as u_algorithms
 import utility.images as u_images
 import utility.bingo as u_bingo
 import utility.detection as u_detection
+import utility.rulette as u_rulette
 
 # pip install python-dotenv
 from dotenv import load_dotenv
@@ -65,6 +66,7 @@ REMINDERS_CHANNEL = 1138583859508813955
 PING_LISTS_CHANNEL = 1060344552818483230
 DAILY_BOARD_CHANNEL = 958705808860921906
 WEEKLY_BOARD_CHANNEL = 958763826025742336
+RULETTE_RULES_CHANNEL = 1223276940681678931
 # lol they get longer by 1 letter each time
 
 database = None # type: u_files.DatabaseInterface
@@ -292,6 +294,28 @@ class Triggers_cog(
             ctx: commands.Context | u_custom.CustomContext
         ):
         await ctx.reply("Latent-Dreamer is a bot that creates new responses via ChatGPT when triggered by specific phrases.\nWhen triggered she will send a message based on what the trigger was.\nThings like 'google en passant' and 'chess 2' always use the same prompt. Triggers such as 'what is ...' and 'google ...' will have ChatGPT provide an answer to the question or generate a list of search terms, depending on which was triggered.\n\nLatent-Dreamer also has a credits system to limit the amount of times people can trigger her per day.\nMore information about the credits system can be found [here](<https://discord.com/channels/958392331671830579/958392332590387262/1110078862286671962>) or by pinging Latent-Dreamer with the word 'credits'.")
+
+
+        
+        
+
+    @commands.command(
+        name = "get_rules",
+        brief="Gives you the current rules.",
+        description="Gives you the current rules."
+    )
+    @commands.check(u_checks.hide_from_help)
+    async def get_rules(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext
+        ):
+        rules = u_rulette.get_rules()
+
+        lines = []
+        for rule in rules:
+            lines.append(f"- {rule.describe()}")
+        
+        await ctx.reply("\n".join(lines))
 
 
         
@@ -1220,6 +1244,12 @@ class Triggers_cog(
         # If Machine-Mind is offline.
         if not message.author.bot and message.content.startswith("$br"):
             await self.mm_offline(message)
+        
+        if message.channel.id == RULETTE_RULES_CHANNEL:
+            await u_rulette.message(
+                bot = self.bot,
+                message = message
+            )
 
 
 
