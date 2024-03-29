@@ -31,7 +31,7 @@ import utility.algorithms as u_algorithms
 import utility.images as u_images
 import utility.bingo as u_bingo
 import utility.detection as u_detection
-import utility.rulette as u_rulette
+# import utility.rulette as u_rulette
 
 # pip install python-dotenv
 from dotenv import load_dotenv
@@ -299,23 +299,23 @@ class Triggers_cog(
         
         
 
-    @commands.command(
-        name = "get_rules",
-        brief="Gives you the current rules.",
-        description="Gives you the current rules."
-    )
-    @commands.check(u_checks.hide_from_help)
-    async def get_rules(
-            self: typing.Self,
-            ctx: commands.Context | u_custom.CustomContext
-        ):
-        rules = u_rulette.get_rules()
+    # @commands.command(
+    #     name = "get_rules",
+    #     brief="Gives you the current rules.",
+    #     description="Gives you the current rules."
+    # )
+    # @commands.check(u_checks.hide_from_help)
+    # async def get_rules(
+    #         self: typing.Self,
+    #         ctx: commands.Context | u_custom.CustomContext
+    #     ):
+    #     rules = u_rulette.get_rules()
 
-        lines = []
-        for rule in rules:
-            lines.append(f"- {rule.describe()}")
+    #     lines = []
+    #     for rule in rules:
+    #         lines.append(f"- {rule.describe()}")
         
-        await ctx.reply("\n".join(lines))
+    #     await ctx.reply("\n".join(lines))
 
 
         
@@ -1245,11 +1245,11 @@ class Triggers_cog(
         if not message.author.bot and message.content.startswith("$br"):
             await self.mm_offline(message)
         
-        if message.channel.id == RULETTE_RULES_CHANNEL:
-            await u_rulette.message(
-                bot = self.bot,
-                message = message
-            )
+        # if message.channel.id == RULETTE_RULES_CHANNEL:
+        #     await u_rulette.message(
+        #         bot = self.bot,
+        #         message = message
+        #     )
 
 
 
