@@ -1051,7 +1051,10 @@ class Stonk_cog(
 
             for param_id, param in enumerate(parameters):
                 if param == "all":
-                    algorithms = copy.deepcopy(u_algorithms.all_live_algorithms(database=database, filter_list=["hide_graph"]))
+                    all_algorithms = u_algorithms.all_live_algorithms(database=database, filter_list=["hide_graph"])
+                    for algorithm in all_algorithms:
+                        if algorithm not in algorithms:
+                            algorithms.append(algorithm)
                     continue
 
                 if param == "-log":
