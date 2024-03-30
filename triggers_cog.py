@@ -257,7 +257,12 @@ class Triggers_cog(
             self: typing.Self,
             ctx: commands.Context | u_custom.CustomContext
         ):
-        if ctx.invoked_subcommand is not None:
+        # List of non-sub admin user ids that are allowed to use the command.
+        whitelisted = [
+            1060254289899044954
+        ]
+        if not (ctx.author.id in whitelisted or u_checks.sub_admin_check(ctx)):
+            await ctx.reply("I''m sorry, but you do not have the permissions to use this command.")
             return
         
         counter_data = database.get_daily_counter("pk_counter")
