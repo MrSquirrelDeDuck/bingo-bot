@@ -1026,7 +1026,7 @@ class Stonk_cog(
     @stonk_algorithms.command(
         name = "graph",
         description = "Graphs of algorithm performances.",
-        brief = "Graphs of algorithm performances.\nYou can also use 'all' to use all the algorithms. Putting an exclamation mark before an algorithm will remove it from the graph. If none are provided it will use them all.\n- To mark the start of the graph, use '-start <start point>'. If none is provided it will use 2,000.\n- To mark the end, '-end <end point>'. If none is provided it will use the current tick.\n- '-log' can be used to set the Y axis to a log scale."
+        brief = "Graphs of algorithm performances.\nYou can also use 'all' to use all the algorithms. Putting an exclamation mark before an algorithm will remove it from the graph. If none are provided it will use them all.\n- To mark the start of the graph, use '-start <start point>'. If none is provided it will use 2,000.\n- To mark the end, '-end <end point>'. If none is provided it will use the current tick.\n- '-log' can be used to set the Y axis to a log scale.\n- `-max <number>` will configure how many algorithms are shown. If there are more algorithms to be shown than this, it will rank the algorithms by ending value. -1 will use no limit. Defaults to -1."
     )
     async def stonk_algorithm_graph(
             self: typing.Self,
@@ -1041,6 +1041,8 @@ class Stonk_cog(
         start_tick = 2000
         end_tick = current_tick
         algorithms = []
+
+        show_max = -1
         
         if parameters is None:
             algorithms = copy.deepcopy(u_algorithms.all_live_algorithms(database=database, filter_list=["hide_graph"]))
@@ -1059,6 +1061,15 @@ class Stonk_cog(
 
                 if param == "-log":
                     log_scale = True
+                    continue
+
+                if param == "-max":
+                    if param_id == len(parameters) - 1:
+                        continue
+                    
+                    if u_converters.is_digit(parameters[param_id + 1]):
+                        show_max = u_converters.parse_int(parameters[param_id + 1])
+
                     continue
 
                 if param == "-start":
@@ -1108,23 +1119,46 @@ class Stonk_cog(
         start_tick = max(start_tick, 2000)
         end_tick = min(end_tick, current_tick)
 
+        if show_max == 0:
+            await ctx.reply("It would be pointless to render a blank graph.")
+            return
+
         stonk_history = u_stonks.stonk_history(database)
 
         lines = []
 
+        algorithm_values = []
+
         for algorithm in algorithms:
+            portfolio = u_algorithms.get_info(database=database, algorithm_name=algorithm)
+            
+            algorithm_values.append({
+                "sum": portfolio["data"]["current_total"],
+                "name": algorithm
+            })
+        
+        if show_max > 0:
+            algorithm_values = sorted(algorithm_values, key = lambda g: g["sum"], reverse=True)
+        
+        for index, data in enumerate(algorithm_values):
+            if show_max > 0 and index >= show_max:
+                break
+
+            algorithm = data["name"]
+
             portfolio_history = u_algorithms.get_portfolio_history(database=database, algorithm_name=algorithm)
-            algoirthm_function = u_algorithms.get_algorithm(database=database, algorithm_name=algorithm)["func"]
+            algorithm_function = u_algorithms.get_algorithm(database=database, algorithm_name=algorithm)["func"]
 
             values = []
             for tick, portfolio in enumerate(portfolio_history[start_tick - 2000 + 1: end_tick - 2000 + 1]):
                 values.append((tick + start_tick + 1, u_algorithms.dough_sum(portfolio, stonk_history[tick + start_tick + 1])))
             
-            lines.append({
+            data = {
                 "label": algorithm.replace("_", " ").title(),
-                "color": algoirthm_function.color,
+                "color": algorithm_function.color,
                 "values": values
-            })
+            }
+            lines.append(data)
         
         file_name = u_images.generate_graph(
             lines = lines,
@@ -1133,7 +1167,12 @@ class Stonk_cog(
             log_scale = log_scale
         )
 
-        await ctx.reply(file=discord.File(file_name))
+        content = ""
+
+        if show_max != -1:
+            content = f"Using max shown of {show_max}. Add `-max <number>` to the command to configure."
+
+        await ctx.reply(content, file=discord.File(file_name))
 
 
 
