@@ -1025,8 +1025,8 @@ class Stonk_cog(
 
     @stonk_algorithms.command(
         name = "graph",
-        description = "Graphs of algorithm performances.",
-        brief = "Graphs of algorithm performances.\nYou can also use 'all' to use all the algorithms. Putting an exclamation mark before an algorithm will remove it from the graph. If none are provided it will use them all.\n- To mark the start of the graph, use '-start <start point>'. If none is provided it will use 2,000.\n- To mark the end, '-end <end point>'. If none is provided it will use the current tick.\n- '-log' can be used to set the Y axis to a log scale.\n- `-max <number>` will configure how many algorithms are shown. If there are more algorithms to be shown than this, it will rank the algorithms by ending value. -1 will use no limit. Defaults to -1."
+        brief = "Graphs of algorithm performances.",
+        description = "Graphs of algorithm performances.\nYou can also use 'all' to use all the algorithms. Putting an exclamation mark before an algorithm will remove it from the graph. If none are provided it will use them all.\n- To mark the start of the graph, use '-start <start point>'. If none is provided it will use 2,000.\n- To mark the end, '-end <end point>'. If none is provided it will use the current tick.\n- '-log' can be used to set the Y axis to a log scale.\n- `-max <number>` will configure how many algorithms are shown. If there are more algorithms to be shown than this, it will rank the algorithms by ending value. -1 will use no limit. Defaults to -1."
     )
     async def stonk_algorithm_graph(
             self: typing.Self,
@@ -1131,7 +1131,7 @@ class Stonk_cog(
 
         for algorithm in algorithms:
             portfolio = u_algorithms.get_info(database=database, algorithm_name=algorithm)
-            
+
             algorithm_values.append({
                 "sum": portfolio["data"]["current_total"],
                 "name": algorithm
