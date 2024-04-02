@@ -1051,8 +1051,8 @@ class Stonk_cog(
 
             for param_id, param in enumerate(parameters):
                 if param == "all":
-                    all_algorithms = u_algorithms.all_live_algorithms(database=database, filter_list=["hide_graph"])
-                    for algorithm in all_algorithms:
+                    algorithms_add = u_algorithms.all_live_algorithms(database=database, filter_list=["hide_graph"])
+                    for algorithm in algorithms_add:
                         if algorithm not in algorithms:
                             algorithms.append(algorithm)
                     continue
