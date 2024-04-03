@@ -266,6 +266,14 @@ def is_bread_roll(message: discord.Message) -> bool:
         return False
     
     content = remove_starting_ping(message.content)
+    
+    first_line = content.split("---")[0].split("\n")[0]
+    per_line_count = len(re.findall("(<a?)?:[\d\w_]+:(\d+>)?", first_line))
+    if per_line_count not in [5, 10]:
+        return False
+
+
+
     content = content.replace(" ", "").replace("\n", "").replace("-", "")
     for item in u_values.rollable_items:
         content = content.replace(item.internal_emoji, "")

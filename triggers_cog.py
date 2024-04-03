@@ -321,6 +321,25 @@ class Triggers_cog(
     #         lines.append(f"- {rule.describe()}")
         
     #     await ctx.reply("\n".join(lines))
+    
+    @commands.command(
+        name = "test",
+        brief = "Testing command.",
+        description = "Testing command."
+    )
+    @commands.check(u_checks.hide_from_help)
+    @commands.is_owner()
+    async def test_command(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext
+        ):
+        print(await u_detection.item_in_roll(
+            bot = self.bot,
+            message = ctx.message.reference.resolved,
+            objective_id = "w10",
+            database = database,
+            bingo_data = u_bingo.live(database)
+        ))
 
 
         
