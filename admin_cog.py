@@ -189,6 +189,8 @@ class Admin_cog(
             ctx: commands.Context | u_custom.CustomContext
         ) -> bool:
         """Bot check that returns False and sends a message if the command is disabled."""
+        if ctx.invoked_with == "help":
+            return True
 
         invoked_command = ctx.command.qualified_name
 
