@@ -203,15 +203,21 @@ async def item_in_roll(
     
     if objective_id == "d32":
         for roll in parsed:
-            if len(roll) >= 14:
-                return True
+            try:
+                if roll["type"] >= 14:
+                    return True
+            except TypeError: # If `type` is a string, then a TypeError will be raised.
+                pass
         
         return False
     
     if objective_id == "w10":
         for roll in parsed:
-            if len(roll) >= 16:
-                return True
+            try:
+                if roll["type"] >= 16:
+                    return True
+            except TypeError: # If `type` is a string, then a TypeError will be raised.
+                pass
         
         return False
     
@@ -220,19 +226,22 @@ async def item_in_roll(
             return False
         
         for roll in parsed:
-            if len(roll) >= 11:
-                return True
+            try:
+                if roll["type"] >= 11:
+                    return True
+            except TypeError: # If `type` is a string, then a TypeError will be raised.
+                pass
         
         return False
 
     if objective_id in ["d34", "w11"]:
         for roll in parsed:
-            if len(roll) < 3: # Oddly enough, if a roll has 2 items it cannot have 3 gems.
+            if len(roll["items"]) < 3: # Oddly enough, if a roll has 2 items it cannot have 3 gems.
                 continue
 
             gem_sum = [
                     item
-                    for item in roll
+                    for item in roll["items"]
                     if item.has_attribute("shiny")
                 ]
 
@@ -246,7 +255,7 @@ async def item_in_roll(
         search = 3 if objective_id == "d84" else 4
 
         for roll in parsed:
-            if len(roll) == 1:
+            if len(roll["items"]) == 1:
                 consecutive += 1
 
                 if consecutive >= search:
@@ -259,7 +268,7 @@ async def item_in_roll(
     if objective_id == "d85":
         gems = []
 
-        flattened = itertools.chain.from_iterable(parsed)
+        flattened = itertools.chain.from_iterable([roll["items"] for roll in parsed])
         for item in flattened:
             if item not in gems and item.has_attribute("shiny"):
                 gems.append(item)
@@ -273,7 +282,7 @@ async def item_in_roll(
         consecutive = 0
         previous = None
 
-        flattened = itertools.chain.from_iterable(parsed)
+        flattened = itertools.chain.from_iterable([roll["items"] for roll in parsed])
         for item in flattened:
             if not item.has_attribute("shiny"):
                 continue
@@ -291,17 +300,17 @@ async def item_in_roll(
     
     if objective_id == "d89":
         for roll in parsed:
-            if len(roll) != 10:
+            if len(roll["items"]) != 10:
                 continue
 
             special_count = 0
             chess_count = 0
 
             for special in u_values.special_and_rare:
-                special_count += roll.count(special)
+                special_count += roll["items"].count(special)
 
             for chess in u_values.all_chess_pieces:
-                chess_count += roll.count(chess)
+                chess_count += roll["items"].count(chess)
 
             if special_count >= 5 and chess_count >= 3:
                 return True
@@ -310,10 +319,10 @@ async def item_in_roll(
     
     if objective_id in ["d91", "w31"]:
         consecutive = 0
-        previous = len(parsed[0])
+        previous = len(parsed[0]["items"])
 
         for roll in parsed[1:]:
-            if len(roll) == previous + 1:
+            if len(roll["items"]) == previous + 1:
                 consecutive += 1
 
                 if consecutive >= 4:
@@ -321,14 +330,14 @@ async def item_in_roll(
             else:
                 consecutive = 1
 
-            previous = len(roll)
+            previous = len(roll["items"])
         
         return False
     
     if objective_id == "d104":
         for roll in parsed:
             for special in u_values.special_and_rare:
-                if roll.count(special) >= 5:
+                if roll["items"].count(special) >= 5:
                     return True
         
         return False
@@ -342,7 +351,7 @@ async def item_in_roll(
         
         key = f"{objective_id}-690_smap"
         
-        if len(parsed[0]) <= 10:
+        if len(parsed[0]["items"]) <= 10:
             data = database.load("auto_detection", default={})
 
             current = data.get(key, 0) + 1
@@ -369,13 +378,13 @@ async def item_in_roll(
             gem_count = 0
 
             for special in u_values.special_and_rare:
-                special_count += roll.count(special)
+                special_count += roll["items"].count(special)
 
             for chess in u_values.all_chess_pieces:
-                chess_count += roll.count(chess)
+                chess_count += roll["items"].count(chess)
 
             for gem in u_values.all_shiny:
-                gem_count += roll.count(gem)
+                gem_count += roll["items"].count(gem)
 
             if special_count >= 2 and chess_count >= 2 and gem_count >= 2:
                 return True
@@ -384,15 +393,15 @@ async def item_in_roll(
     
     if objective_id in ["d173", "w75"]:
         for roll in parsed:
-            if len(roll) < 5:
+            if len(roll["items"]) < 5:
                 continue
 
-            item = roll[0]
+            item = roll["items"][0]
 
             if item not in u_values.special_and_rare:
                 continue
 
-            if roll.count(item) == len(roll):
+            if roll["items"].count(item) == len(roll["items"]):
                 return True
         
         return False
@@ -832,7 +841,8 @@ async def general_messages(
         **kwargs
     ) -> bool:
     if objective_id == "d31":
-        match = re.search("holy(?! hell)", message.content.lower())
+        filtered = u_interface.remove_emojis(message.content.lower())
+        match = re.search("holy(?![\s_-]?hell)", filtered)
         return match is not None
     
     if objective_id == "d71":

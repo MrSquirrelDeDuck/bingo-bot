@@ -1098,23 +1098,24 @@ def parse_gamble(message: discord.Message | str) -> list[typing.Type[u_values.It
 
     return [u_values.get_item(item, "gamble_item") for item in raw]
 
-def parse_roll(message: discord.Message) -> list[list[typing.Type[u_values.Item]]] | None:
+def parse_roll(message: discord.Message) -> list[dict[str, str | int | list[typing.Type[u_values.Item]]]] | None:
     """Parses a message to determine the items it contains.
 
     Args:
         message (discord.Message): The message to parse.
 
     Returns:
-        list[list[typing.Type[u_values.Item]]] | None: A list of lists of items. Each inner list is a single roll in a compound roller message. This will return None if the message is not a bread roll. 
+        list[dict[str, str | int | list[typing.Type[u_values.Item]]]] | None: A list of dictionaries. Each inner dictionary contains the roll type under the key `type`, and the roll contents under `items`. `items` is a single roll in a compound roller message. This will return None if the message is not a bread roll. 
     """
     if not u_interface.is_bread_roll(message):
         return None
     
     by_roll = u_interface.remove_starting_ping(message.content).replace("\n", "").split("---")
+    by_roll_raw = u_interface.remove_starting_ping(message.content).split("---")
 
     output = []
 
-    for roll in by_roll:
+    for roll, raw in zip(by_roll, by_roll_raw):
         if len(roll) == 0:
             continue
 
@@ -1127,8 +1128,21 @@ def parse_roll(message: discord.Message) -> list[list[typing.Type[u_values.Item]
                 continue
             
             add.append(u_values.get_item(item))
+
+        first_line = raw.split("\n")[0]
+        per_line_count = len(re.findall("(<a?)?:[\d\w_]+:(\d+>)?", first_line))
+        if per_line_count == 10:
+            roll_type = "lottery"
+        elif per_line_count == 8:
+            # That is not a bread roll, that is a chessatron completion.
+            return None
+        else:
+            roll_type = len(add)
         
-        output.append(add)
+        output.append({
+            "type": roll_type,
+            "items": add
+        })
     
     return output
 

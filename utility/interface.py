@@ -266,6 +266,14 @@ def is_bread_roll(message: discord.Message) -> bool:
         return False
     
     content = remove_starting_ping(message.content)
+    
+    first_line = content.split("---")[0].split("\n")[0]
+    per_line_count = len(re.findall("(<a?)?:[\d\w_]+:(\d+>)?", first_line))
+    if per_line_count not in [5, 10]:
+        return False
+
+
+
     content = content.replace(" ", "").replace("\n", "").replace("-", "")
     for item in u_values.rollable_items:
         content = content.replace(item.internal_emoji, "")
@@ -745,3 +753,20 @@ async def handle_wiki_search(
 
         if embed is not None and sent_message is not None:
             await error_message(embed, sent_message)
+
+def remove_emojis(
+        input_text: str,
+        filler: str | None = None
+    ) -> str:
+    """Removes non-ascii emojis from a piece of text. This can have false positives.
+
+    Args:
+        input_text (str): The input text to remove emojis from.
+        filler (str | None, optional): What to replace emojis with, None will use an empty string. Defaults to None.
+
+    Returns:
+        str: The input text, but with emojis removed.
+    """
+    if filler is None:
+        filler = ""
+    return re.sub("(<a?)?:[\d\w_]+:(\d+>)?", input_text, filler)
