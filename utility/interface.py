@@ -745,3 +745,20 @@ async def handle_wiki_search(
 
         if embed is not None and sent_message is not None:
             await error_message(embed, sent_message)
+
+def remove_emojis(
+        input_text: str,
+        filler: str | None = None
+    ) -> str:
+    """Removes non-ascii emojis from a piece of text. This can have false positives.
+
+    Args:
+        input_text (str): The input text to remove emojis from.
+        filler (str | None, optional): What to replace emojis with, None will use an empty string. Defaults to None.
+
+    Returns:
+        str: The input text, but with emojis removed.
+    """
+    if filler is None:
+        filler = ""
+    return re.sub("(<a?)?:[\d\w_]+:(\d+>)?", input_text, filler)

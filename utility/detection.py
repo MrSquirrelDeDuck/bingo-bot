@@ -832,7 +832,8 @@ async def general_messages(
         **kwargs
     ) -> bool:
     if objective_id == "d31":
-        match = re.search("holy(?! hell)", message.content.lower())
+        filtered = u_interface.remove_emojis(message.content.lower())
+        match = re.search("holy(?![\s_-]?hell)", filtered)
         return match is not None
     
     if objective_id == "d71":
