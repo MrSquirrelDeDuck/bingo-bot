@@ -1030,7 +1030,7 @@ class Stonk_cog(
             algorithms_shown += 1
         
         embed = u_interface.gen_embed(
-            title = "Algorithm leaderboard",
+            title = f"Algorithm leaderboard on tick {tick_number}:",
             description = "*Showing {} of {} algorithms.*".format(algorithms_shown, len(sorted_list)),
             fields = [
                 ("", "\n".join(lines), False)
