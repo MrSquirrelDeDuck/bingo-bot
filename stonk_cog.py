@@ -884,7 +884,8 @@ class Stonk_cog(
     async def stonk_algorithm_stats(
             self: typing.Self,
             ctx: commands.Context | u_custom.CustomContext,
-            algorithm_name: typing.Optional[u_algorithms.AlgorithmConverter] = commands.parameter(description = "The name of the algorithm you want to get the stats of.")
+            algorithm_name: typing.Optional[u_algorithms.AlgorithmConverter] = commands.parameter(description = "The name of the algorithm you want to get the stats of."),
+            tick_number: typing.Optional[u_converters.parse_int] = commands.parameter(description = "The tick number to get the algorithm's portfolio.")
         ):
         if algorithm_name is None:
             algorithm_list = u_algorithms.all_live_algorithms(database=database)
@@ -895,9 +896,21 @@ class Stonk_cog(
             await ctx.reply(embed=embed)
             return
         
-        algorithms = u_algorithms.StonkAlgorithms(database)
+        if tick_number is None:
+            tick_number = -1
 
-        algorithm_info = u_algorithms.get_info(database=database, algorithm_name=algorithm_name, algorithms=algorithms)
+        current_tick = u_stonks.current_tick_number(database)
+
+        if tick_number < 0:
+            tick_number = current_tick + (tick_number + 1)
+
+        if 0 <= tick_number < 2000:
+            await ctx.reply("The tick number must be greater than 2,000, or negative for previous ticks.\n-1 would be the current tick, and -2 would be the previous tick.")
+            return
+        
+        algorithms = u_algorithms.StonkAlgorithms(database, tick=tick_number)
+
+        algorithm_info = u_algorithms.get_info(database=database, algorithm_name=algorithm_name, algorithms=algorithms, tick_id=tick_number)
 
         title = algorithm_name.replace("_", " ").title()
 
@@ -910,7 +923,7 @@ class Stonk_cog(
             portfolio_section.extend("{} -- {}, worth **{} dough**".format(stonk, u_text.smart_text(converted_current[stonk], 'stonk'), u_text.smart_number(converted_current[stonk] * algorithms.current[stonk.internal_name])) for stonk in u_values.stonks)
 
         embed = u_interface.gen_embed(
-            title = "Stonk algorithm {}:".format(title),
+            title = "Stonk algorithm {} on tick {}:".format(title, u_text.smart_number(tick_number)),
             description = "*Created by {}*\n\n{}\nIn total, {} has **{} dough**, and in the last tick it's portfolio changed by **{} dough**.".format(
                     algorithm_info["creator"],
                     "\n".join(portfolio_section),
@@ -966,12 +979,25 @@ class Stonk_cog(
     async def stonk_algorithm_leaderboard(
             self: typing.Self,
             ctx: commands.Context | u_custom.CustomContext,
-            algorithm_name: typing.Optional[u_algorithms.AlgorithmConverter] = commands.parameter(description = "The name of the algorithm you want to get the stats of.")                    
+            algorithm_name: typing.Optional[u_algorithms.AlgorithmConverter] = commands.parameter(description = "The name of the algorithm you want to get the stats of."),
+            tick_number: typing.Optional[u_converters.parse_int] = commands.parameter(description = "The tick number to get the algorithm's portfolio.")
         ):
+        if tick_number is None:
+            tick_number = -1
+
+        current_tick = u_stonks.current_tick_number(database)
+
+        if tick_number < 0:
+            tick_number = current_tick + (tick_number + 1)
+
+        if 0 <= tick_number < 2000:
+            await ctx.reply("The tick number must be greater than 2,000, or negative for previous ticks.\n-1 would be the current tick, and -2 would be the previous tick.")
+            return
+        
         def check(algorithm_info):
             return algorithm_info["data"]["current_total"]
         
-        sorted_list = u_algorithms.get_leaderboard(database, check)
+        sorted_list = u_algorithms.get_leaderboard(database, check, tick_number=tick_number)
 
         highlight_point = -5
 
