@@ -979,12 +979,25 @@ class Stonk_cog(
     async def stonk_algorithm_leaderboard(
             self: typing.Self,
             ctx: commands.Context | u_custom.CustomContext,
-            algorithm_name: typing.Optional[u_algorithms.AlgorithmConverter] = commands.parameter(description = "The name of the algorithm you want to get the stats of.")                    
+            algorithm_name: typing.Optional[u_algorithms.AlgorithmConverter] = commands.parameter(description = "The name of the algorithm you want to get the stats of."),
+            tick_number: typing.Optional[u_converters.parse_int] = commands.parameter(description = "The tick number to get the algorithm's portfolio.")
         ):
+        if tick_number is None:
+            tick_number = -1
+
+        current_tick = u_stonks.current_tick_number(database)
+
+        if tick_number < 0:
+            tick_number = current_tick + (tick_number + 1)
+
+        if 0 <= tick_number < 2000:
+            await ctx.reply("The tick number must be greater than 2,000, or negative for previous ticks.\n-1 would be the current tick, and -2 would be the previous tick.")
+            return
+        
         def check(algorithm_info):
             return algorithm_info["data"]["current_total"]
         
-        sorted_list = u_algorithms.get_leaderboard(database, check)
+        sorted_list = u_algorithms.get_leaderboard(database, check, tick_number=tick_number)
 
         highlight_point = -5
 
