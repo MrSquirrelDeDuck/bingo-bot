@@ -769,4 +769,4 @@ def remove_emojis(
     """
     if filler is None:
         filler = ""
-    return re.sub("(<a?)?:[\d\w_]+:(\d+>)?", input_text, filler)
+    return re.sub("(<a?)?:[\d\w_]+:(\d+>)?", filler, input_text)
