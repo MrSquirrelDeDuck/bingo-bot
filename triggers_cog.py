@@ -1129,7 +1129,14 @@ class Triggers_cog(
         ):
         modified_content = f"{message.content} "
 
-        if not(modified_content.startswith("$bread ") or modified_content.startswith("$brick ")):
+        if not(modified_content.startswith("$bread ") or \
+               modified_content.startswith("$brick ") or \
+               modified_content.startswith("$board ") or \
+               modified_content.startswith("$say ") or \
+               modified_content.startswith("$analysis ") or \
+               modified_content.startswith("$verify ") or \
+               modified_content.startswith("$move ")
+            ):
             return
         
         mm_member = discord.utils.find(lambda m: m.id == 960869046323134514, message.guild.members)
@@ -1138,9 +1145,7 @@ class Triggers_cog(
             return
         
         if mm_member.raw_status == "offline":
-            await message.reply("Machine-Mind is currently listed as offline, so bread rolling and bricking is impossible.")
-        
-        return
+            await message.reply("Machine-Mind is currently listed as offline, so doing things such as bread rolling, bricking, and playing chess is impossible.")
     
     async def pk_filter(
             self: typing.Self,
@@ -1247,7 +1252,7 @@ class Triggers_cog(
             await self.seven_twenty_seven(message)
         
         # If Machine-Mind is offline.
-        if not message.author.bot and message.content.startswith("$br"):
+        if not message.author.bot and message.content.startswith("$"):
             await self.mm_offline(message)
         
         # if message.channel.id == RULETTE_RULES_CHANNEL:
