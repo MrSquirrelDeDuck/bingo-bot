@@ -13076,5 +13076,131 @@
         "cookie": 30,
         "fortune_cookie": 808,
         "pancakes": 2708
+    },
+    {
+        "pretzel": 128,
+        "cookie": 33,
+        "fortune_cookie": 752,
+        "pancakes": 2845
+    },
+    {
+        "pretzel": 116,
+        "cookie": 35,
+        "fortune_cookie": 686,
+        "pancakes": 3036
+    },
+    {
+        "pretzel": 126,
+        "cookie": 35,
+        "fortune_cookie": 724,
+        "pancakes": 3330
+    },
+    {
+        "pretzel": 133,
+        "cookie": 37,
+        "fortune_cookie": 785,
+        "pancakes": 3053
+    },
+    {
+        "pretzel": 146,
+        "cookie": 37,
+        "fortune_cookie": 858,
+        "pancakes": 2782
+    },
+    {
+        "pretzel": 155,
+        "cookie": 40,
+        "fortune_cookie": 930,
+        "pancakes": 2485
+    },
+    {
+        "pretzel": 144,
+        "cookie": 43,
+        "fortune_cookie": 1016,
+        "pancakes": 2291
+    },
+    {
+        "pretzel": 151,
+        "cookie": 44,
+        "fortune_cookie": 1106,
+        "pancakes": 2337
+    },
+    {
+        "pretzel": 144,
+        "cookie": 48,
+        "fortune_cookie": 1029,
+        "pancakes": 2230
+    },
+    {
+        "pretzel": 155,
+        "cookie": 53,
+        "fortune_cookie": 939,
+        "pancakes": 2039
+    },
+    {
+        "pretzel": 156,
+        "cookie": 47,
+        "fortune_cookie": 505,
+        "pancakes": 2166
+    },
+    {
+        "pretzel": 169,
+        "cookie": 44,
+        "fortune_cookie": 484,
+        "pancakes": 2210
+    },
+    {
+        "pretzel": 185,
+        "cookie": 48,
+        "fortune_cookie": 457,
+        "pancakes": 2287
+    },
+    {
+        "pretzel": 200,
+        "cookie": 51,
+        "fortune_cookie": 426,
+        "pancakes": 2402
+    },
+    {
+        "pretzel": 216,
+        "cookie": 55,
+        "fortune_cookie": 463,
+        "pancakes": 2614
+    },
+    {
+        "pretzel": 209,
+        "cookie": 57,
+        "fortune_cookie": 422,
+        "pancakes": 2363
+    },
+    {
+        "pretzel": 195,
+        "cookie": 63,
+        "fortune_cookie": 445,
+        "pancakes": 2562
+    },
+    {
+        "pretzel": 107,
+        "cookie": 67,
+        "fortune_cookie": 406,
+        "pancakes": 2316
+    },
+    {
+        "pretzel": 99,
+        "cookie": 67,
+        "fortune_cookie": 438,
+        "pancakes": 2304
+    },
+    {
+        "pretzel": 103,
+        "cookie": 33,
+        "fortune_cookie": 477,
+        "pancakes": 2443
+    },
+    {
+        "pretzel": 106,
+        "cookie": 35,
+        "fortune_cookie": 518,
+        "pancakes": 2412
     }
 ]

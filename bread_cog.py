@@ -1949,10 +1949,10 @@ class Bread_cog(
     @bread.command(
         brief="Tasty bread roll",
         help="It's bread.",
-        hidden=True
+        name = "roll_old"
     )
-    @commands.is_owner()
-    async def roll_old(self, ctx):
+    @commands.check(u_checks.hide_from_help)
+    async def bread_roll_old(self, ctx):
         # make sure that the person isn't overloading with spam
         if (ctx.author.id in self.currently_interacting):
             print("in process of rolling, rejecting")
