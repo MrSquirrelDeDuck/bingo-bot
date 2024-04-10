@@ -7,6 +7,7 @@ import datetime
 import copy
 import math
 import re
+import random
 
 # pip install pytz
 import pytz
@@ -36,6 +37,8 @@ class Bread_cog(
         name="Bread",
         description="Utility commands for The Bread Game!"
     ):
+    currently_interacting = []
+
     bread_wiki_searching = False
 
     # This is a list of unix timestamps, such that if you use <t:time_keys[0]> it'll be the right time.
@@ -1933,6 +1936,123 @@ class Bread_cog(
         )
 
         await ctx.reply(embed=embed)
+
+    
+
+        
+
+
+    ######################################################################################################################################################
+    ##### BREAD ROLL OLD #################################################################################################################################
+    ######################################################################################################################################################
+    
+    @bread.command(
+        brief="Tasty bread roll",
+        help="It's bread.",
+        hidden=True
+    )
+    @commands.is_owner()
+    async def roll_old(self, ctx):
+        # make sure that the person isn't overloading with spam
+        if (ctx.author.id in self.currently_interacting):
+            print("in process of rolling, rejecting")
+            return
+        #add them to the list, we'll remove them at the end
+        self.currently_interacting.append(ctx.author.id)
+
+        
+        
+
+        # no more breasic britch
+        special_value = 0
+        special_stat = None
+
+        count = 1
+        commentary = ""
+        emoji = ":bread:"
+        if random.randint(0,8191) == 0:
+            emoji = random.choice(u_values.one_of_a_kinds).internal_emoji
+            special_value = 2000
+            
+            
+            print("Wow. "+emoji)
+            commentary = "Wow."
+            special_stat = "unique_token"
+        elif random.randint(0,4095) == 0:
+            print("Mega chance! CRAZY SHIT")
+            for i in range(10):
+                output = ""
+                for i in range(1,90):
+                    #special_value += 1
+                    output += random.choice(u_values.all_breads).internal_emoji + " "
+                    if (random.randint(0,5) == 0):
+                        output += "\n"
+                await ctx.reply(output)
+            await ctx.reply("Error. Error. Error. Error. Error. Error.")
+            special_stat = "lottery_win"
+            special_value = 1000
+            #self.json_interface.increase_value_in_file(ctx.author,"total_dough",count)
+            #return
+        elif random.randint(0,2047) == 0:
+            print("Super rare chance! 12 breads")
+            count = 12
+            commentary = "Error. Number of breads (12) detected to be inconceivable. System overloaded."
+            special_stat = "twelve_breads"
+        elif random.randint(0,1023) == 0:
+            print("Rare chance! 11 breads")
+            count = 11
+            commentary = "NANI?? ELEVEN BOREADOS??"
+            special_stat = "eleven_breads"
+        elif random.randint(0,512) == 0:
+            if random.randint(0,3) == 0:
+                emoji = random.choice(u_values.white_chess_pieces).internal_emoji
+                special_value = 80
+            else:
+                emoji = random.choice(u_values.black_chess_pieces).internal_emoji
+                special_value = 40
+            print("Rare chance! Chess piece "+emoji)
+            commentary = "You have now increased your elo by 10 points."
+            special_stat = "chess_pieces"
+        elif random.randint(0,128) == 0:
+            print("Uncommon chance. Rare Bread.")
+            emoji = random.choice(u_values.all_rares).internal_emoji
+            commentary = "Tasty."
+            special_value = 10
+            special_stat = "special_bread"
+        else:
+            count = random.randint(1,10)
+            if count == 10:
+                commentary = "Congratulations! You found all 10 loaves!"
+                special_stat = "ten_breads"
+            elif count == 1:
+                chance = random.randint(1,3)
+                commentary = "Better luck next time."
+                special_stat = "natural_1"
+                #print ("1 bread. Random rolling for a 1, got "+str(chance))
+                if chance == 1:
+                    emoji = random.choice(u_values.all_breads).internal_emoji
+                    if emoji != ":bread:":
+                        commentary = "Interesting."
+                        special_stat = "special_bread"
+                        special_value = 5
+
+        record = False
+
+        print("dispensing "+str(count)+" bread for "+str(ctx.message.author)+" in "+str(ctx.message.channel))
+        output = ""
+
+        if special_value == 0: #if it's not a special case we do our usual
+            for i in range(count) :
+                output += emoji
+        else: #just output once 
+            output += emoji
+        await ctx.reply(output)
+
+        if commentary != "":
+            await ctx.reply(commentary)
+        
+        # now we remove them from the list of rollers, this allows them to roll again without spamming
+        self.currently_interacting.remove(ctx.author.id)
 
 
 
