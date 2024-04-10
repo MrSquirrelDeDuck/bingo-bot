@@ -415,8 +415,7 @@ def get_role_list(guild: discord.Guild) -> dict[str, list[int]]:
     return out
 
 def snapshot_roles(guild: discord.Guild) -> None:
-    # """"""
-    """Loops through all the members in the given guild and writes dough the role ids for each member. It then saves all of this to a json file with the name of the current unix timestamp in 'v2_data/role_snapshots/'
+    """Loops through all the members in the given guild and writes dough the role ids for each member. It then saves all of this to a json file with the name of the current unix timestamp in 'data/role_snapshots/snapshots/'
 
     Args:
         guild (discord.Guild): Discord guild to get the role information for.

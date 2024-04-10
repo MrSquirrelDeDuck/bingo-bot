@@ -774,6 +774,7 @@ rollable_items = attribute_item_list("rollable")
 all_specials = attribute_item_list("special_bread")
 all_rares = attribute_item_list("rare_bread")
 special_and_rare = all_specials + all_rares
+all_breads = [bread] + all_specials # Used by roll_old, copy of `all_breads` in Machine-Mind's utility/values.py.
 
 white_chess_pieces = attribute_item_list("white_chess_piece")
 white_chess_biased = [wpawn] * 8 + [wknight] * 2 + [wbishop] * 2 + [wrook] * 2 + [wqueen, wking]
