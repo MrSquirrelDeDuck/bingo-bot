@@ -139,7 +139,10 @@ def after_parameter(
     """
     return u_interface.msg_content(ctx).split(str(parameter_text), 1)[-1].lstrip('"\'').strip()
 
-def return_numeric(text: str, return_type: typing.Any = None) -> typing.Union[T, int]:
+def return_numeric(
+        text: str,
+        return_type: typing.Any = None
+    ) -> typing.Union[T, int]:
     """Returns just all the nubmer in a string as an integer, ignoring all other characters.
 
     Args:
