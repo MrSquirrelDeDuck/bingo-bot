@@ -5,6 +5,8 @@ from os.path import sep as SLASH
 import typing
 import importlib
 import textwrap
+import chess
+import re
 
 # pip install matplotlib
 import matplotlib.pyplot as plt
@@ -21,6 +23,7 @@ import utility.files as u_files
 import utility.stonks as u_stonks
 import utility.values as u_values
 import utility.algorithms as u_algorithms
+import utility.chess_utils as u_chess
 
 ######################################################################################################################################
 ##### BINGO BOARDS ###################################################################################################################
@@ -536,7 +539,130 @@ def stonk_report(database: u_files.DatabaseInterface) -> None:
     # Save the final image.
     img.save(f"images{SLASH}generated{SLASH}stonk_report.png", quality=90)
 
+######################################################################################################################################
+##### CHESS MATCH ####################################################################################################################
+######################################################################################################################################
+
+def chess_match(
+        bot_white: str,
+        bot_black: str,
+        game_data: dict
+    ) -> None:
+    """Generates the cover image for the daily Chess game and saves it to 'images/generated/chess_match.png'
+
+    Args:
+        bot_white (str): The name of the bot playing the white pieces.
+        bot_black (str): The name of the bot playing the black pieces.
+    """
+    img = PIL_Image.open(f"images{SLASH}bases{SLASH}chess_match_base.png").copy().convert("RGBA")
+
+    ### Rendering the chess board.
+
+    board = u_chess.get_board_from_pgn(game_data.get("pgn"))
+    board_path = u_chess.render_board(board)
+    board_image = PIL_Image.open(board_path).copy().convert("RGBA")
+
+    img.paste(board_image, (406, 105))
+
+    #############################
+
+    font_path = f"images{SLASH}bases{SLASH}verdana.ttf"
+
+    imgDraw = PIL_ImageDraw.Draw(img)
+
+    white_name = bot_white.replace("_"," ").title()
+    black_name = bot_black.replace("_"," ").title()
+
+    max_font_size = 57
+    y_size = 95
+    x_size = 356
+    x_multiplier = 0.95
+    
+    # The coordinates of the top left parts of the text background boxes.
+    # The left sides of the boxes is the same, so only one variable is needed.
+    box_left = 33
+    box_white_top = 388
+    box_black_top = 115
+
+    # Font sizes.
+    ending_x_size = x_size * x_multiplier
+
+    font_size_white = 1
+    font_size_black = 1
+
+    # White font size.
+    font_white = PIL_ImageFont.truetype(font_path, font_size_white)
+    while font_white.getsize(white_name)[0] < ending_x_size:
+        # iterate until the text size is just larger than the criteria
+        font_size_white += 1
+        font_white = PIL_ImageFont.truetype(font_path, font_size_white)
+    font_white = PIL_ImageFont.truetype(font_path, font_size_white - 1)
+
+    if font_size_white > max_font_size:
+        font_white = PIL_ImageFont.truetype(font_path, size=max_font_size)
+
+    # White font size.
+    font_black = PIL_ImageFont.truetype(font_path, font_size_black)
+    while font_black.getsize(black_name)[0] < ending_x_size:
+        # iterate until the text size is just larger than the criteria
+        font_size_black += 1
+        font_black = PIL_ImageFont.truetype(font_path, font_size_black)
+    font_black = PIL_ImageFont.truetype(font_path, font_size_black - 1)
+
+    if font_size_black > max_font_size:
+        font_black = PIL_ImageFont.truetype(font_path, size=max_font_size)
+
+    # Figure out where the text should go.
+    white_bounds = imgDraw.textbbox((0, 0), white_name, font=font_white)
+    black_bounds = imgDraw.textbbox((0, 0), black_name, font=font_black)
+
+    white_x_coord = (x_size - white_bounds[2]) / 2 + box_left
+    black_x_coord = (x_size - black_bounds[2]) / 2 + box_left
+
+    white_y_coord = (y_size - white_bounds[3]) / 2 + box_white_top
+    black_y_coord = (y_size - black_bounds[3]) / 2 + box_black_top
+
+    # Write the name of the bot playing white.
+    imgDraw.text((white_x_coord, white_y_coord), white_name, (0, 0, 0), font=font_white, align="center", stroke_width=1)
+
+    # Write the name of the bot playing black.
+    imgDraw.text((black_x_coord, black_y_coord), black_name, (0, 0, 0), font=font_black, align="center", stroke_width=1)
+    
+    # Elo ratings:
+    increase_color = (0, 230, 0)
+    decrease_color = (230, 0, 0)
+
+    elo_font = PIL_ImageFont.truetype(font_path, size=30)
+
+    # White elo
+    imgDraw.text((242, 341), str(game_data["white_elo"]), (0, 0, 0), font=elo_font, align="center", stroke_width=1)
+    white_width = imgDraw.textlength(str(game_data["white_elo"]), elo_font)
+
+    delta = str(game_data["delta_white_elo"])
+    if game_data["delta_white_elo"] > 0:
+        delta = f"+{delta}"
+        color = increase_color
+    else:
+        color = decrease_color
+
+    imgDraw.text((242 + white_width + 10, 341), delta, color, font=elo_font, align="center", stroke_width=1)
+
+    # Black elo
+    imgDraw.text((242, 218), str(game_data["black_elo"]), (0, 0, 0), font=elo_font, align="center", stroke_width=1)
+    black_width = imgDraw.textlength(str(game_data["black_elo"]), elo_font)
+
+    delta = str(game_data["delta_black_elo"])
+    if game_data["delta_black_elo"] > 0:
+        delta = f"+{delta}"
+        color = increase_color
+    else:
+        color = decrease_color
+
+    imgDraw.text((242 + black_width + 10, 218), delta, color, font=elo_font, align="center", stroke_width=1)
 
 
-        
 
+    # Save the final image.
+    img.save(f"images{SLASH}generated{SLASH}chess_match.png", quality=90)
+    
+    # 242, 221

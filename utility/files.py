@@ -291,7 +291,7 @@ class DatabaseInterface:
     def get_ping_list(
             self: typing.Self,
             ping_list_name: str
-        ) -> list[typing.Optional[int]]:
+        ) -> list[int]:
         """Gets a ping list from the ping list file.
 
         Args:

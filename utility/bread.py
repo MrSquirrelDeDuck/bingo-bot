@@ -278,7 +278,7 @@ class BreadDataAccount:
 def bread_time() -> datetime.timedelta:
     """Returns a datetime.timedelta representing the time since the last Bread o' Clock.
 
-    You can use `bread_time().total_seconds() // 3600` to get the current Bread Standard Time hour.
+    You can use `bst_time()` to get the current hour.
 
     Returns:
         datetime.timedelta: Timedelta for the time since the last Bread o' Clock.
@@ -304,6 +304,14 @@ def bread_time() -> datetime.timedelta:
         breadoclock = breadoclock - datetime.timedelta(days=1)
 
     return timestamp - breadoclock
+
+def bst_time() -> int:
+    """Returns the current hour in Bread Standard Time.
+
+    Returns:
+        int: The current hour.
+    """
+    return bread_time().total_seconds() // 3600
 
 def calculate_tron_value(
         ascension: int = 0,
