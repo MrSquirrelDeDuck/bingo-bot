@@ -5,8 +5,6 @@ from os.path import sep as SLASH
 import typing
 import importlib
 import textwrap
-import chess
-import re
 
 # pip install matplotlib
 import matplotlib.pyplot as plt
