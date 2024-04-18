@@ -23,7 +23,7 @@ import utility.text as u_text
 
 database = None # type: u_files.DatabaseInterface
 
-PING_LISTS_CHANNEL = 1196865786489344120
+PING_LISTS_CHANNEL = 1060344552818483230
 
 class Chess_cog(
         u_custom.CustomCog,
@@ -36,7 +36,7 @@ class Chess_cog(
         bread_time = u_bread.bst_time()
 
         # If it's not the correct time (noon in EDT,) then stop here.
-        if bread_time != 18:
+        if bread_time != 20:
             return
         
         # If it's here, then time to play a game of Chess!
