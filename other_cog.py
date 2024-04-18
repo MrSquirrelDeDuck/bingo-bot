@@ -295,7 +295,7 @@ class Other_cog(
         )
         await ctx.reply(embed=embed)
 
-    def hourly_task(self: typing.Self) -> None:
+    async def hourly_task(self: typing.Self) -> None:
         """Code that runs for every hour."""
         self.minecraft_wiki_searching = False
         self.vdc_wiki_searching = False

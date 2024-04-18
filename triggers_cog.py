@@ -304,6 +304,22 @@ class Triggers_cog(
         
         
 
+    @commands.command(
+        name = "test",
+        brief="test",
+        description="test"
+    )
+    @commands.check(u_checks.hide_from_help)
+    async def test_command(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext
+        ):
+        await self.hourly_loop()
+
+
+        
+        
+
     # @commands.command(
     #     name = "get_rules",
     #     brief="Gives you the current rules.",
@@ -338,90 +354,93 @@ class Triggers_cog(
     async def hourly_loop(self: typing.Self):
         print("Hourly loop triggered at {}.".format(datetime.datetime.now()))
 
-        ### REMINDERS ###
-
-        bst_time = u_bread.bread_time().total_seconds() // 3600
-
-        reminder_data = database.load("reminders", default=None)
-
-        if reminder_data is None:
-            data = {
-                "disallowed": [],
-                "reminder_list": []
-            }
-            database.save("reminders", data=data)
-            
-            reminder_data = data.copy()
-
-        reminder_channel = None
-
-        for reminder in reminder_data["reminder_list"]:
-            if reminder["hour"] != bst_time:
-                continue
-            
-            if reminder_channel is None:
-                reminder_channel = await self.bot.fetch_channel(REMINDERS_CHANNEL)
-
-            embed = u_interface.gen_embed(
-                title = "You had a reminder set for now!",
-                description = reminder["text"]
-            )
-            await reminder_channel.send(content="<@{}>".format(reminder["user"]), embed=embed)
-        
-        ### XKCD PINGLIST ###
-        
-        async with aiohttp.ClientSession() as session:
-            async with session.get(f"https://xkcd.com/info.0.json") as resp:
-                if resp.status != 200:
-                    return
-                
-                return_json = await resp.json()
-        
-        ping_list_data = database.load("ping_lists", default={})
-
-        if return_json["num"] > ping_list_data.get("xkcd_previous", return_json["num"]):
-            ping_list_channel = await self.bot.fetch_channel(PING_LISTS_CHANNEL)
-
-            embed = u_interface.gen_embed(
-                title = "{}: {}".format(return_json["num"], return_json["safe_title"]),
-                title_link = "https://xkcd.com/{}/".format(return_json["num"]),
-                image_link = return_json["img"],
-                footer_text = return_json["alt"]
-            )
-            content = "New xkcd strip!!\n\nPinglist:\n{}\nUse `%xkcd ping` to add or remove yourself from the pinglist.".format("".join([f"<@{str(item)}>" for item in ping_list_data.get("xkcd_strips", [])]))
-
-            xkcd_message = await ping_list_channel.send(content=content, embed=embed)
-
-            ping_list_data["xkcd_previous"] = return_json["num"]
-            database.save("ping_lists", data=ping_list_data)
-
-            try:
-                created_thread = await xkcd_message.create_thread(
-                    name=f"Comic #{return_json['num']}: {return_json['title']} discussion thread",
-                    auto_archive_duration=4320,
-                    reason="Auto thread creation for xkcd pinglist."
-                )
-                await created_thread.send(f"Discussion for this comic goes here!\n[Explain xkcd link.](<https://www.explainxkcd.com/wiki/index.php/{return_json['num']}>)")
-            except:
-                print("Issue with creating xkcd thread.")
-                print(traceback.format_exc())
-        
-        # Update the bot status.
         try:
-            await self.refresh_status()
+            ### REMINDERS ###
+
+            bst_time = u_bread.bst_time()
+
+            reminder_data = database.load("reminders", default=None)
+
+            if reminder_data is None:
+                data = {
+                    "disallowed": [],
+                    "reminder_list": []
+                }
+                database.save("reminders", data=data)
+                
+                reminder_data = data.copy()
+
+            reminder_channel = None
+
+            for reminder in reminder_data["reminder_list"]:
+                if reminder["hour"] != bst_time:
+                    continue
+                
+                if reminder_channel is None:
+                    reminder_channel = await self.bot.fetch_channel(REMINDERS_CHANNEL)
+
+                embed = u_interface.gen_embed(
+                    title = "You had a reminder set for now!",
+                    description = reminder["text"]
+                )
+                await reminder_channel.send(content="<@{}>".format(reminder["user"]), embed=embed)
+            
+            ### XKCD PINGLIST ###
+            
+            async with aiohttp.ClientSession() as session:
+                async with session.get(f"https://xkcd.com/info.0.json") as resp:
+                    if resp.status != 200:
+                        return
+                    
+                    return_json = await resp.json()
+            
+            ping_list_data = database.load("ping_lists", default={})
+
+            if return_json["num"] > ping_list_data.get("xkcd_previous", return_json["num"]):
+                ping_list_channel = await self.bot.fetch_channel(PING_LISTS_CHANNEL)
+
+                embed = u_interface.gen_embed(
+                    title = "{}: {}".format(return_json["num"], return_json["safe_title"]),
+                    title_link = "https://xkcd.com/{}/".format(return_json["num"]),
+                    image_link = return_json["img"],
+                    footer_text = return_json["alt"]
+                )
+                content = "New xkcd strip!!\n\nPinglist:\n{}\nUse `%xkcd ping` to add or remove yourself from the pinglist.".format("".join([f"<@{str(item)}>" for item in ping_list_data.get("xkcd_strips", [])]))
+
+                xkcd_message = await ping_list_channel.send(content=content, embed=embed)
+
+                ping_list_data["xkcd_previous"] = return_json["num"]
+                database.save("ping_lists", data=ping_list_data)
+
+                try:
+                    created_thread = await xkcd_message.create_thread(
+                        name=f"Comic #{return_json['num']}: {return_json['title']} discussion thread",
+                        auto_archive_duration=4320,
+                        reason="Auto thread creation for xkcd pinglist."
+                    )
+                    await created_thread.send(f"Discussion for this comic goes here!\n[Explain xkcd link.](<https://www.explainxkcd.com/wiki/index.php/{return_json['num']}>)")
+                except:
+                    print("Issue with creating xkcd thread.")
+                    print(traceback.format_exc())
+            
+            # Update the bot status.
+            try:
+                await self.refresh_status()
+            except:
+                print(traceback.format_exc())
+            
+            # Save and backup database.
+            database.save_database(make_backup=True)
         except:
             print(traceback.format_exc())
-        
-        # Save and backup database.
-        database.save_database(make_backup=True)
 
-        # Running _hourly_task in other cogs.
+        # Running hourly_task in other cogs.
         for cog in self.bot.cogs.values():
             if cog.__cog_name__ == self.__cog_name__:
                 continue
 
             try:
-                await cog._hourly_task()
+                await cog.hourly_task()
             except AttributeError:
                 pass
 
@@ -463,117 +482,120 @@ class Triggers_cog(
     async def daily_loop(self: typing.Self):
         print("Daily loop triggered at {}".format(datetime.datetime.now()))
 
-        hour_offset = 5 # The number of hours to subract from the current unix timestamp.
-        day_of_the_week = ((int(time.time()) - (hour_offset * 3600)) // 86400 + 4) % 7
-        weekly_board = day_of_the_week == 0
+        try:
+            hour_offset = 5 # The number of hours to subract from the current unix timestamp.
+            day_of_the_week = ((int(time.time()) - (hour_offset * 3600)) // 86400 + 4) % 7
+            weekly_board = day_of_the_week == 0
 
-        ##### Archive the old bingo boards. #####
+            ##### Archive the old bingo boards. #####
 
-        # Archive daily board and the weekly board if it's Monday.
-        live_data = u_bingo.live(database=database)
+            # Archive daily board and the weekly board if it's Monday.
+            live_data = u_bingo.live(database=database)
 
-        archive_5x5 = database.load("bingo", "previous_5x5_boards", default={})
+            archive_5x5 = database.load("bingo", "previous_5x5_boards", default={})
 
-        archive_5x5[str(live_data["daily_board_id"])] = {
-            "tile_string": live_data["daily_tile_string"],
-            "enabled": live_data["daily_enabled"]
-        }
-
-        database.save("bingo", "previous_5x5_boards", data=archive_5x5)
-
-        # If it's the day of the weekly board then archive it since we'll be making a new one.
-        if weekly_board:
-            archive_9x9 = database.load("bingo", "previous_9x9_boards", default={})
-
-            archive_9x9[str(live_data["weekly_board_id"])] = {
-                "tile_string": live_data["weekly_tile_string"],
-                "enabled": live_data["weekly_enabled"]
+            archive_5x5[str(live_data["daily_board_id"])] = {
+                "tile_string": live_data["daily_tile_string"],
+                "enabled": live_data["daily_enabled"]
             }
 
-            database.save("bingo", "previous_9x9_boards", data=archive_9x9)
-        
-        ##### Handle the day stats. #####
+            database.save("bingo", "previous_5x5_boards", data=archive_5x5)
+
+            # If it's the day of the weekly board then archive it since we'll be making a new one.
+            if weekly_board:
+                archive_9x9 = database.load("bingo", "previous_9x9_boards", default={})
+
+                archive_9x9[str(live_data["weekly_board_id"])] = {
+                    "tile_string": live_data["weekly_tile_string"],
+                    "enabled": live_data["weekly_enabled"]
+                }
+
+                database.save("bingo", "previous_9x9_boards", data=archive_9x9)
             
-        handled_stats = False
+            ##### Handle the day stats. #####
+                
+            handled_stats = False
 
-        try:
-            # Load the previous day stats.
-            existing = u_files.load("data", "bread", "day_stats.json", default={}, join_file_path=True)
+            try:
+                # Load the previous day stats.
+                existing = u_files.load("data", "bread", "day_stats.json", default={}, join_file_path=True)
 
-            # Update the previous day stats to add this last day's stats.
-            existing[
-                    str(live_data.get("daily_board_id", time.time() // 1))
-                ] = database.load("bread", "day_stats", default={})
+                # Update the previous day stats to add this last day's stats.
+                existing[
+                        str(live_data.get("daily_board_id", time.time() // 1))
+                    ] = database.load("bread", "day_stats", default={})
 
-            # Save the day stats file.
-            u_files.save("data", "bread", "day_stats.json", data=existing, join_file_path=True)
+                # Save the day stats file.
+                u_files.save("data", "bread", "day_stats.json", data=existing, join_file_path=True)
 
-            # Clear the day stats in the database.
-            database.save("bread", "day_stats", data={})
+                # Clear the day stats in the database.
+                database.save("bread", "day_stats", data={})
+                
+                handled_stats = True
+            except:
+                print(traceback.format_exc())
+
+            ##### Make new boards. #####
+
+            new_daily = u_bingo.generate_5x5_board(database=database)
+
+            live_data["daily_tile_string"] = new_daily
+            live_data["daily_enabled"] = 0
+            live_data["daily_board_id"] += 1
+
+            if weekly_board:
+                new_weekly = u_bingo.generate_9x9_board(database=database)
+
+                live_data["weekly_tile_string"] = new_weekly
+                live_data["weekly_enabled"] = 0
+                live_data["weekly_board_id"] += 1
             
-            handled_stats = True
-        except:
-            print(traceback.format_exc())
+            u_bingo.update_live(database=database, bot=self.bot, new_data=live_data)
+            self.bot.update_bingo_cache(live_data)
 
-        ##### Make new boards. #####
-
-        new_daily = u_bingo.generate_5x5_board(database=database)
-
-        live_data["daily_tile_string"] = new_daily
-        live_data["daily_enabled"] = 0
-        live_data["daily_board_id"] += 1
-
-        if weekly_board:
-            new_weekly = u_bingo.generate_9x9_board(database=database)
-
-            live_data["weekly_tile_string"] = new_weekly
-            live_data["weekly_enabled"] = 0
-            live_data["weekly_board_id"] += 1
-        
-        u_bingo.update_live(database=database, bot=self.bot, new_data=live_data)
-        self.bot.update_bingo_cache(live_data)
-
-        ##### Send board announcement messages. #####
-        # Send the daily board.
-        daily_channel = await self.bot.fetch_channel(DAILY_BOARD_CHANNEL)
-        u_images.render_full_5x5(
-            database = database,
-            tile_string = new_daily,
-            enabled = 0
-        )
-
-        await daily_channel.send(
-            "Bingo Board #{board_id}!\nThe wiki:\n<https://bread.miraheze.org/wiki/The_Bread_Game_Wiki>\n{stats_text}".format(
-                board_id = live_data["daily_board_id"],
-                stats_text = f"The previous day's stats have been archived! You can check the stats with `%bread day {live_data['daily_board_id'] - 1}`!" if handled_stats else "*Something went wrong with the daily stats.*"
-            ),
-            file=discord.File(r'images/generated/bingo_board.png')
-        )
-        
-        # If it's the day for it, send the weekly board.
-        if weekly_board:
-            weekly_channel = await self.bot.fetch_channel(WEEKLY_BOARD_CHANNEL)
-            u_images.render_board_9x9(
+            ##### Send board announcement messages. #####
+            # Send the daily board.
+            daily_channel = await self.bot.fetch_channel(DAILY_BOARD_CHANNEL)
+            u_images.render_full_5x5(
                 database = database,
-                tile_string = new_weekly,
+                tile_string = new_daily,
                 enabled = 0
             )
 
-            await weekly_channel.send("Weekly Bingo Board #{}!".format(live_data["weekly_board_id"]), file=discord.File(r'images/generated/bingo_board.png'))
-        
-        ##### Increment counters. #####
-        
-        counter_list = [
-            "pk_counter"
-        ]
-        for counter in counter_list:
-            database.increment_daily_counter(counter, amount=1)
-        
-        ##### Make role snapshot. #####
+            await daily_channel.send(
+                "Bingo Board #{board_id}!\nThe wiki:\n<https://bread.miraheze.org/wiki/The_Bread_Game_Wiki>\n{stats_text}".format(
+                    board_id = live_data["daily_board_id"],
+                    stats_text = f"The previous day's stats have been archived! You can check the stats with `%bread day {live_data['daily_board_id'] - 1}`!" if handled_stats else "*Something went wrong with the daily stats.*"
+                ),
+                file=discord.File(r'images/generated/bingo_board.png')
+            )
             
-        u_interface.snapshot_roles(
-            guild = self.bot.get_guild(MAIN_GUILD)
-        )
+            # If it's the day for it, send the weekly board.
+            if weekly_board:
+                weekly_channel = await self.bot.fetch_channel(WEEKLY_BOARD_CHANNEL)
+                u_images.render_board_9x9(
+                    database = database,
+                    tile_string = new_weekly,
+                    enabled = 0
+                )
+
+                await weekly_channel.send("Weekly Bingo Board #{}!".format(live_data["weekly_board_id"]), file=discord.File(r'images/generated/bingo_board.png'))
+            
+            ##### Increment counters. #####
+            
+            counter_list = [
+                "pk_counter"
+            ]
+            for counter in counter_list:
+                database.increment_daily_counter(counter, amount=1)
+            
+            ##### Make role snapshot. #####
+                
+            u_interface.snapshot_roles(
+                guild = self.bot.get_guild(MAIN_GUILD)
+            )
+        except:
+            print(traceback.format_exc())
 
         ##### Running _daily_task in other cogs. #####
         for cog in self.bot.cogs.values():
@@ -581,7 +603,7 @@ class Triggers_cog(
                 continue
 
             try:
-                await cog._daily_task()
+                await cog.daily_task()
             except AttributeError:
                 pass
 

@@ -22,6 +22,7 @@ import utility.algorithms as u_algorithms
 import utility.images as u_images
 import utility.converters as u_converters
 import utility.files as u_files
+import utility.chess_utils as u_chess
 
 database = None # type: u_files.DatabaseInterface
 
@@ -42,7 +43,8 @@ class Admin_cog(
         "bread_cog",
         "stonk_cog",
         "secret_cog",
-        "games_cog"
+        "games_cog",
+        "chess_cog",
     ]
         
     # This is a list of roles that the bot either can't add or shouldn't be adding to people.
@@ -1694,6 +1696,44 @@ class Admin_cog(
         )
 
         await ctx.reply(f"Done, deleted {len(deleted)} messages.")
+
+        
+            
+
+        
+    ######################################################################################################################################################
+    ##### ADMIN SET BOT ELO ##############################################################################################################################
+    ######################################################################################################################################################
+        
+    @admin.command(
+        name="set_bot_elo",
+        brief = "Sets a Chess bot's elo.",
+        description = "Sets a Chess bot's elo.",
+        aliases = ["set_bot_rating"]
+    )
+    async def admin_set_bot_elo(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext,
+            bot: typing.Optional[u_chess.ChessBotConverter] = commands.parameter(description = "The bot to modify."),
+            new_elo: typing.Optional[int] = commands.parameter(description = "The new elo for the bot.")
+        ):
+        if bot is None:
+            await ctx.reply("You must specify a bot.")
+            return
+        
+        if new_elo is None:
+            await ctx.reply("You must specify a new elo.")
+            return
+        
+        old_elo = bot.get_elo(database)
+
+        u_chess.set_bot_elo(
+            database = database,
+            bot = bot,
+            new_rating = new_elo
+        )
+
+        await ctx.reply(f"Success, old elo was {u_text.smart_number(round(old_elo))}, new elo is {u_text.smart_number(new_elo)}")
 
 
         

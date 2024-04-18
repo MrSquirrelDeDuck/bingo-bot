@@ -769,3 +769,28 @@ def remove_emojis(
     if filler is None:
         filler = ""
     return re.sub("(<a?)?:[\d\w_]+:(\d+>)?", filler, input_text)
+
+def get_members(
+        guild: discord.Guild,
+        id_list: list[str | int]
+    ) -> list[discord.Member]:
+    """Converts a list of member ids to a list of `discord.Member` objects.
+    
+    Args:
+        guild (discord.Guild): The guild the members are from.
+        id_list (list[str | int]): The list of member ids.
+    
+    Returns:
+        list[discord.Member]: The list of member objects."""
+    return [guild.get_member(identifier) for identifier in id_list]
+
+def member_display_names(member_list: list[discord.Member]) -> list[str]:
+    """Converts a list of member objects to a list of the member display names."""
+    return [get_display_name(member) for member in member_list]
+
+def get_channel_id(channel: discord.TextChannel | int | str) -> str:
+    """Returns the given channel's id."""
+    try:
+        return str(channel.id)
+    except AttributeError:
+        return str(channel)

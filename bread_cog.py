@@ -70,6 +70,11 @@ class Bread_cog(
         23: "<t:1648847100:t>"
     }
 
+    async def hourly_task(self: typing.Self):
+        """Code that runs for every hour."""
+        self.currently_interacting.clear()
+        self.bread_wiki_searching = False
+
     ######################################################################################################################################################
     ##### UTILITY FUNCTIONS ##############################################################################################################################
     ######################################################################################################################################################
@@ -113,10 +118,6 @@ class Bread_cog(
         )
         
         return await ctx.reply(embed=embed)
-
-    def hourly_task(self: typing.Self):
-        """Code that runs for every hour."""
-        self.bread_wiki_searching = False
 
     ######################################################################################################################################################
     ##### CHECKS #########################################################################################################################################
@@ -1899,7 +1900,7 @@ class Bread_cog(
             return
         
         total = u_text.extract_number(
-            r"The combined amount between all people is ([\d,]+)\.",
+            r"The combined amount between all people is (-?[\d,]+)\.",
             replied.content,
             default = 0
         )
@@ -1908,10 +1909,10 @@ class Bread_cog(
 
         previous_placement = 0
 
-        for match in re.finditer(r"([\d,]+)\. (.+) ([\d,]+)(.*)", replied.content):
+        for match in re.finditer(r"([\d,]+)\. (.+) (-?[\d,]+)(.*)", replied.content):
             placement = u_text.return_numeric(match.group(1))
             username = match.group(2)
-            amount = u_text.return_numeric(match.group(3))
+            amount = u_converters.parse_int(match.group(3))
             bonus = match.group(4)
 
             if total == 0:
