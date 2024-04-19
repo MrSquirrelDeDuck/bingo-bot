@@ -590,7 +590,7 @@ def chess_match(
 
     # White font size.
     font_white = PIL_ImageFont.truetype(font_path, font_size_white)
-    while font_white.getsize(white_name)[0] < ending_x_size:
+    while font_white.getlength(white_name) < ending_x_size:
         # iterate until the text size is just larger than the criteria
         font_size_white += 1
         font_white = PIL_ImageFont.truetype(font_path, font_size_white)
@@ -601,7 +601,7 @@ def chess_match(
 
     # White font size.
     font_black = PIL_ImageFont.truetype(font_path, font_size_black)
-    while font_black.getsize(black_name)[0] < ending_x_size:
+    while font_black.getlength(black_name) < ending_x_size:
         # iterate until the text size is just larger than the criteria
         font_size_black += 1
         font_black = PIL_ImageFont.truetype(font_path, font_size_black)
