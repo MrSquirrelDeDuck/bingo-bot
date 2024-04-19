@@ -23,7 +23,7 @@ import utility.text as u_text
 
 database = None # type: u_files.DatabaseInterface
 
-PING_LISTS_CHANNEL = 1196865786489344120
+PING_LISTS_CHANNEL = 1060344552818483230
 
 class Chess_cog(
         u_custom.CustomCog,
@@ -511,6 +511,46 @@ class Chess_cog(
             description = "You will {} be pinged for future daily chess matches.".format("now" if new_state else "no longer")
         )
         await ctx.reply(embed=embed)
+
+
+        
+
+
+        
+        
+            
+
+        
+    ######################################################################################################################################################
+    ##### CHESS TEST ##############################################################################################################################
+    ######################################################################################################################################################
+        
+    @chess.command(
+        name = "test",
+        brief = "Chess testing.",
+        description = "Chess testing."
+    )
+    @commands.is_owner()
+    async def chess_test(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext
+        ):
+        u_images.chess_match(
+            bot_white = u_chess.RandomBot.name,
+            bot_black = u_chess.MoveCount.name,
+            game_data = {
+                'winner': False,
+                'pgn': '[White "[Bot] pi"]\n[Black "[Bot] move_count"]\n[Result "0-1"]\n\n1. Nc3 e6 2. d4 Qh4 3. Kd2 Qxd4+ 4. Ke1 Nc6 5. Nf3 Bd6 6. Nb1 Bb4+ 7. c3 Bxc3+ 8. Qd2 Qc5 9. Qxc3 Qd5 10. a4 Nge7 11. Ra3 Nb4 12. b3 Qe4 13. Rg1 b6 14. Nbd2 Nc2+ 15. Kd1 Qf4 16. Qb2 Bb7 17. Ra2 b5 18. b4 c5 19. Nh4 a5 20. Ne4 Qxe4 21. e3 Qg4+ 22. Nf3 Nf5 23. axb5 Nfxe3+ 24. fxe3 Bd5 25. bxc5 Rc8 26. c6 Rxc6 27. e4 Rc8 28. exd5 Qe4 29. h3 Qxd5+ 30. Bd3 Qxd3+ 31. Nd2 Ne3+ 32. Ke1 Rc5 33. b6 h6 34. Kf2 a4 35. Ra3 Ng4+ 36. hxg4 Qd5 37. b7 Qxb7 38. g5 Rf5+ 39. Nf3 Rxf3+ 40. Ke2 Qe4+ 41. Be3 Qc4+ 42. Kd1 Qd5+ 43. Qd4 Rf1+ 44. Rxf1 hxg5 45. Bxg5 Qxd4+ 46. Rd3 Qxd3+ 47. Kc1 Qc3+ 48. Kb1 Qd3+ 49. Kc1 Qc3+ 50. Kd1 Qd3+ 51. Bd2 Rh4 52. Kc1 f6 53. Rg1 Kf7 54. Rh1 Rxh1+ 55. Kb2 Qb3# 0-1',
+                'fen': '8/3p1kp1/4pp2/8/p7/1q6/1K1B2P1/7r w - - 2 56',
+                'white_elo': 786,
+                'black_elo': 856,
+                'delta_white_elo': -13,
+                'delta_black_elo': 13
+            }
+        )
+        send_file = discord.File("images/generated/chess_match.png")
+        
+        await ctx.reply(file=send_file)
 
 
         
