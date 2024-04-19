@@ -170,7 +170,8 @@ class BreadDataAccount:
                     continue
 
                 try:
-                    dict_data[key.internal_name] = dict_data.pop(key)
+                    modify_key = key.internal_name
+                    dict_data[modify_key] = dict_data.pop(key)
                 except AttributeError:
                     pass # If the key is not an item, do nothing.
 
@@ -189,8 +190,11 @@ class BreadDataAccount:
         self.data = {}
 
         stored_data = database.load("bread", "data_storage", default={})
-        
-        stored_data.pop(str(self.user_id))
+
+        try:       
+            stored_data.pop(str(self.user_id))
+        except KeyError: # This will be raised if the key isn't in the data already.
+            return
 
         database.save("bread", "data_storage", data=stored_data)
         

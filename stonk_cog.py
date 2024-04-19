@@ -251,7 +251,7 @@ class Stonk_cog(
                     dough = " dough"
                     bonus += "**"
 
-                found_data[stonk].append("".join([bonus, str(tick_data[stonk.internal_name]), dough, bonus]))
+                found_data[stonk].append("".join([bonus, str(tick_data[stonk.internal_name]), dough, "".join(reversed(bonus))]))
         
             previous_tick = tick_data.copy()
         
