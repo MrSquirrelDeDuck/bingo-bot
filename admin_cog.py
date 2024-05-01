@@ -1097,14 +1097,16 @@ class Admin_cog(
             try:
                 role = ctx.guild.get_role(role_id)
                 
+                if role is None:
+                    continue
+
                 # If the role is managed by an integration, like a bot.
                 if role.managed:
                     blacklisted_roles.append(role.id)
                     continue
 
-                if role is not None:
-                    roles_added.append(role_id)
-                    await member.add_roles(role)
+                roles_added.append(role_id)
+                await member.add_roles(role)
             except discord.Forbidden:
                 await ctx.reply("I don't have the permissions to give people roles.")
                 return
@@ -1218,10 +1220,10 @@ class Admin_cog(
                 ("Added roles:", ", ".join(
                     [f"<@&{item}>" for item in added_roles]
                 ), False),
-                ("Blacklisted roles:", "These are roles that are in the blacklist, but the member had them in the snapshot.\n\n" + ", ".join(
+                ("Blacklisted roles:", "These are roles that are in the blacklist, but the source member has them.\n\n" + ", ".join(
                     [f"<@&{item}>" for item in blacklisted_roles]
                 ), False),
-                ("Already had:", "These are roles that the member had in the snapshot and already had when the command was run.\n\n" + ", ".join(
+                ("Already had:", "These are roles that both the source and destination member have, so adding them is unneeded.\n\n" + ", ".join(
                     [f"<@&{item}>" for item in already_has]
                 ), False)
             ]
