@@ -45,6 +45,7 @@ class Admin_cog(
         "secret_cog",
         "games_cog",
         "chess_cog",
+        "brad_cog",
     ]
         
     # This is a list of roles that the bot either can't add or shouldn't be adding to people.
@@ -337,6 +338,9 @@ class Admin_cog(
 
         for module_name in copy.deepcopy([i.replace(".py", "") for i in os.listdir("utility/") if i.endswith(".py")]):
             reloaded_count += await self._smart_reload("utility.{}".format(module_name))
+
+        for module_name in copy.deepcopy([i.replace(".py", "") for i in os.listdir("brad/") if i.endswith(".py")]):
+            reloaded_count += await self._smart_reload("brad.{}".format(module_name))
             
         for cog_name in copy.deepcopy(list(dict(self.bot.cogs).keys())):
             reloaded_count += await self._smart_reload(f"{cog_name.lower()}_cog")

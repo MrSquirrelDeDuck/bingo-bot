@@ -1799,6 +1799,27 @@ class Other_cog(
             hours = relative_delta.hours,
             minutes = relative_delta.minutes
         ))
+
+        
+            
+
+        
+    ######################################################################################################################################################
+    ##### EASTERN US SIMULATION ##########################################################################################################################
+    ######################################################################################################################################################
+    
+    @commands.command(
+        name = "eastern_us_simulation",
+        brief = "Eastern US simulation.",
+        description = "Eastern US simulation."
+    )
+    @commands.check(u_checks.hide_from_help)
+    async def eastern_us_simulation(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext
+        ):
+        await ctx.reply("Current year: 2023")
+
     
 
 
