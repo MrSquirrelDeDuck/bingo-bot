@@ -5,6 +5,7 @@ from __future__ import annotations
 from discord.ext import commands
 import typing
 import re
+import datetime
 
 import utility.interface as u_interface
 import utility.converters as u_converters
@@ -264,3 +265,18 @@ def parse_wikitext(
     sections = dict(zip(section_list[::2], map(str, section_list[1::2])))
 
     return sections
+
+def format_timedelta(duration: datetime.timedelta) -> tuple[int, int, int, int]:
+    """Formats a timedelta into more readable numbers.
+
+    Args:
+        duration (datetime.timedelta): The timedelta to format.
+
+    Returns:
+        tuple[int, int, int, int]: The number of days, then hours, then minutes, then seconds.
+    """
+    days, seconds = duration.days, duration.seconds
+    hours = seconds // 3600
+    minutes = (seconds % 3600) // 60
+    seconds = (seconds % 60)
+    return days, hours, minutes, seconds

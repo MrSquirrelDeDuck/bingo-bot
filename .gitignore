@@ -175,3 +175,5 @@ backups/
 # spooky
 secret_cog.py
 rulette.py
+brad/
+brad_cog.py
