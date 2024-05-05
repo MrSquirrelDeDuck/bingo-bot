@@ -1178,7 +1178,7 @@ class Games_cog(
                         if msg.author.bot:
                             return False
                         
-                        if msg.content not in options:
+                        if msg.content.lower() not in options:
                             return False
                         
                         return True
@@ -1190,7 +1190,7 @@ class Games_cog(
                             timeout = 60
                         )
 
-                        action = action_message.content
+                        action = action_message.content.lower()
                     except asyncio.TimeoutError:
                         action = "stand"
                     
