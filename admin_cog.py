@@ -34,7 +34,7 @@ class Admin_cog(
         description="Administration commands for the Bingo-Bot."
     ):
 
-    bot = None
+    bot = None # type: commands.Bot | u_custom.CustomBot
 
     all_extensions = [
         "triggers_cog",
@@ -985,6 +985,38 @@ class Admin_cog(
         sent = await message.reply(message_content)
 
         await ctx.reply(f"Done.\n[Message link.](<{sent.jump_url}>)")
+
+        
+            
+
+        
+    ######################################################################################################################################################
+    ##### ADMIN REMOTE TYPING ############################################################################################################################
+    ######################################################################################################################################################
+    
+    @admin.command(
+        name="remote_typing",
+        brief = "Hehe",
+        description = "Hehe"
+    )
+    @commands.check(u_checks.remote_say_check)
+    async def admin_remote_typing(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext,
+            channel_id: typing.Optional[u_converters.parse_int] = commands.parameter(description = "The channel id to type in.")
+        ):
+        if channel_id is None:
+            await ctx.reply("You must provide a channel id.")
+            return
+        
+        channel = self.bot.get_channel(channel_id)
+
+        if channel is None:
+            await ctx.reply("I can't find that channel.")
+            return
+        
+        await ctx.reply("Sending typing indicator...")
+        await channel.typing()
 
         
             
