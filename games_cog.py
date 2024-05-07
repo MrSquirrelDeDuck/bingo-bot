@@ -994,7 +994,7 @@ class Games_cog(
             1063317762191147008
         ]
         if ctx.guild.id == 958392331671830579:
-            if ctx.guild.id not in allowed_channels:
+            if ctx.channel.id not in allowed_channels:
                 await ctx.reply("I am sorry, but Blackjack can only be started in the following channels or in any thread: {}".format(
                     ", ".join([f"<#{c}>" for c in allowed_channels])
                 ))
