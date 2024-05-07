@@ -613,7 +613,7 @@ class Games_cog(
                 if msg.author.bot:
                     return False
                 
-                if msg.content != "join":
+                if msg.contetn.lower() != "join":
                     return False
                 
                 return True
@@ -824,7 +824,7 @@ class Games_cog(
 
             # Check that's used for bot.wait_for.
             def player_check(message):
-                return message.author not in players_participating and message.content == "join" and message.channel == ctx.channel and hasattr(message, "webhook_id") and message.webhook_id is None
+                return message.author not in players_participating and message.content.lower() == "join" and message.channel == ctx.channel and hasattr(message, "webhook_id") and message.webhook_id is None
             
             # Useful function that generates the initial message, since it's edited whenever a player joins.
             def generate_initial():
@@ -984,6 +984,23 @@ class Games_cog(
             await ctx.reply("A game of blackjack is currently underway somewhere. Please wait until it's done to try again.")
             return
         
+        if ctx.guild is None:
+            await ctx.reply("This cannot be run in DMs.")
+            return
+        
+        allowed_channels = [
+            959229175229726760,
+            967544442468843560,
+            1063317762191147008
+        ]
+        if ctx.guild.id == 958392331671830579:
+            if ctx.guild.id not in allowed_channels:
+                await ctx.reply("I am sorry, but Blackjack can only be started in the following channels or in any thread: {}".format(
+                    ", ".join([f"<#{c}>" for c in allowed_channels])
+                ))
+                return
+
+        
         wager_min = 4
         wager_max = 161660
 
@@ -1046,7 +1063,7 @@ class Games_cog(
                 if msg.author.bot:
                     return False
 
-                matched = join_pattern.match(msg.content)
+                matched = join_pattern.match(msg.content.lower())
                 if matched is None:
                     return False
                 
