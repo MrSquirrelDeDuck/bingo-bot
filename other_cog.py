@@ -1122,6 +1122,45 @@ class Other_cog(
 
         
     ######################################################################################################################################################
+    ##### GET CHAIN ######################################################################################################################################
+    ######################################################################################################################################################
+        
+    @commands.command(
+        name = "get_chain",
+        brief = "Provides the current length of a chain.",
+        description = "Provides the current length of a chain for the given channel."
+    )
+    @commands.check(u_checks.hide_from_help)
+    async def get_chain(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext,
+            channel: typing.Union[None, commands.GuildChannelConverter, commands.ThreadConverter] = commands.parameter(description = "The channel to get the current chain in.")
+        ):
+        if channel is None:
+            await ctx.reply("You must give a channel or thread to get the chain in.")
+            return
+        
+        data = database.load(
+            "chains_data", str(channel.id),
+            default = {"message": None, "sender": 0, "count": 0}
+        )
+
+        channel_type = "channel"
+        if isinstance(channel, discord.Thread):
+            channel_type = "thread"
+
+        if data.get("count", 0) < 3:
+            await ctx.reply(f"That {channel_type} doesn't have a chain currently.")
+            return
+        
+        await ctx.reply(f"That {channel_type} currently has a **{u_text.smart_number(data.get('count'))}** message long chain!")
+
+
+        
+            
+
+        
+    ######################################################################################################################################################
     ##### GET COUNT ######################################################################################################################################
     ######################################################################################################################################################
         
