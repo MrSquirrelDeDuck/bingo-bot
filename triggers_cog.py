@@ -1219,16 +1219,14 @@ class Triggers_cog(
         # Increment the daily stats.
         await self.daily_stats(message)
 
+        # Chains.
+        await self.chains(message)
+
         # Make sure the bot doesn't read it's own messages.
         if message.author.id == self.bot.user.id:
             return
         
         # Just a note, while there's u_custom.CustomContext for context objects, there is no CustomMessage, so u_interface.smart_reply still needs to be used.
-
-        # Chains.
-        await self.chains(message)
-
-        # Autodetection.
 
         # Stonk ticks.
         if u_interface.is_mm(message) and message.content.startswith("Current stonk values are as follows"):
