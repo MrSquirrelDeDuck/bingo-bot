@@ -885,7 +885,7 @@ class Other_cog(
             return
         
         # If it doesn't start with "Brick stats for" or if it ends with ".", "?", or "!" then it's not a brick stats message.
-        if not(replied_to.content.startswith("Brick stats for") or replied_to.content[-1] in ".?!"):
+        if not(replied_to.content.startswith("Brick stats for") and (replied_to.content[-1] not in ".?!")):
             await ctx.reply("You must reply to the stats of someone who has been bricked at least once.")
             return
         
