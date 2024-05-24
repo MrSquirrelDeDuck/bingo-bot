@@ -786,7 +786,47 @@ class Games_cog(
         )
         await ctx.reply(embed=embed, file=discord.File(image_path, filename="graph.png"))
         
+    @dnd_command.command(
+        name = "fast_roll",
+        brief = "Roll some dice (O(1) edition).",
+        description = "Roll some dice (O(1) edition)."
+    )
+    async def dnd_fast_roll(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext,
+            dice: typing.Optional[str] = commands.parameter(description = "The number of dice and number of sides, like '2d6'.")
+        ):
+        from random import randint
+            
+        if dice is None:
+            await ctx.reply("You must provide some dice to roll, like `2d6` or `3d4`.")
+            return
+        
+        matched = re.match(r"([\d,]+)d([\d,]+)", dice)
 
+        if matched is None:
+            await ctx.reply("You must provide some dice to roll, like `2d6` or `3d4`.")
+            return
+        
+        dice_amount = int(matched.group(1))
+        dice_sides = int(matched.group(2))
+
+        if dice_amount == 0:
+            await ctx.reply("Oddly enough, rolling 0 dice has a total of 0.")
+            return
+        
+        if dice_sides == 0:
+            await ctx.reply("How would a 0-sided die even work?")
+            return
+
+        outcome = randint(dice_amount, dice_sides*dice_amount)
+        
+        embed = u_interface.gen_embed(
+            title = "{}d{}".format(dice_amount, dice_sides),
+            description = "Total {}".format(outcome)
+        )
+        
+        await ctx.reply(embed=embed)
 
         
             
