@@ -493,7 +493,86 @@ class Tau(ChessBot):
                     digits = int(self.digits[self.digit_position * 2:self.digit_position * 2 + 2])
         
             return possible_moves[int(digits / cutoff * possible_move_count)]
+
+class CCPBot(ChessBot):
+    name = "ccpbot"
+    description = """BORN TO BLUNDER / TOURNAMENT IS A FUCK / 將死 Capture Em All 1989 / I am martin / 410,757,864,530 HUNG QUEENS"""
+    creator = "ph03n1x"
+
+    def turn(
+            self: typing.Self,
+            board: chess.Board
+        ) -> chess.Move:
+
+        # This bot has the following priorities:
+        # Priority 1: Checkmate
+        # Priority 2: Deliver a check
+        # Priority 3: Capture a piece
+        # Priority 4: Push a piece closer to the king.
+
+        # First, classify all the moves, and while doing so:
+        # Step 1: If you find a checkmate, play it immediately.
+
+        check_moves = []
+        cap_moves = []
+
+        board_copy = copy.deepcopy(board)
+        for move in board.legal_moves:
+            if board.gives_check(move): # Is it a check?
+                check_moves.append(move) # If so, note the move as a check, then scan for mate.
+                board_copy.push(move) 
+                if board_copy.is_checkmate(): # If it is mate, then play it now.
+                    return move
+                board_copy.pop()
+            elif board.is_capture(move): # If it is not check, check if it is a capture.
+                cap_moves.append(move) # Note any captures.            
+
+        # Step 2: If no mate exists, Check the king
+
+        if len(check_moves) != 0:
+            return random.choice(check_moves)
+
+        # Step 3: ...and if that can't happen, Capture a piece
+
+        if len(cap_moves) != 0:
+            return random.choice(cap_moves)
         
+        # Step 4: ...and if that can't happen, Push a piece closer to the enemy king.
+
+        # All potential future boards will be assigned a "rating" value for average
+        # distance from the enemy1 king with dist(). Lower is better.
+        
+        moveDict = {}
+
+        for move in board.legal_moves:
+            board_copy.push(move) 
+            moveDict[move] = self.rateDistFromKing(board_copy, board.turn)
+            board_copy.pop()
+
+        return min(moveDict, key=moveDict.get)
+            
+    # Functions for use in turn().
+
+    def helper_numToSquare(self, boardNum): # Must input an integer.
+        if boardNum < 0 or boardNum >= 64:
+            return None       
+        return [(boardNum // 8)+1,boardNum % 8+1]
+
+    def rateDistFromKing(self, thisBoard, color):
+        # For now, all pieces' distance from the king will be judged.
+        # It should be fairly easy to adjust this so that a piece type is ignored later.
+
+        thisBoard.turn = color
+        sumDist = 0
+        totalPieces = 0
+        for piece in chess.PIECE_TYPES:
+            listPieces = list(thisBoard.pieces(piece, thisBoard.turn))
+            for item in listPieces:
+                sumDist += math.dist(self.helper_numToSquare(item),self.helper_numToSquare(thisBoard.king(not thisBoard.turn)))
+                totalPieces += 1
+        if totalPieces == 0:
+            return 0
+        return sumDist/totalPieces
 
 
 #######################################################################################################################
