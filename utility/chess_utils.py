@@ -574,6 +574,195 @@ class CCPBot(ChessBot):
             return 0
         return sumDist/totalPieces
 
+class PacifistBot(ChessBot):
+    name = "pacifistbot"
+    description = """With the power of friendship I shall win!"""
+    creator = "ph03n1x"
+
+    PAC_PIECE_VALUES = [1,3,3,5,9,3] # For use in distance calc. P,N,B,R,Q,K
+
+    def turn(
+            self: typing.Self,
+            board: chess.Board
+        ) -> chess.Move:
+
+        board_copy = copy.deepcopy(board)
+        moveDict = {}
+
+        for move in board.legal_moves:
+            moveDict[move] = self.ratePacifism(move, board_copy, board.turn)
+
+        # Uncomment this to see the board before every move.
+        # print(board)
+        # print()
+
+        highValMove = max(moveDict, key=moveDict.get)
+        highVal = self.ratePacifism(highValMove, board_copy, board.turn)
+        return random.choice([k for k, v in moveDict.items() if v == highVal])
+            
+    # Functions for use in turn().
+
+    def helper_numToSquare(self, boardNum): # Must input an integer.
+        if boardNum < 0 or boardNum >= 64:
+            print("Illegal input made.")
+            return None       
+        return [(boardNum // 8)+1,boardNum % 8+1]
+    
+    def helper_squareToNum(self, boardNum): # Must input a list.
+        if type(boardNum) != list:
+            print("Illegal input made.")
+            return None       
+        return (boardNum[0]-1)*8+(boardNum[1]-1)
+
+    def ratePacifism(self, move, thisBoard, color):
+        # For now, all pieces' distance from the king will be judged.
+        # It should be fairly easy to adjust this so that a piece type is ignored later.
+
+        thisBoard.turn = color
+        sumDist = 0
+        totalPieces = 0
+        thisBoard.push(move) 
+        if chess.Board.is_checkmate(thisBoard):
+            thisBoard.pop()
+            return -93258468905632490863452
+        if chess.Board.is_check(thisBoard):
+            checkCount = len(chess.Board.checkers(thisBoard))
+            thisBoard.pop()
+            return -5000*checkCount
+        else:
+            thisBoard.pop()
+        if chess.Board.is_en_passant(thisBoard, move):
+            return -100
+        if chess.Board.is_capture(thisBoard, move):
+            return -100*self.getPieceValue(thisBoard, move.to_square)
+        return 0
+        
+    def getPieceValue(self, thisBoard, square):
+        if chess.Board.piece_type_at(thisBoard, square) == chess.PAWN:
+            return self.PAC_PIECE_VALUES[0]
+        elif chess.Board.piece_type_at(thisBoard, square) == chess.KNIGHT:
+            return self.PAC_PIECE_VALUES[1]
+        elif chess.Board.piece_type_at(thisBoard, square) == chess.BISHOP:
+            return self.PAC_PIECE_VALUES[2]
+        elif chess.Board.piece_type_at(thisBoard, square) == chess.ROOK:
+            return self.PAC_PIECE_VALUES[3]
+        elif chess.Board.piece_type_at(thisBoard, square) == chess.QUEEN:
+            return self.PAC_PIECE_VALUES[4]
+        elif chess.Board.piece_type_at(thisBoard, square) == chess.KING:
+            return self.PAC_PIECE_VALUES[5]
+        else:
+            print("The square is empty.", square)
+            return 0
+
+class BrokenCloset(ChessBot):
+    name = "brokencloset"
+    description = """Tries to put its king as close as possible to his boyfriend: The enemy king."""
+    creator = "ph03n1x"
+
+    BC_DIST_CAP = 0 # Adjust this if the bot seems to prioritize getting to the enemy king *too* much.
+
+    def turn(
+            self: typing.Self,
+            board: chess.Board
+        ) -> chess.Move:
+
+        # Uncomment this to see the board before every move.
+        # print(board)
+        # print()
+
+        if board.ply() == 0:
+            return chess.Move(chess.E2,chess.E4)
+        elif board.ply() == 1:
+            return chess.Move(chess.E7,chess.E5)
+        
+        board_copy = copy.deepcopy(board)
+        moveDict = {}
+
+        for move in board.legal_moves:
+            board_copy.push(move) 
+            moveDict[move] = self.rateDistFromKing(board_copy, board.turn)
+            board_copy.pop()
+
+        lowValMove = min(moveDict, key=moveDict.get)
+        board_copy.push(lowValMove) 
+        lowVal = self.rateDistFromKing(board_copy, board.turn)
+        board_copy.pop()
+        return random.choice([k for k, v in moveDict.items() if v == lowVal])
+
+    # Functions for use in turn().
+
+    def helper_numToSquare(self, boardNum): # Must input an integer.
+        if boardNum < 0 or boardNum >= 64:
+            print("Illegal input made.")
+            return None       
+        return [(boardNum // 8)+1,boardNum % 8+1]
+    
+    def helper_squareToNum(self, boardNum): # Must input a list.
+        if type(boardNum) != list:
+            print("Illegal input made.")
+            return None       
+        return (boardNum[0]-1)*8+(boardNum[1]-1)
+
+    def rateDistFromKing(self, thisBoard, color):
+        # For now, all pieces' distance from the king will be judged.
+        # It should be fairly easy to adjust this so that a piece type is ignored later.
+
+        thisBoard.turn = color
+        if thisBoard.king(thisBoard.turn) == None or thisBoard.king(not thisBoard.turn) == None:
+            print("A king is missing.")
+            return 0
+        pieceDist = math.dist(self.helper_numToSquare(thisBoard.king(thisBoard.turn)),self.helper_numToSquare(thisBoard.king(not thisBoard.turn)))
+        if pieceDist < (self.BC_DIST_CAP): # Replace 13**0.5 with the highest distance you want to matter.
+            return self.BC_DIST_CAP
+        else:
+            return pieceDist
+
+class RandomCheckmate(ChessBot):
+    name = "random_checkmate"
+    description = """The same as `random`, but if it has mate in 1 it will take it."""
+    creator = "Duck"
+
+    def turn(
+            self: typing.Self,
+            board: chess.Board
+        ) -> chess.Move:
+        board_copy = copy.deepcopy(board)
+
+        for move in board_copy.legal_moves:
+            board_copy.push(move)
+            if board_copy.is_checkmate():
+                board_copy.pop()
+                return move
+            board_copy.pop()
+        
+        # Regular Random.
+            
+        all_pieces = []
+
+        for piece in chess.PIECE_TYPES:
+            pieces = board.pieces(piece, board.turn)
+
+            for tile in pieces:
+                all_pieces.append(tile)
+        
+        for _ in all_pieces:
+            chosen_tile = random.choice(all_pieces)
+                
+            all_moves = board.legal_moves
+
+            possible_moves = []
+            for move in all_moves:
+                if move.from_square == chosen_tile:
+                    possible_moves.append(move)
+            
+            if len(possible_moves) == 0:
+                continue
+            
+            return random.choice(possible_moves)
+        
+        # Failsafe, this should never happen, and it might not even help.
+        return random.choice(list(board.legal_moves))
+
 
 #######################################################################################################################
 ##### BOT INTERACTION #################################################################################################
