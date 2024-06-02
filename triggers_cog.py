@@ -405,7 +405,13 @@ class Triggers_cog(
                     image_link = return_json["img"],
                     footer_text = return_json["alt"]
                 )
-                content = "New xkcd strip!!\n\nPinglist:\n{}\nUse `%xkcd ping` to add or remove yourself from the pinglist.".format("".join([f"<@{str(item)}>" for item in ping_list_data.get("xkcd_strips", [])]))
+
+                ping_list_members = ping_list_data.get("xkcd_strips", [])
+
+                # For funzies, shuffle the pinglist order.
+                random.shuffle(ping_list_members)
+
+                content = "New xkcd strip!!\n\nPinglist:\n{}\nUse `%xkcd ping` to add or remove yourself from the pinglist.".format("".join([f"<@{str(item)}>" for item in ping_list_members]))
 
                 xkcd_message = await ping_list_channel.send(content=content, embed=embed)
 
@@ -663,6 +669,9 @@ class Triggers_cog(
         ### Send message. ###
 
         stonk_pinglist = database.get_ping_list("stonk_tick_pings")
+
+        # For funzies, shuffle the pinglist order.
+        random.shuffle(stonk_pinglist)
 
         await message.reply("{}\n\nCopy of tick {}:\n\n{}".format(
             "".join(["<@{}>".format(user_id) for user_id in stonk_pinglist]),
@@ -997,6 +1006,9 @@ class Triggers_cog(
         
         # Now, fetch the users in the "727_pinglist" from the pinglist data and send a message pinging all of them.
         ping_data = database.get_ping_list("727_pinglist")
+
+        # For funzies, shuffle the pinglist order.
+        random.shuffle(ping_data)
 
         await message.reply("".join([f"<@{user_id}>" for user_id in ping_data]), mention_author=False)
         return
