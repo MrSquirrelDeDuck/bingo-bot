@@ -877,16 +877,20 @@ class Other_cog(
         ):
         replied_to = u_interface.replying_mm_checks(ctx.message, False, True)
         if not replied_to:
-            await ctx.reply("You must reply to the stats of someone who has been bricked at least once.")
+            await ctx.reply("You must reply to the stats of someone who has been bricked at least once.\nThis can be acquired via `$brick stats`.")
             return
         
         if replied_to.content.startswith("$brick stats"):
-            await ctx.reply("No, a message from Machine-Mind that is someone's brick stats.")
+            await ctx.reply("No, a message from Machine-Mind that is someone's brick stats.\nThis can be acquired via `$brick stats`.")
+            return
+        
+        if replied_to.content.startswith("%brick analyze"):
+            await ctx.reply("No, a message from Machine-Mind that is someone's brick stats.\nThis can be acquired via `$brick stats`.")
             return
         
         # If it doesn't start with "Brick stats for" or if it ends with ".", "?", or "!" then it's not a brick stats message.
         if not(replied_to.content.startswith("Brick stats for") and (replied_to.content[-1] not in ".?!")):
-            await ctx.reply("You must reply to the stats of someone who has been bricked at least once.")
+            await ctx.reply("You must reply to the stats of someone who has been bricked at least once.\nThis can be acquired via `$brick stats`.")
             return
         
         parsed = u_bread.parse_stats(replied_to)["stats"]
