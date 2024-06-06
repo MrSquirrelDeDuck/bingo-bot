@@ -63,6 +63,10 @@ class Chess_cog(
         ping_list_channel = await self.bot.fetch_channel(PING_LISTS_CHANNEL)
 
         ping_list = database.get_ping_list("daily_chess_match")
+
+        # For funzies, shuffle the pinglist order.
+        random.shuffle(ping_list)
+
         pings = "".join(["<@{}>".format(user_id) for user_id in ping_list])
         content = "{pings}\n\nA new series of Chess matches are starting!\nMatch lineup:\n{matches}\n{bye_bot}\n\nYou can use `%chess ping` to join or leave the pinglist!".format(
             pings = pings,

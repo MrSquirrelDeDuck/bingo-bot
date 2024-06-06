@@ -21,9 +21,10 @@ intents.reactions = True
 
 
 bot = u_custom.CustomBot(
-    command_prefix=COMMAND_PREFIX,
-    intents=intents, 
-    owner_id=OWNER_ID
+    command_prefix = COMMAND_PREFIX,
+    intents = intents, 
+    owner_id = OWNER_ID,
+    help_command = u_custom.CustomHelpCommand()
 )
 
 @bot.event

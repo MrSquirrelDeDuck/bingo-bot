@@ -221,13 +221,16 @@ class Other_cog(
         name="Other",
         description="Commands that don't fit elsewhere, and are kind of silly."
     ):
-    bot = None
+    bot: u_custom.CustomBot = None
 
     minecraft_wiki_searching = False
     vdc_wiki_searching = False
     stellaris_wiki_searching = False
     terraria_wiki_searching = False
     lichess_cooldown = 0
+
+    def setup(self: typing.Self) -> None:
+        self.bot.help_command.cog = self
     
     ######################################################################################################################################################
     ##### UTILITY FUNCTIONS ##############################################################################################################################
@@ -401,6 +404,26 @@ class Other_cog(
             ctx: commands.Context | u_custom.CustomContext
         ):
         await ctx.reply("Poggers.")
+
+        
+            
+
+        
+    ######################################################################################################################################################
+    ##### YOGGERS ########################################################################################################################################
+    ######################################################################################################################################################
+    
+    @commands.command(
+        name = "yoggers",
+        brief = "Yoggers.",
+        description = "Yoggers.",
+        hidden = True
+    )
+    async def poggers_command(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext
+        ):
+        await ctx.reply("Yoggers.")
 
         
             
@@ -877,16 +900,20 @@ class Other_cog(
         ):
         replied_to = u_interface.replying_mm_checks(ctx.message, False, True)
         if not replied_to:
-            await ctx.reply("You must reply to the stats of someone who has been bricked at least once.")
+            await ctx.reply("You must reply to the stats of someone who has been bricked at least once.\nThis can be acquired via `$brick stats`.")
             return
         
         if replied_to.content.startswith("$brick stats"):
-            await ctx.reply("No, a message from Machine-Mind that is someone's brick stats.")
+            await ctx.reply("No, a message from Machine-Mind that is someone's brick stats.\nThis can be acquired via `$brick stats`.")
+            return
+        
+        if replied_to.content.startswith("%brick analyze"):
+            await ctx.reply("No, a message from Machine-Mind that is someone's brick stats.\nThis can be acquired via `$brick stats`.")
             return
         
         # If it doesn't start with "Brick stats for" or if it ends with ".", "?", or "!" then it's not a brick stats message.
         if not(replied_to.content.startswith("Brick stats for") and (replied_to.content[-1] not in ".?!")):
-            await ctx.reply("You must reply to the stats of someone who has been bricked at least once.")
+            await ctx.reply("You must reply to the stats of someone who has been bricked at least once.\nThis can be acquired via `$brick stats`.")
             return
         
         parsed = u_bread.parse_stats(replied_to)["stats"]
@@ -1384,6 +1411,7 @@ class Other_cog(
             1074083716961402940, # Transfem
             1214084942145912842, # Gay
             1214083260766883840, # Enby
+            1247903767186378794, # Queer
         ]
 
         prune_ids = selectable + additional
@@ -1857,9 +1885,7 @@ class Other_cog(
             self: typing.Self,
             ctx: commands.Context | u_custom.CustomContext
         ):
-        await ctx.reply("Current year: 2023")
-
-    
+        await ctx.reply("Current year: 2023")    
 
 
 async def setup(bot: commands.Bot):
@@ -1868,6 +1894,8 @@ async def setup(bot: commands.Bot):
     
     cog = Other_cog()
     cog.bot = bot
+
+    cog.setup()
 
     # Add attributes for sys.modules and globals() so the _reload_module() function in utility.custom can read it and get the module objects.
     cog.modules = sys.modules
