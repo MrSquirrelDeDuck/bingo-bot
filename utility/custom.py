@@ -107,7 +107,10 @@ class CustomContext(commands.Context):
             self: typing.Self,
             content: str = "",
             **kwargs
-        ) -> discord.Message:
+        ) -> discord.Message | None:
+        if len(content) == 0 and kwargs.get("embed", None) is None and kwargs.get("file", None) is None:
+            return None
+        
         try:
             return await self.safe_reply(content, **kwargs)
         except discord.HTTPException:
@@ -146,3 +149,264 @@ class CustomBot(commands.Bot):
                 pass
 
 
+class CustomHelpCommand(commands.DefaultHelpCommand):
+    # THIS CAN ONLY BE RELOADED BY RESTARTING THE ENTIRE BOT.
+
+    def get_ending_note(self: typing.Self) -> str:
+        command_name = self.invoked_with
+
+        return f'Type `{self.context.clean_prefix}{command_name} <command>` for more info on a command.\nYou can also type `{self.context.clean_prefix}{command_name} <category>` for more info on a category.'
+
+    def get_opening_note(self: typing.Self) -> str:
+        return self.get_ending_note()
+
+    async def command_not_found(
+            self: typing.Self,
+            string: str
+        ) -> None:
+        embed_send = u_interface.gen_embed(
+            title = "Bingo-Bot help",
+            description = f"Command `{string}` not found."
+        )
+        return await self.context.reply(embed=embed_send)
+    
+    async def subcommand_not_found(
+            self: typing.Self,
+            command: commands.Command,
+            string: str
+        ) -> None:
+        embed_send = u_interface.gen_embed(
+            title = "Bingo-Bot help",
+            description = f"Command `{command.qualified_name}` has no subcommand called `{string}`."
+        )
+        return await self.context.reply(embed=embed_send)
+
+    async def send_cog_help(
+            self: typing.Self,
+            cog: commands.Cog | CustomBot
+        ) -> None:
+            
+        command_lines = []
+        all_commands = await self.filter_commands(cog.get_commands(), sort=self.sort_commands)
+
+        for command in all_commands:
+            try:
+
+                command_description = command.brief
+
+                if command_description is None:
+                    command_description = command.help
+                    if command_description is None:
+                        command_description = ""
+
+                if len(command_description) > 120:
+                    command_description = f"{command_description[:120]}..."
+                
+                command_lines.append(f"- `{command.name}` -- {command_description}")
+            except commands.CommandError:
+                continue
+        
+        if len(command_lines) == 0:
+            command_lines.append("*Nothing to list.*")
+        
+        embed = u_interface.gen_embed(
+            title = "Bingo-Bot help",
+            description = "{}\n\n**Commands:**\n{}\n\n{}".format(
+                cog.description,
+                "\n".join(command_lines),
+                self.get_opening_note()
+            )
+        )
+        await self.context.reply(embed=embed)
+    
+    async def send_bot_help(self: typing.Self) -> None:
+        all_commands = await self.filter_commands(self.context.bot.commands, sort=self.sort_commands)
+        all_commands = [(c.name, c) for c in all_commands]
+        all_commands: dict[str, commands.Command] = dict(sorted(all_commands, key=lambda c: c[0]))
+
+        command_data = {}
+        listed = []
+        for name, command in all_commands.items():
+            try:
+                if len(command.parents) != 0:
+                    continue
+
+                if command in listed:
+                    continue
+
+                listed.append(command)
+
+                if command.cog not in command_data:
+                    command_data[command.cog] = []
+
+                brief = command.short_doc
+                
+                if len(brief) > 120:
+                    brief = f"{brief[120]}..."
+
+                command_data[command.cog].append(f"- `{name}` -- {brief}")
+
+            except commands.CommandError:
+                continue
+        
+        command_data = dict(sorted(command_data.items(), key=lambda c: c[0].qualified_name))
+
+        lines = []
+
+        if self.context.bot.description is not None:
+            lines.append(f"{self.context.bot.description}\n")
+        
+        for cog, command_list in command_data.items():
+            lines.append(f"**{cog.qualified_name}:**")
+            for cmd in command_list:
+                lines.append(cmd)
+        
+        lines.append("")
+        lines.append(self.get_ending_note())
+        
+        embed = u_interface.gen_embed(
+            title = "Bingo-Bot help",
+            description = "\n".join(lines)
+        )
+        await self.context.reply(embed=embed)
+
+    async def send_command_help(
+            self: typing.Self,
+            command: commands.Command
+        ) -> None:
+        command_lines = []
+
+        breadcrumbs = []
+        for parent in reversed(command.parents):
+            breadcrumbs.append(parent.name)
+        
+        if len(breadcrumbs) != 0:
+            breadcrumbs.append(command.name)
+
+            command_lines.append("*{}*".format(" -> ".join(breadcrumbs)))
+
+        ####
+
+        command_name = f"{command.full_parent_name} {command.name}".strip()
+        command_lines.append(f"## **{self.context.clean_prefix}{command_name}**")
+        command_lines.append(command.description)
+        command_lines.append("")
+
+        usage = f"{self.context.clean_prefix}{command_name} {command.signature}".strip()
+        command_lines.append(f"Syntax: `{usage}`")
+        if len(command.aliases) > 0:
+            command_lines.append("Aliases: {}".format(', '.join([f"`{a}`" for a in command.aliases])))
+
+        
+        arguments = command.clean_params.values()
+        if len(arguments) > 0:
+            command_lines.append("\n**Arguments:**")
+            for argument in arguments:
+                name = argument.displayed_name or argument.name
+                description = argument.description or self.default_argument_description
+                command_lines.append(f"- `{name}`-- {description}")
+
+        ####
+        
+        command_lines.append("")
+        command_lines.append(self.get_ending_note())
+        
+        embed = u_interface.gen_embed(
+            title = "Bingo-Bot help",
+            description = "\n".join(command_lines)
+        )
+        await self.context.reply(embed=embed)
+        
+    async def send_group_help(
+            self: typing.Self,
+            command: commands.Group
+        ) -> None:
+        command_lines = []
+
+        breadcrumbs = []
+        for parent in reversed(command.parents):
+            breadcrumbs.append(parent.name)
+        
+        if len(breadcrumbs) != 0:
+            breadcrumbs.append(command.name)
+
+            command_lines.append("*{}*".format(" -> ".join(breadcrumbs)))
+
+        ####
+
+        command_name = f"{command.full_parent_name} {command.name}".strip()
+        command_lines.append(f"## **{self.context.clean_prefix}{command_name}**")
+        command_lines.append(command.description)
+        command_lines.append("")
+
+        usage = f"{self.context.clean_prefix}{command_name} {command.signature}".strip()
+        command_lines.append(f"Syntax: `{usage}`")
+        if len(command.aliases) > 0:
+            command_lines.append("Aliases: {}".format(', '.join([f"`{a}`" for a in command.aliases])))
+
+        
+        arguments = command.clean_params.values()
+        if len(arguments) > 0:
+            command_lines.append("\n**Arguments:**")
+            for argument in arguments:
+                name = argument.displayed_name or argument.name
+                description = argument.description or self.default_argument_description
+                command_lines.append(f"- `{name}` -- {description}")
+
+        subcommands = command.commands
+        if len(subcommands) > 0:
+            command_lines.append("\n**Subcommands:**")
+            for subcommand in subcommands:
+                name = subcommand.name
+                description = subcommand.short_doc
+                command_lines.append(f"- `{name}` -- {description}")
+
+        ####
+        
+        command_lines.append("")
+        command_lines.append(self.get_ending_note())
+        
+        embed = u_interface.gen_embed(
+            title = "Bingo-Bot help",
+            description = "\n".join(command_lines)
+        )
+        await self.context.reply(embed=embed)
+
+    async def command_callback(
+            self: typing.Self,
+            ctx: commands.Context | CustomContext,
+            /, *,
+            command: typing.Optional[str] = None
+        ) -> None:
+
+        bot = ctx.bot
+
+        if command is None:
+            return await self.send_bot_help()
+
+        # Check if it's a cog
+        cog = bot.get_cog(command)
+        if cog is not None:
+            return await self.send_cog_help(cog)
+
+        keys = command.split(' ')
+        cmd = bot.all_commands.get(keys[0])
+        if cmd is None:
+            return await self.command_not_found(keys[0])
+            
+
+        for key in keys[1:]:
+            try:
+                found = cmd.all_commands.get(key)  # type: ignore
+            except AttributeError:
+                return await self.subcommand_not_found(cmd, self.remove_mentions(key))
+            else:
+                if found is None:
+                    return await self.subcommand_not_found(cmd, self.remove_mentions(key))
+                cmd = found
+
+        if isinstance(cmd, commands.Group):
+            return await self.send_group_help(cmd)
+        else:
+            return await self.send_command_help(cmd)
+    

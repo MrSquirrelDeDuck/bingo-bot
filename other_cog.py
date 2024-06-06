@@ -221,13 +221,16 @@ class Other_cog(
         name="Other",
         description="Commands that don't fit elsewhere, and are kind of silly."
     ):
-    bot = None
+    bot: u_custom.CustomBot = None
 
     minecraft_wiki_searching = False
     vdc_wiki_searching = False
     stellaris_wiki_searching = False
     terraria_wiki_searching = False
     lichess_cooldown = 0
+
+    def setup(self: typing.Self) -> None:
+        self.bot.help_command.cog = self
     
     ######################################################################################################################################################
     ##### UTILITY FUNCTIONS ##############################################################################################################################
@@ -401,6 +404,26 @@ class Other_cog(
             ctx: commands.Context | u_custom.CustomContext
         ):
         await ctx.reply("Poggers.")
+
+        
+            
+
+        
+    ######################################################################################################################################################
+    ##### YOGGERS ########################################################################################################################################
+    ######################################################################################################################################################
+    
+    @commands.command(
+        name = "yoggers",
+        brief = "Yoggers.",
+        description = "Yoggers.",
+        hidden = True
+    )
+    async def poggers_command(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext
+        ):
+        await ctx.reply("Yoggers.")
 
         
             
@@ -1862,9 +1885,7 @@ class Other_cog(
             self: typing.Self,
             ctx: commands.Context | u_custom.CustomContext
         ):
-        await ctx.reply("Current year: 2023")
-
-    
+        await ctx.reply("Current year: 2023")    
 
 
 async def setup(bot: commands.Bot):
@@ -1873,6 +1894,8 @@ async def setup(bot: commands.Bot):
     
     cog = Other_cog()
     cog.bot = bot
+
+    cog.setup()
 
     # Add attributes for sys.modules and globals() so the _reload_module() function in utility.custom can read it and get the module objects.
     cog.modules = sys.modules

@@ -31,8 +31,8 @@ class Stonk_cog(
     ):
 
     @commands.group(
-        name = "stonks",
-        aliases = ["stonk"],
+        name = "stonk",
+        aliases = ["stonks"],
         description = "You might want `$bread stonks` instead of this.\n\nHeader command for stonk related utility commands.",
         brief = "Header for stonk related commands.",
         invoke_without_command = True,
@@ -849,21 +849,21 @@ class Stonk_cog(
     ######################################################################################################################################################
 
     @stonk.group(
-        name = "algorithms",
-        aliases = ["algorithm", "algo", "algos"],
+        name = "algorithm",
+        aliases = ["algorithms", "algo", "algos"],
         description = "Algorithms that try to make as much dough as they can.",
         brief = "Algorithms that try to make as much dough as they can.",
         invoke_without_command = True,
         pass_context = True
     )
-    async def stonk_algorithms(
+    async def stonk_algorithm(
             self: typing.Self,
             ctx: commands.Context | u_custom.CustomContext
         ):
         if ctx.invoked_subcommand is not None:
             return
         
-        await ctx.send_help(self.stonk_algorithms)
+        await ctx.send_help(self.stonk_algorithm)
     
 
 
@@ -875,7 +875,7 @@ class Stonk_cog(
     ##### STONK ALGORITHM STATS ##########################################################################################################################
     ######################################################################################################################################################
 
-    @stonk_algorithms.command(
+    @stonk_algorithm.command(
         name = "stats",
         aliases = ["portfolio"],
         description = "Get the stats of an algorithm.",
@@ -948,7 +948,7 @@ class Stonk_cog(
     ##### STONK ALGORITHM RANDOM #########################################################################################################################
     ######################################################################################################################################################
 
-    @stonk_algorithms.command(
+    @stonk_algorithm.command(
         name = "random",
         description = "Chooses a random algorithm.",
         brief = "Chooses a random algorithm."
@@ -970,7 +970,7 @@ class Stonk_cog(
     ##### STONK ALGORITHM LEADERBOARD ####################################################################################################################
     ######################################################################################################################################################
 
-    @stonk_algorithms.command(
+    @stonk_algorithm.command(
         name = "leaderboard",
         aliases = ["lb"],
         description = "Leaderboards for algorithms.",
@@ -1049,7 +1049,7 @@ class Stonk_cog(
     ##### STONK ALGORITHM GRAPH ##########################################################################################################################
     ######################################################################################################################################################
 
-    @stonk_algorithms.command(
+    @stonk_algorithm.command(
         name = "graph",
         brief = "Graphs of algorithm performances.",
         description = "Graphs of algorithm performances.\nYou can also use 'all' to use all the algorithms. Putting an exclamation mark before an algorithm will remove it from the graph. If none are provided it will use them all.\n- To mark the start of the graph, use '-start <start point>'. If none is provided it will use 2,000.\n- To mark the end, '-end <end point>'. If none is provided it will use the current tick.\n- '-log' can be used to set the Y axis to a log scale.\n- `-max <number>` will configure how many algorithms are shown. If there are more algorithms to be shown than this, it will rank the algorithms by ending value. -1 will use no limit. Defaults to -1."
