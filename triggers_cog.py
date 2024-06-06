@@ -304,22 +304,6 @@ class Triggers_cog(
         
         
 
-    @commands.command(
-        name = "test",
-        brief="test",
-        description="test"
-    )
-    @commands.check(u_checks.hide_from_help)
-    async def test_command(
-            self: typing.Self,
-            ctx: commands.Context | u_custom.CustomContext
-        ):
-        await self.hourly_loop()
-
-
-        
-        
-
     # @commands.command(
     #     name = "get_rules",
     #     brief="Gives you the current rules.",
