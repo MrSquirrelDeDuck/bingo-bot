@@ -1856,7 +1856,7 @@ class Other_cog(
             self: typing.Self,
             ctx: commands.Context | u_custom.CustomContext
         ):
-        lilly_timestamp = datetime.datetime.fromtimestamp(1095408240)
+        lilly_timestamp = datetime.datetime.fromtimestamp(1095667440)
         relative_delta = dateutil.relativedelta.relativedelta(datetime.datetime.now(), lilly_timestamp)
 
         await ctx.reply("Years: {years}\nMonths: {months}\nDays: {days}\nHours: {hours}\nMinutes: {minutes}".format(
