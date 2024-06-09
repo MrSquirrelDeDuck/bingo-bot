@@ -121,7 +121,7 @@ def has_ping(text: str) -> bool:
     Returns:
         bool: Whether the text contains a ping.
     """
-    return re.match("<@&?\d+>|@(everyone|here)", text) is not None
+    return re.search("<@&?\d+>|@(everyone|here)", text) is not None
 
 def after_parameter(
         ctx: commands.Context | u_custom.CustomContext,

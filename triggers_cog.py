@@ -194,6 +194,21 @@ class Triggers_cog(
         await self.daily_loop()
         await ctx.reply("Done.")
         
+    @commands.command(
+        name = "hourly_loop",
+        description = "Runs the hourly loop.",
+        brief = "Runs the hourly loop.",
+        aliases = ["hourly_task"],
+        hidden = True
+    )
+    @commands.is_owner()
+    async def hourly_loop_command(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext
+        ):
+        await self.hourly_loop()
+        await ctx.reply("Done.")
+        
     @commands.group(
         name = "pk",
         description = "Provides a more tailored PluralKit description.",
