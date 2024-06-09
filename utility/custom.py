@@ -108,7 +108,7 @@ class CustomContext(commands.Context):
             content: str = "",
             **kwargs
         ) -> discord.Message | None:
-        if len(content) == 0 and kwargs.get("embed", None) is None and kwargs.get("file", None) is None:
+        if (content is None or len(content) == 0) and kwargs.get("embed", None) is None and kwargs.get("file", None) is None:
             return None
         
         try:
