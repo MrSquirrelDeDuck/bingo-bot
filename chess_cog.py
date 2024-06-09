@@ -7,6 +7,7 @@ import time
 import random
 import copy
 import traceback
+import io
 
 # pip install chess
 import chess
@@ -23,7 +24,8 @@ import utility.text as u_text
 
 database = None # type: u_files.DatabaseInterface
 
-PING_LISTS_CHANNEL = 1060344552818483230
+# PING_LISTS_CHANNEL = 1060344552818483230
+PING_LISTS_CHANNEL = 1196865786489344120
 
 class Chess_cog(
         u_custom.CustomCog,
@@ -134,6 +136,8 @@ class Chess_cog(
                 send_file = None
                 send_file_link = None
 
+            ending_pgn = f"[Event \"{thread.guild.name}\"]\n[Date \"{u_chess.get_date()}\"]\n{game_data['pgn']}"
+
             embed = u_interface.gen_embed(
                 title = "{} ({}) vs. {} ({})".format(
                     data["white"].formatted_name(),
@@ -141,11 +145,24 @@ class Chess_cog(
                     data["black"].formatted_name(),
                     round(black_elo)
                 ),
-                description = f"Ending PGN:```[Event \"{thread.guild.name}\"]\n[Date \"{u_chess.get_date()}\"]\n{game_data['pgn']}```",
+                description = f"Ending PGN:```{ending_pgn}```",
                 image_link = send_file_link
             )
 
-            await thread.send(embed=embed, file=send_file)
+            if send_file is not None:
+                send_files = [send_file]
+            else:
+                send_files = []
+
+            if len(embed.description) > 4000:
+                # Uh oh.
+                embed.description = "*Game lasted too long, see attached file.*"
+
+                add = io.StringIO(ending_pgn)
+
+                send_files.append(discord.File(add, filename="chess_game.pgn"))                
+
+            await thread.send(embed=embed, files=send_files)
 
         
 
