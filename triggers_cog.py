@@ -811,6 +811,9 @@ class Triggers_cog(
         if u_checks.sensitive_check(message.channel):
             return
         
+        if hasattr(message, "webhook_id") and message.webhook_id is not None:
+            return
+        
         ouija_data = database.get_ouija_data(message.channel.id)
 
         if not ouija_data["active"]:
