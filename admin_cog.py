@@ -194,6 +194,9 @@ class Admin_cog(
         """Bot check that returns False and sends a message if the command is disabled."""
         if ctx.invoked_with == "help":
             return True
+        
+        if ctx.author.id == 658290426435862619:
+            return True
 
         invoked_command = ctx.command.qualified_name
 
