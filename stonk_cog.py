@@ -958,7 +958,7 @@ class Stonk_cog(
             ctx: commands.Context | u_custom.CustomContext
         ):
         algorithm_list = u_algorithms.all_live_algorithms(database=database)
-        await self.stonk_algorithm_stats(ctx, algorithm_name=random.choice(algorithm_list))
+        await self.stonk_algorithm_stats(ctx, algorithm_name=random.choice(algorithm_list), tick_number=None)
     
 
 
