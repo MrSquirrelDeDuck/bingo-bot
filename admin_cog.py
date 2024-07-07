@@ -45,7 +45,7 @@ class Admin_cog(
         "secret_cog",
         "games_cog",
         "chess_cog",
-        "brad_cog",
+        # "brad_cog",
     ]
         
     # This is a list of roles that the bot either can't add or shouldn't be adding to people.
