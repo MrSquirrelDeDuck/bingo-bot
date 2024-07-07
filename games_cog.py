@@ -1025,7 +1025,7 @@ class Games_cog(
                 wager = wager
             ))
 
-            seconds_to_wait = 60
+            seconds_to_wait = 10
 
             end_time = time.time() + seconds_to_wait
 
