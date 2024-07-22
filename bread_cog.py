@@ -1650,7 +1650,7 @@ class Bread_cog(
         if stonk is None:
             stonk = u_stonks.closest_to_dough(dough_amount=after_percentage, database=database)
         
-        gift_amount, remaining = divmod(after_percentage, stonk.value())
+        gift_amount, remaining = divmod(after_percentage, stonk.value(database = database))
 
         sm = u_text.smart_number
         
