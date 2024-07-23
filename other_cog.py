@@ -1368,7 +1368,7 @@ class Other_cog(
         name = "role_leaderboard",
         aliases = ["role_lb"],
         brief = "Alias for `%role leaderboard`.",
-        description = "Alias for `%role leaderboard`."
+        description = "Alias for `%role leaderboard`.\n\nA leaderboard for roles.\n\nModifier list:\n- '-list' will provide a list of all the roles the highlighted person has."
     )
     @commands.check(u_checks.hide_from_help)
     async def role_leaderboard_shortcut(
@@ -1685,7 +1685,7 @@ class Other_cog(
             for role in roles:
                 if role.id == ctx.guild.id:
                     continue
-                
+
                 name_similarity = fuzz.partial_ratio(term, role.name.lower())
 
                 role_data = all_role_data.get(role.id)
