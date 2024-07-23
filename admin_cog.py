@@ -1752,6 +1752,7 @@ class Admin_cog(
         description = "Sets a Chess bot's elo.",
         aliases = ["set_bot_rating"]
     )
+    @commands.is_owner()
     async def admin_set_bot_elo(
             self: typing.Self,
             ctx: commands.Context | u_custom.CustomContext,
