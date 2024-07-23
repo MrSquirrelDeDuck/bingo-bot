@@ -37,6 +37,10 @@ import mpmath
 # pip install wikipedia
 import wikipedia
 
+# pip install fuzzywuzzy
+# pip install python-Levenshtein
+from fuzzywuzzy import fuzz
+
 import sys
 
 import utility.custom as u_custom
@@ -1334,16 +1338,53 @@ class Other_cog(
 
         
     ######################################################################################################################################################
+    ##### ROLE ###########################################################################################################################################
+    ######################################################################################################################################################
+    
+    @commands.group(
+        name = "role",
+        aliases = ["roles"],
+        brief = "Commands regarding roles.",
+        description = "Commands regarding roles.",
+        invoke_without_command = True,
+        pass_context = True
+    )
+    async def role_command(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext
+        ):
+        if ctx.invoked_subcommand is not None:
+            return
+        
+        await ctx.send_help(self.role_command)
+            
+
+        
+    ######################################################################################################################################################
     ##### ROLE LEADERBOARD ###############################################################################################################################
     ######################################################################################################################################################
     
     @commands.command(
         name = "role_leaderboard",
         aliases = ["role_lb"],
+        brief = "Alias for `%role leaderboard`.",
+        description = "Alias for `%role leaderboard`."
+    )
+    @commands.check(u_checks.hide_from_help)
+    async def role_leaderboard_shortcut(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext,
+            member: typing.Optional[discord.Member] = commands.parameter(description = "The member to view."),
+            *, modifiers: typing.Optional[str] = commands.parameter(description = "Optional modifiers, see above for modifier list.")
+        ):
+        await self.role_leaderboard(ctx, member, modifiers=modifiers)
+    
+    @role_command.command(
+        name = "leaderboard",
+        aliases = ["lb"],
         brief = "A leaderboard for roles.",
         description = "A leaderboard for roles.\n\nModifier list:\n- '-list' will provide a list of all the roles the highlighted person has."
     )
-    @commands.check(u_checks.hide_from_help)
     async def role_leaderboard(
             self: typing.Self,
             ctx: commands.Context | u_custom.CustomContext,
@@ -1500,6 +1541,191 @@ class Other_cog(
         )
         
         await ctx.reply(embed=embed)
+            
+
+        
+    ######################################################################################################################################################
+    ##### ROLE INFO ######################################################################################################################################
+    ######################################################################################################################################################
+    
+    @role_command.command(
+        name = "info",
+        aliases = ["role_information"],
+        brief = "Provides information about a role.",
+        description = "Provides information about a role."
+    )
+    async def role_info(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext,
+            *, role: typing.Optional[discord.Role] = commands.parameter(description = "The role to get the info on.")
+        ):
+        if role is None:
+            await ctx.reply("Please provide a role.\nNote that role names are case sensitive.")
+            return
+
+        all_members = ctx.guild.members
+        total_member_count = len(all_members)
+        
+        member_role_count = 0
+        for member in all_members:
+            if role.id in [r.id for r in member.roles]:
+                member_role_count += 1
+                
+        all_role_data = database.load("roles", default={})
+        role_data = all_role_data.get(role.id, None)
+
+        fields = []
+
+        if role_data is None:
+            fields.append(("Role description:", "*Unknown.*\n\nRequirement:\n*Unknown.*\n\nObtainable: <:question:1265171774325264404>", False))
+        else:
+            fields.append((
+                "Role description:",
+                "{description}\n\nRequirement:\n{requirement}\n\nObtainable: {obtainable}".format(
+                    description = role_data.get("description", "*Unknown.*"),
+                    requirement = role_data.get("requirement", "*Unknown.*"),
+                    obtainable = "<:question:1265171774325264404>" if role_data.get("obtainable") is None else ("<:check:1189696905077325894>" if role_data.get("obtainable", False) else "<:x_:1189696918645907598>")
+                ),
+                False
+            ))
+
+        embed = u_interface.gen_embed(
+            title = f"\"{role.name}\" role info:",
+            description = "Number of people with this role: {count}/{member_count} ({percent}%)\nColor: {color}\nIs an integration role: {integration}".format(
+                count = u_text.smart_number(member_role_count),
+                member_count = u_text.smart_number(total_member_count),
+                percent = round(member_role_count / total_member_count * 100, 2),
+                color = "#{:06x}".format(role.color.value) if role.color.value != 0 else "None.",
+                integration = "<:check:1189696905077325894>" if role.is_bot_managed() else "<:x_:1189696918645907598>"
+            ),
+            fields = fields
+        )
+
+        await ctx.reply(embed=embed)
+            
+
+        
+    ######################################################################################################################################################
+    ##### ROLE EDIT ######################################################################################################################################
+    ######################################################################################################################################################
+    
+    @role_command.command(
+        name = "edit",
+        brief = "Edits information about a role.",
+        description = "Edits information about a role.\nThis command can only be used by moderators. Please ping Duck if you want a role updated in this."
+    )
+    @commands.check(u_checks.in_authority)
+    async def role_edit(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext,
+            role: typing.Optional[discord.Role] = commands.parameter(description = "The role to get the info on. (Quotation marks required.)"),
+            info_type: typing.Optional[str] = commands.parameter(description = "The type of information to edit."),
+            *, new_info: typing.Optional[str] = commands.parameter(description = "The new information to set.")
+        ):
+        if role is None:
+            await ctx.reply("Please provide a role.\nNote that roles are case sensitive and require quotation marks around the name if the name contains spaces.")
+            return
+        
+        if info_type not in ["description", "obtainable", "requirement"]:
+            await ctx.reply("Please provide the type of information to update.\nCurrent options:\n- `description`\n- `requirement`\n- `obtainable`")
+            return
+        
+        if new_info is None:
+            await ctx.reply("Please provide what to update the information with.")
+            return
+        
+        if info_type == "obtainable":
+            try:
+                new_info = u_converters.extended_bool(new_info)
+            except commands.BadArgument:
+                await ctx.reply("The \"obtainable\" data is a boolean. Please use \"yes\" or \"no\" for the new information.")
+                return
+            
+        all_role_data = database.load("roles", default={})
+        existing = all_role_data.get(role.id, {})
+        edit = existing.copy()
+
+        edit[info_type] = new_info
+        all_role_data[role.id] = edit
+        database.save("roles", data=all_role_data)
+
+        embed = u_interface.gen_embed(
+            title = "Role info updated.",
+            description = f"Info type: {info_type.title()}\n\nOld:\n{existing.get(info_type, '*None found.*')}\n\nNew:\n{edit.get(info_type, '*None found.*')}"
+        )
+
+        await ctx.reply(embed=embed)
+            
+
+        
+    ######################################################################################################################################################
+    ##### ROLE SEARCH ####################################################################################################################################
+    ######################################################################################################################################################
+    
+    @role_command.command(
+        name = "search",
+        brief = "Searches the list of roles.",
+        description = "Searches the list of roles"
+    )
+    async def role_search(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext,
+            *, search_term: typing.Optional[str] = commands.parameter(description = "What to search for.")
+        ):
+        if search_term is None:
+            await ctx.reply("Please provide a search term.")
+            return
+        
+        all_role_data = database.load("roles", default={})
+
+        def fuzzy_search(search_term: str, roles: list[discord.Role]) -> list[tuple[discord.Role, int]]:
+            result = []
+            term = search_term.lower()
+
+            for role in roles:
+                if role.id == ctx.guild.id:
+                    continue
+                
+                name_similarity = fuzz.partial_ratio(term, role.name.lower())
+
+                role_data = all_role_data.get(role.id)
+                if role_data is not None:
+                    description_similarity = fuzz.partial_ratio(term, role_data.get("description", "").lower())
+                    requirement_similarity = fuzz.partial_ratio(term, role_data.get("requirement", "").lower())
+                else:
+                    description_similarity = -100000
+                    requirement_similarity = -100000
+
+                result.append((role, max(name_similarity, description_similarity, requirement_similarity)))
+
+            return sorted(result, key=lambda x: x[1], reverse=True)
+        
+        returned = fuzzy_search(search_term, ctx.guild.roles)
+
+        fields = []
+
+        for role, score in returned[:6]:
+            role_data = all_role_data.get(role.id, {})
+
+            fields.append((
+                role.name,
+                "Description:\n{description}\n\nRequirement:\n{requirement}\n\nObtainable: {obtainable}".format(
+                    description = role_data.get("description", "*Unknown.*"),
+                    requirement = role_data.get("requirement", "*Unknown.*"),
+                    obtainable = "<:question:1265171774325264404>" if role_data.get("obtainable") is None else ("<:check:1189696905077325894>" if role_data.get("obtainable", False) else "<:x_:1189696918645907598>")
+                ),
+                True
+            ))
+
+        embed = u_interface.gen_embed(
+            title = "Role search",
+            description = f"Searching for \"{search_term}\":",
+            fields = fields
+        )
+
+        await ctx.reply(embed=embed)
+
+
 
         
             
