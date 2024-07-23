@@ -319,7 +319,8 @@ class CustomHelpCommand(commands.DefaultHelpCommand):
         
     async def send_group_help(
             self: typing.Self,
-            command: commands.Group
+            command: commands.Group,
+            ctx: commands.Context | CustomContext
         ) -> None:
         command_lines = []
 
@@ -357,6 +358,12 @@ class CustomHelpCommand(commands.DefaultHelpCommand):
         if len(subcommands) > 0:
             command_lines.append("\n**Subcommands:**")
             for subcommand in subcommands:
+                try:
+                    if not await subcommand.can_run(ctx):
+                        continue
+                except commands.CommandError:
+                    continue
+
                 name = subcommand.name
                 description = subcommand.short_doc
                 command_lines.append(f"- `{name}` -- {description}")
@@ -406,7 +413,7 @@ class CustomHelpCommand(commands.DefaultHelpCommand):
                 cmd = found
 
         if isinstance(cmd, commands.Group):
-            return await self.send_group_help(cmd)
+            return await self.send_group_help(cmd, ctx)
         else:
             return await self.send_command_help(cmd)
     
