@@ -1572,7 +1572,7 @@ class Other_cog(
                 member_role_count += 1
                 
         all_role_data = database.load("roles", default={})
-        role_data = all_role_data.get(role.id, None)
+        role_data = all_role_data.get(str(role.id), None)
 
         fields = []
 
@@ -1642,11 +1642,11 @@ class Other_cog(
                 return
             
         all_role_data = database.load("roles", default={})
-        existing = all_role_data.get(role.id, {})
+        existing = all_role_data.get(str(role.id), {})
         edit = existing.copy()
 
         edit[info_type] = new_info
-        all_role_data[role.id] = edit
+        all_role_data[str(role.id)] = edit
         database.save("roles", data=all_role_data)
 
         embed = u_interface.gen_embed(
@@ -1688,7 +1688,7 @@ class Other_cog(
 
                 name_similarity = fuzz.partial_ratio(term, role.name.lower())
 
-                role_data = all_role_data.get(role.id)
+                role_data = all_role_data.get(str(role.id))
                 if role_data is not None:
                     description_similarity = fuzz.partial_ratio(term, role_data.get("description", "").lower())
                     requirement_similarity = fuzz.partial_ratio(term, role_data.get("requirement", "").lower())
@@ -1705,7 +1705,7 @@ class Other_cog(
         fields = []
 
         for role, score in returned[:6]:
-            role_data = all_role_data.get(role.id, {})
+            role_data = all_role_data.get(str(role.id), {})
 
             fields.append((
                 role.name,
