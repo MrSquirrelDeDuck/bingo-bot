@@ -5,6 +5,7 @@ Note that in order to reload this code utility.custom needs to be reloaded, and 
 import typing
 import discord
 from discord.ext import commands
+import traceback
 
 import importlib
 
@@ -119,6 +120,60 @@ class CustomContext(commands.Context):
                 return await self.send(f"{self.author.mention},\n\n{content}", **kwargs)
             else:
                 return await self.send(f"{u_text.ping_filter(u_interface.get_display_name(self.author))},\n\n{content}", **kwargs)
+    
+    async def send_help(
+            self: typing.Self,
+            *args: typing.Any
+        ) -> typing.Any:
+        """Slightly modified version of base Context send_help to pass ctx to the send_group_help method."""
+        bot = self.bot
+        cmd = bot.help_command
+
+        if cmd is None:
+            return None
+
+        cmd = cmd.copy()
+        cmd.context = self
+
+        if len(args) == 0:
+            await cmd.prepare_help_command(self, None)
+            mapping = cmd.get_bot_mapping()
+            injected = commands.core.wrap_callback(cmd.send_bot_help)
+            try:
+                return await injected(mapping)
+            except commands.errors.CommandError as e:
+                await cmd.on_help_command_error(self, e)
+                return None
+
+        entity = args[0]
+        if isinstance(entity, str):
+            entity = bot.get_cog(entity) or bot.get_command(entity)
+
+        if entity is None:
+            return None
+
+        try:
+            entity.qualified_name
+        except AttributeError:
+            # if we're here then it's not a cog, group, or command.
+            return None
+
+        await cmd.prepare_help_command(self, entity.qualified_name)
+
+        try:
+            if commands.context.is_cog(entity):
+                injected = commands.core.wrap_callback(cmd.send_cog_help)
+                return await injected(entity)
+            elif isinstance(entity, commands.Group):
+                injected = commands.core.wrap_callback(cmd.send_group_help)
+                return await injected(entity, self)
+            elif isinstance(entity, commands.Command):
+                injected = commands.core.wrap_callback(cmd.send_command_help)
+                return await injected(entity)
+            else:
+                return None
+        except commands.errors.CommandError as e:
+            await cmd.on_help_command_error(self, e)
 
 class CustomBot(commands.Bot):
     # THIS CAN ONLY BE RELOADED BY RESTARTING THE ENTIRE BOT.
@@ -417,3 +472,9 @@ class CustomHelpCommand(commands.DefaultHelpCommand):
         else:
             return await self.send_command_help(cmd)
     
+    async def on_help_command_error(
+            self: typing.Self,
+            ctx: commands.Context | CustomContext,
+            error: Exception, /
+        ) -> None:
+        raise error
