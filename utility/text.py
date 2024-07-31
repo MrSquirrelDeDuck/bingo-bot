@@ -232,6 +232,7 @@ def parse_wikitext(
     if manual_replacements is not None:
         parsed = manual_replacements(parsed)
 
+    parsed = re.sub(r"{{PAGENAME}}", page_title, parsed)
     parsed = re.sub("<math>.*?<\/math>", "", parsed)
     parsed = re.sub("{{[\w\W]*?}}", "", parsed)
     parsed = re.sub("\[\[File:[\w\W]+?\]\]", "", parsed)
@@ -242,9 +243,12 @@ def parse_wikitext(
     parsed = parsed.replace("<code>", "`")
     parsed = parsed.replace("</code>", "`")
     
-    link_found = re.findall("\[\[([\w'\" _]+)(\|[\w\W _]+?)?\]\]", parsed)
+    link_found = re.findall("\[\[((([\w'\" _]+)?#?)[\w'\" _]+)(\|[\w\W _]+?)?\]\]", parsed)
 
-    for link_page, link_text in link_found:
+    for link_page, _, _, link_text in link_found:
+        if link_page.startswith("#"):
+            link_page = f"{page_title}#{link_text[1:]}"
+
         link_formatted = "{}{}".format(wiki_link, link_page.replace(" ", "_"))
 
         if len(link_text) == 0:
