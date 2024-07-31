@@ -5,6 +5,7 @@ import re
 import typing
 import math
 import datetime
+import json
 
 # pip install pytz
 import pytz
@@ -14,6 +15,7 @@ import utility.values as u_values
 import utility.interface as u_interface
 import utility.files as u_files
 import utility.solvers as u_solvers
+import utility.values as u_values
 
 import importlib
 
@@ -384,9 +386,10 @@ def get_ascension(
 
     return int(((token_sum - 31) / 6 + 6 if token_sum-1 > 30 else (token_sum - 1) / 5) + 1)
 
-def parse_attempt(
+async def parse_attempt(
         message: discord.Message,
         require_reply: bool = False,
+        require_stats: bool = True,
         custom_check: typing.Callable[[discord.Message], bool] = None
     ) -> bool | dict[str, int | typing.Type[u_values.Item] | dict[str, bool], bool]:
     """Attempts to parse a Discord message. Returns the parser output, or False if any check failed.
@@ -404,14 +407,14 @@ def parse_attempt(
     if not replied_to:
         return False
 
-    if not replied_to.content.startswith("Stats for:"):
+    if not replied_to.content.startswith("Stats for:") and require_stats:
         return False
     
     if custom_check is not None:
         if custom_check(replied_to):
             return False
                     
-    return parse_stats(message.reference.resolved)
+    return await parse_stats(message.reference.resolved)
     
 
 
@@ -425,7 +428,7 @@ def parse_attempt(
 ##### STATS PARSER ############################################
 ###############################################################
 
-def parse_stats(message: discord.Message) -> dict[str | typing.Type[u_values.Item], int | dict[str, bool] | bool]:
+async def parse_stats(message: discord.Message) -> dict[str | typing.Type[u_values.Item], int | dict[str, bool] | bool]:
     """Parses a Machine-Mind message and returns a dict of as many stats as it can figure out, both user stats and internal stats, like stonks, will be returned in the `stats` dict.
     
     The following messages can be parsed:
@@ -439,6 +442,7 @@ def parse_stats(message: discord.Message) -> dict[str | typing.Type[u_values.Ite
     - $bread hidden
     - $bread dough
     - $bread stonks
+    - $bread dump
     - $brick stats
 
     Args:
@@ -464,6 +468,38 @@ def parse_stats(message: discord.Message) -> dict[str | typing.Type[u_values.Ite
     """
 
     content = message.content
+    
+    ###################
+    ### $bread dump ###
+    ###################
+
+    if len(content) == 0:
+        text_dict = None
+
+        for attachment in message.attachments:
+            if attachment.filename != "export.json":
+                continue
+
+            attachment_bytes = await attachment.read()
+
+            text_dict = json.loads(attachment_bytes)
+            
+            for key in text_dict.copy():
+                item = u_values.get_item(key)
+                
+                if item is None:
+                    continue
+                
+                text_dict[item] = text_dict.pop(key)
+        
+        if text_dict is not None:
+            return {
+                "parse_successful": True,
+                "stats_type": "dump",
+                "stats": text_dict
+            }
+        
+
     
     def extract(
             surrounding: str,

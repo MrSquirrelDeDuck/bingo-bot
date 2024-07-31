@@ -920,7 +920,7 @@ class Other_cog(
             await ctx.reply("You must reply to the stats of someone who has been bricked at least once.\nThis can be acquired via `$brick stats`.")
             return
         
-        parsed = u_bread.parse_stats(replied_to)["stats"]
+        parsed = await u_bread.parse_stats(replied_to)["stats"]
 
         bricks = parsed["bricks"]
         gold = parsed["brick_gold"]
