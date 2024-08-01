@@ -613,10 +613,10 @@ class Bread_cog(
         if ctx.invoked_subcommand is not None:
             return
 
-        attempted_parse = u_bread.parse_attempt(ctx.message, require_reply=True)
+        attempted_parse = await u_bread.parse_attempt(ctx.message, require_reply=True, require_stats=False)
         
         if attempted_parse:
-            current, self_converting_yeast = attempted_parse["stats"]["loaf_converter"], attempted_parse["stats"]["loaf_converter_discount"]
+            current, self_converting_yeast = attempted_parse["stats"].get("loaf_converter", 0), attempted_parse["stats"].get("loaf_converter_discount", 0)
 
         if current is None:
             await ctx.reply("You must provide the amount of Loaf Converters you have.\nSyntax: `%bread loaf_converter <current amount of lcs> <level of scy>`.")
@@ -652,11 +652,11 @@ class Bread_cog(
             goal: typing.Optional[u_converters.parse_int] = commands.parameter(description = "The amount of Loaf Converters you would like to have."),
             self_converting_yeast: typing.Optional[u_converters.parse_int] = commands.parameter(description = "The amount of Self Converting Yeast you currently have.")
         ):
-        attempted_parse = u_bread.parse_attempt(ctx.message, require_reply=True)
+        attempted_parse = await u_bread.parse_attempt(ctx.message, require_reply=True, require_stats=False)
 
         if attempted_parse:
             goal = current
-            current, self_converting_yeast = attempted_parse["stats"]["loaf_converter"], attempted_parse["stats"]["loaf_converter_discount"]
+            current, self_converting_yeast = attempted_parse["stats"].get("loaf_converter", 0), attempted_parse["stats"].get("loaf_converter_discount", 0)
 
         if current is None:
             await ctx.reply("You must provide the amount of Loaf Converters you currently have, or reply to a stats message.\nSyntax: `%bread loaf_converter calculate <current amount of lcs> <goal amount of lcs> <scy level>`, or reply to a stats message and just provide the goal.")
@@ -702,10 +702,10 @@ class Bread_cog(
             current: typing.Optional[u_converters.parse_int] = commands.parameter(description = "The amount of Loaf Converters you currently have."),
             self_converting_yeast: typing.Optional[u_converters.parse_int] = commands.parameter(description = "The amount of Self Converting Yeast you currently have.")
         ):
-        attempted_parse = u_bread.parse_attempt(ctx.message, require_reply=True)
+        attempted_parse = await u_bread.parse_attempt(ctx.message, require_reply=True, require_stats=False)
 
         if attempted_parse:
-            current, self_converting_yeast = attempted_parse["stats"]["loaf_converter"], attempted_parse["stats"]["loaf_converter_discount"]
+            current, self_converting_yeast = attempted_parse["stats"].get("loaf_converter", 0), attempted_parse["stats"].get("loaf_converter_discount", 0)
 
             if dough is None:
                 dough = attempted_parse["stats"]["total_dough"]
@@ -926,7 +926,7 @@ class Bread_cog(
         parsed_data = None
         stored_data = None
 
-        def get_parsed():
+        async def get_parsed():
             nonlocal parsed_data
             if parsed_data is None:
                 replied = u_interface.replying_mm_checks(
@@ -939,7 +939,7 @@ class Bread_cog(
                     parsed_data = {}
                     return parsed_data
 
-                parsed_data = u_bread.parse_stats(replied)
+                parsed_data = await u_bread.parse_stats(replied)
 
                 if parsed_data.get("parse_successful"):
                     parsed_data = parsed_data.get("stats")
@@ -961,7 +961,7 @@ class Bread_cog(
         for gem in u_values.all_shiny:
             if resolve_values.get(gem) is None:
                 if parsed_data is None:
-                    parsed_data = get_parsed()
+                    parsed_data = await get_parsed()
                 
                 if gem in parsed_data:
                     resolve_values[gem] = parsed_data[gem]
@@ -974,7 +974,7 @@ class Bread_cog(
 
         if tron_value is None:
             if parsed_data is None:
-                parsed_data = get_parsed()
+                parsed_data = await get_parsed()
 
             if "prestige_level" in parsed_data and \
                "chessatron_shadow_boost" in parsed_data and \
@@ -1070,7 +1070,7 @@ class Bread_cog(
             "prestige_level": ascension
         }
 
-        resolved = u_interface.resolve_conflict(
+        resolved = await u_interface.resolve_conflict(
             database = database,
             ctx = ctx,
             resolve_keys = list(resolve_values.keys()),
@@ -1207,7 +1207,7 @@ class Bread_cog(
             "prestige_level": ascension
         }
 
-        resolved = u_interface.resolve_conflict(
+        resolved = await u_interface.resolve_conflict(
             database = database,
             ctx = ctx,
             resolve_keys = list(resolve_values.keys()),
@@ -1320,7 +1320,7 @@ class Bread_cog(
             await ctx.reply("You must reply to stats message.")
             return
         
-        parsed = u_bread.parse_stats(replied_to)
+        parsed = await u_bread.parse_stats(replied_to)
 
         if not parsed["parse_successful"]:
             await ctx.reply("You must reply to stats message.")
@@ -1399,8 +1399,11 @@ class Bread_cog(
                     ", ".join([u_values.get_item(item).internal_emoji for item in value.keys()])
                 ))
                 continue
-
-            lines.append(f"{key}: {u_text.smart_number(value)}")
+            
+            if isinstance(value, int):
+                value = u_text.smart_number(value)
+                
+            lines.append(f"{key}: {value}")
         
         embed = u_interface.gen_embed(
             title = "Stored data inventory",

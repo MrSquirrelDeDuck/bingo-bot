@@ -353,10 +353,10 @@ class Stonk_cog(
             await ctx.reply("You must reply to a portfolio to analyze it.")
             return
         
-        parsed = u_bread.parse_stats(replied_to)
+        parsed = await u_bread.parse_stats(replied_to)
 
 
-        if parsed.get("stats_type") != "portfolio":
+        if parsed.get("stats_type") not in ["portfolio", "dump"]:
             await ctx.reply("You must reply to a portfolio to analyze it.")
             return
         
@@ -371,19 +371,19 @@ class Stonk_cog(
         output_lines = []
         for stonk in u_values.stonks:
             if stonk.internal_name not in tick_data:
-                output_lines.append("{} -- {}, however it did not exist on this tick.".format(stonk, u_text.smart_text(parsed[stonk], "stonk")))
+                output_lines.append("{} -- {}, however it did not exist on this tick.".format(stonk, u_text.smart_text(parsed.get(stonk, 0), "stonk")))
                 continue
 
-            value = parsed[stonk] * tick_data[stonk.internal_name]
+            value = parsed.get(stonk, 0) * tick_data[stonk.internal_name]
             dough_value.append(value)
 
-            output_lines.append("{} -- {}, worth **{} dough**".format(stonk, u_text.smart_text(parsed[stonk], "stonk"), u_text.smart_number(value)))
+            output_lines.append("{} -- {}, worth **{} dough**".format(stonk, u_text.smart_text(parsed.get(stonk, 0), "stonk"), u_text.smart_number(value)))
 
             if stonk.internal_name not in previous_tick_data:
                 previous_dough_value.append(value)
                 continue
             
-            previous_dough_value.append(parsed[stonk] * previous_tick_data[stonk.internal_name])
+            previous_dough_value.append(parsed.get(stonk, 0) * previous_tick_data[stonk.internal_name])
         
         embed = u_interface.gen_embed(
             title = "Analyzed portfolio",
@@ -784,9 +784,9 @@ class Stonk_cog(
             await ctx.reply("You must reply to a portfolio to get a graph of it.")
             return
         
-        parsed = u_bread.parse_stats(replied_to)
+        parsed = await u_bread.parse_stats(replied_to)
 
-        if parsed.get("stats_type") != "portfolio":
+        if parsed.get("stats_type") not in ["portfolio", "dump"]:
             await ctx.reply("You must reply to a portfolio to get a graph of it.")
             return
 
@@ -994,8 +994,10 @@ class Stonk_cog(
             await ctx.reply("The tick number must be greater than 2,000, or negative for previous ticks.\n-1 would be the current tick, and -2 would be the previous tick.")
             return
         
+        stonk_values = u_stonks.current_values(database)
         def check(algorithm_info):
-            return algorithm_info["data"]["current_total"]
+            return u_algorithms.dough_sum(algorithm_info, stonk_values)
+            # return algorithm_info["data"]["current_total"]
         
         sorted_list = u_algorithms.get_leaderboard(database, check, tick_number=tick_number)
 
@@ -1172,7 +1174,7 @@ class Stonk_cog(
 
             algorithm = data["name"]
 
-            portfolio_history = u_algorithms.get_portfolio_history(database=database, algorithm_name=algorithm)
+            portfolio_history = u_algorithms.get_portfolio_history(algorithm_name=algorithm)
             algorithm_function = u_algorithms.get_algorithm(database=database, algorithm_name=algorithm)["func"]
 
             values = []

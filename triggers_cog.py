@@ -378,11 +378,19 @@ class Triggers_cog(
                 if reminder_channel is None:
                     reminder_channel = await self.bot.fetch_channel(REMINDERS_CHANNEL)
 
+                ping_id = reminder["user"]
+
+                if not ping_id.startswith("&"): # Filter out role pings.
+                    found_member = discord.utils.find(lambda m: str(m.id) == ping_id, reminder_channel.guild.members)
+
+                    if found_member is None:
+                        continue
+
                 embed = u_interface.gen_embed(
                     title = "You had a reminder set for now!",
                     description = reminder["text"]
                 )
-                await reminder_channel.send(content="<@{}>".format(reminder["user"]), embed=embed)
+                await reminder_channel.send(content="<@{}>".format(ping_id), embed=embed)
             
             ### XKCD PINGLIST ###
             

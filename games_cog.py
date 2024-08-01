@@ -11,6 +11,8 @@ import traceback
 import asyncio
 import copy
 import os
+import aiohttp
+import datetime
 
 import sys
 
@@ -21,6 +23,7 @@ import utility.checks as u_checks
 import utility.text as u_text
 import utility.images as u_images
 import utility.converters as u_converters
+import utility.skyblock as u_skyblock
 
 database = None # type: u_files.DatabaseInterface
 
@@ -62,6 +65,18 @@ class PlayingCard:
     
     def __repr__(self: typing.Self) -> str:
         return self.emoji
+        
+class BlackjackCard(PlayingCard):
+    def __init__(
+            self: typing.Self,
+            card_code: str
+        ):
+        super().__init__(card_code)
+
+        if self.value <= 10:
+            self.game_value = self.value
+        else:
+            self.game_value = 10
 
 class BlackjackPlayer:
     def __init__(
@@ -77,7 +92,7 @@ class BlackjackPlayer:
 
         self.ping = f"<@{member_id}>"
         
-        self.hand: list[PlayingCard] = []
+        self.hand: list[BlackjackCard] = []
 
     @property
     def hand_value(self: typing.Self) -> int:
@@ -227,14 +242,14 @@ class BlackjackPlayer:
     
     def add_card(
             self: typing.Self,
-            card: PlayingCard
+            card: BlackjackCard
         ) -> None:
         self.hand.append(card)
 
     def hit(
             self: typing.Self,
-            deck: list[PlayingCard]
-        ) -> tuple[PlayingCard, list[PlayingCard]]:
+            deck: list[BlackjackCard]
+        ) -> tuple[BlackjackCard, list[BlackjackCard]]:
         card = deck.pop(0)
 
         self.add_card(card)
@@ -252,8 +267,8 @@ class BlackjackPlayer:
     
     def double_down(
             self: typing.Self,
-            deck: list[PlayingCard]
-        ) -> tuple[PlayingCard, list[PlayingCard]]:
+            deck: list[BlackjackCard]
+        ) -> tuple[BlackjackCard, list[BlackjackCard]]:
         self.wager *= 2
         self.stopped = True
 
@@ -270,8 +285,8 @@ class BlackjackPlayer:
     
     def split(
             self: typing.Self,
-            deck: list[PlayingCard]
-        ) -> tuple[BlackjackPlayer, list[PlayingCard]]:
+            deck: list[BlackjackCard]
+        ) -> tuple[BlackjackPlayer, list[BlackjackCard]]:
 
         additional = BlackjackPlayer(
             member_id = self.member_id,
@@ -289,7 +304,7 @@ class BlackjackPlayer:
     def handle_choice(
             self: typing.Self,
             choice: str,
-            deck: list[PlayingCard]
+            deck: list[BlackjackCard]
         ) -> dict:
         if choice == "hit":
             card, deck = self.hit(deck=deck)
@@ -559,10 +574,85 @@ class Games_cog(
         name="Games",
         description="Game related commands!\n\nSome of these commands are miscellaneous game related utility commands, and some commands are games themselves!"
     ):
+    skyblock_item_data = None
+    skyblock_skill_data = None
+    skyblock_collections_data = None
+
     story_game_going = False
     blackjack_going = False
+    skyblock_wiki_searching = False
 
     traitor_game_going = False
+
+    #########################################################################################################
+
+    async def fetch_skyblock_items(self: typing.Self) -> list | None:
+        """Returns the list of skyblock items via sending a request to the Hypixel API."""
+        async with aiohttp.ClientSession() as session:
+            async with session.get("https://api.hypixel.net/v2/resources/skyblock/items") as resp:
+                if not resp.ok:
+                    return None
+                
+                return (await resp.json())
+    
+    async def get_skyblock_items(self: typing.Self) -> list:
+        """Returns the list of skyblock items as is stored in the `skyblock_item_data` attribute.
+        If the attribute has not been loaded yet it will be loaded."""
+        if self.skyblock_item_data is not None:
+            return self.skyblock_item_data
+
+        self.skyblock_item_data = await self.fetch_skyblock_items()
+        return self.skyblock_item_data
+    
+    #########################################################################################################
+
+    async def fetch_skyblock_skills(self: typing.Self) -> list | None:
+        """Returns the list of skyblock skills via sending a request to the Hypixel API."""
+        async with aiohttp.ClientSession() as session:
+            async with session.get("https://api.hypixel.net/v2/resources/skyblock/skills") as resp:
+                if not resp.ok:
+                    return None
+                
+                return (await resp.json())
+    
+    async def get_skyblock_skills(self: typing.Self) -> list:
+        """Returns the list of skyblock skills as is stored in the `skyblock_skill_data` attribute.
+        If the attribute has not been loaded yet it will be loaded."""
+        if self.skyblock_skill_data is not None:
+            return self.skyblock_skill_data
+
+        self.skyblock_skill_data = await self.fetch_skyblock_skills()
+        return self.skyblock_skill_data
+    
+    #########################################################################################################
+
+    async def fetch_skyblock_collections(self: typing.Self) -> list | None:
+        """Returns the list of skyblock collections via sending a request to the Hypixel API."""
+        async with aiohttp.ClientSession() as session:
+            async with session.get("https://api.hypixel.net/v2/resources/skyblock/collections") as resp:
+                if not resp.ok:
+                    return None
+                
+                return (await resp.json())
+    
+    async def get_skyblock_collections(self: typing.Self) -> list:
+        """Returns the list of skyblock collections as is stored in the `skyblock_collections_data` attribute.
+        If the attribute has not been loaded yet it will be loaded."""
+        if self.skyblock_collections_data is not None:
+            return self.skyblock_collections_data
+
+        self.skyblock_collections_data = await self.fetch_skyblock_collections()
+        return self.skyblock_collections_data
+
+    #########################################################################################################
+    
+    async def daily_task(self: typing.Self):
+        """Code that runs for every hour."""
+        self.skyblock_item_data = await self.fetch_skyblock_items()
+        self.skyblock_skill_data = await self.fetch_skyblock_skills()
+        self.skyblock_collection_data = await self.fetch_skyblock_collections()
+
+    #########################################################################################################
 
     async def waiting_room(
             self: typing.Self,
@@ -1116,7 +1206,7 @@ class Games_cog(
             for _ in range(deck_count):
                 for suit in ["s", "h", "d", "c"]:
                     for value in range(1, 14):
-                        deck.append(PlayingCard(
+                        deck.append(BlackjackCard(
                             card_code = f"{suit}{value}"
                         ))
 
@@ -1479,6 +1569,769 @@ class Games_cog(
         except:
             self.story_game_going = False
             raise
+
+        
+            
+
+        
+    ######################################################################################################################################################
+    ##### SKYBLOCK #######################################################################################################################################
+    ######################################################################################################################################################
+    
+    @commands.group(
+        name = "skyblock",
+        brief = "Header command for Hypixel Skyblock commands.",
+        description = "Header command for Hypixel Skyblock related utility commands.",
+        invoke_without_command = True,
+        pass_context = True
+    )
+    @commands.check(u_checks.hide_from_help)
+    async def skyblock(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext
+        ):
+        if ctx.invoked_subcommand is not None:
+            return
+        
+        await ctx.send_help(self.skyblock)
+
+        
+            
+
+        
+    ######################################################################################################################################################
+    ##### SKYBLOCK WIKI ##################################################################################################################################
+    ######################################################################################################################################################
+    
+    @skyblock.command(
+        name = "wiki",
+        brief = "Search the Skyblock Wiki.",
+        description = "Search the Skyblock Wiki, which can be found here:\nhttps://wiki.hypixel.net/"
+    )
+    async def skyblock_wiki(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext,
+            *, search_term: typing.Optional[str] = commands.parameter(description = "The search term to search the wiki with.")
+        ):
+        if self.skyblock_wiki_searching:
+            await ctx.reply("This commmand is currently being used somewhere, please wait until it's done to try again.")
+            return
+        
+        try:
+            self.skyblock_wiki_searching = True
+
+            def manual_replacements(text: str) -> str:
+                base = {
+                    r"{{Unobtainable}}": "Admin",
+                    r"{{Ultimate Rarity}}": "Ultimate",
+                    r"{{Very Special}}": "Very Special",
+                    r"{{Special}}": "Special",
+                    r"{{Devine}}": "Devine",
+                    r"{{Mythic}}": "Mythic",
+                    r"{{Legendary}}": "Legenday",
+                    r"{{Epic}}": "Epic",
+                    r"{{Rare}}": "Rare",
+                    r"{{Uncommon}}": "Uncommon",
+                    r"{{Common}}": "Common",
+                    r"{{Item\/([A-Z_0-9-]+)}}": r"[\1](https://wiki.hypixel.net/\1)",
+                }
+
+                for pattern, replacement in base.items():
+                    text = re.sub(pattern, replacement, text)
+
+                out = []
+
+                patterns = [
+                    r"\|summary ?= ?([\s\S]+?)\|[\w]+ ?= ?",
+                    r"\|obtaining ?= ?([\s\S]+?)\|[\w]+ ?= ?",
+                    r"\|usage ?= ?([\s\S]+?)\|[\w]+ ?= ?",
+                    r"\|body ?= ?([\s\S]+?)\|[\w]+ ?= ?"
+                ]
+                for pattern in patterns:
+                    searched = re.search(pattern, text)
+                    if searched is None:
+                        continue
+
+                    searched = searched.group(1).strip()
+
+                    out.append(searched)
+                
+                return "\n".join(out)
+
+            await u_interface.handle_wiki_search(
+                ctx = ctx,
+                wiki_link = "https://wiki.hypixel.net/",
+                wiki_main_page = "https://wiki.hypixel.net/Main_Page",
+                wiki_name = "The Hypixel Skyblock Wiki",
+                wiki_api_url = "https://wiki.hypixel.net/api.php",
+                search_term = search_term,
+                manual_replacements = manual_replacements
+            )
+
+            self.skyblock_wiki_searching = False
+        except:
+            self.skyblock_wiki_searching = False
+
+            # After ensuring skyblock_wiki_searching has been reset, reraise the exception so the "Something went wrong processing that command." message is still sent.
+            raise
+
+        
+            
+
+        
+    ######################################################################################################################################################
+    ##### SKYBLOCK EVENTS ################################################################################################################################
+    ######################################################################################################################################################
+    
+    @skyblock.command(
+        name = "events",
+        brief = "Shows the mining events.",
+        description = "Shows the current events in the Dwarven Mines, Crystal Hollows, and Glacite Mineshafts."
+    )
+    async def skyblock_events(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext
+        ):
+        current_time = time.time()
+
+        async with aiohttp.ClientSession() as session:
+            async with session.get("https://api.soopy.dev/skyblock/chevents/get") as resp:
+                if resp.status != 200:
+                    await ctx.reply("Something went wrong.")
+                    return
+                
+                ret_json = await resp.json()
+            
+            if not ret_json.get("success", False):
+                await ctx.reply("Something went wrong.")
+                return
+        
+        fields = []
+
+        ret_json = ret_json["data"]
+
+        for key, name in [("DWARVEN_MINES", "Dwarven Mines"), ("CRYSTAL_HOLLOWS", "Crystal Hollows"), ("MINESHAFT", "Glacite Mineshafts")]:
+            event_data = ret_json.get("event_data", {}).get(key, {})
+            data = ret_json.get("running_events", {}).get(key, {})
+
+            data = list(sorted(
+                data,
+                # key = lambda d: event_data.get(d.get("event"), {}).get("starts_at_min", 0)
+                key = lambda d: event_data.get(d.get("event"), {}).get("lobby_count", 0)
+            ))
+
+            data = [d for d in data if (d.get("ends_at") / 1000) > current_time]
+
+            total_lobby_count = ret_json.get("total_lobbys", {}).get(key, "*Unknown.*")
+
+            if len(data) == 0:
+                current = "*Unknown.*"
+                future = "*Unknown.*"
+            else:
+                current = "Type: **{name}**\nEnds <t:{end}:R>\n*Lobby count: {lobby_count}*".format(
+                    name = data[0].get("event", "Unknown.").lower().replace("_", " ").title(),
+                    end = int(data[0].get("ends_at", 0) // 1000),
+                    lobby_count = data[0].get("lobby_count", 0)
+                )
+
+                if len(data) >= 2:
+                    future_events = []
+
+                    for event in data[1:]:
+                        # start_min = event_data.get(event.get("event"), {}).get("starts_at_min", 0) # this didnt work for some reason
+                        # start_max = event_data.get(event.get("event"), {}).get("starts_at_max", 0)
+
+                        future_events.append("- Type: **{name}**\n  Ends <t:{end}:R>\n  *Lobby count: {lobby_count}*".format(
+                            name = event.get("event", "Unknown.").lower().replace("_", " ").title(),
+                            # starts = int(((start_min + start_max) / 2) // 1000),
+                            end = int(event.get("ends_at", 0) // 1000),
+                            lobby_count = event.get("lobby_count", 0)
+                        ))
+                    
+                    future = "\n\n".join(future_events)
+                else:
+                    future = "*Unknown.*"
+            
+            fields.append(
+                (
+                    name,
+                    f"*Total lobby count: {total_lobby_count}*\n\n Current event:\n{current}\n\nFuture event{'s' if len(data) >= 3 else ''}:\n{future}",
+                    True
+                )
+            )
+        
+        embed = u_interface.gen_embed(
+            title = "Mining Events",
+            fields = fields,
+            footer_text = "Data sourced from soopy.dev.",
+            timestamp = datetime.datetime.fromtimestamp(time.time())
+        )
+
+        await ctx.reply(embed = embed)
+
+        
+            
+
+        
+    ######################################################################################################################################################
+    ##### SKYBLOCK HOTM ##################################################################################################################################
+    ######################################################################################################################################################
+    
+    @skyblock.command(
+        name = "hotm",
+        brief = "Calculates HotM perk requirements.",
+        description = "Calculates the required amount of powder to go from a level of a Heart of the Mountain perk to another."
+    )
+    async def skyblock_hotm(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext,
+            *, perk_name: typing.Optional[str] = commands.parameter(description = "The name of the perk."),
+            start: typing.Optional[str] = commands.parameter(description = "The starting level."),
+            end: typing.Optional[str] = commands.parameter(description = "The ending level.")
+        ):
+        if perk_name is None:
+            await ctx.reply("Please provide the perk name, start level, and end level.")
+            return
+        
+        perk_use = None
+        
+        check_split = perk_name.lower().split(" ")
+        check_name = check_split[0]
+        
+        for perk in sorted(u_skyblock.all_hotm_perks, key=lambda p: len(p.name), reverse=True):
+            if perk.name.split(" ")[0].lower() != check_name:
+                continue
+
+            perk_split = perk.name.lower().split(" ")
+
+            if len(check_split) < len(perk_split):
+                continue
+
+            for arg_id, arg in enumerate(perk_split):
+                if check_split[arg_id] != arg:
+                    break
+            else:
+                perk_use = perk
+                break
+        else:
+            await ctx.reply("Please provide the perk name, start level, and end level.")
+            return
+        
+        if perk_use is None:
+            await ctx.reply("Please provide the perk name, start level, and end level.")
+            return
+        
+        start_index = len(perk_use.name.split(" "))
+
+        if len(check_split) <= start_index + 1:
+            await ctx.reply("Please provide the perk name, start level, and end level.")
+            return
+        
+        try:
+            start = u_converters.parse_int(check_split[start_index])
+            end = u_converters.parse_int(check_split[start_index + 1])
+        except ValueError:
+            await ctx.reply("Please provide the perk name, start level, and end level.")
+            return
+
+        if start < 0:
+            start = 0
+        
+        if end > perk_use.max_level:
+            end = perk_use.max_level
+
+        if end < start:
+            await ctx.reply("The start must be before the end.")
+            return
+        
+        if end == start:
+            start -= 1
+
+        cost = perk_use.get_cost_sum(
+            start = 1 if start == 0 else start,
+            end = end
+        )
+
+        cost_description = "**{} {}**{}".format(
+            u_text.smart_number(round(cost)),
+            perk_use.cost_type,
+            " and 1 Token of the Mountain" if start == 0 else ""
+        )
+
+        embed = u_interface.gen_embed(
+            title = f"{perk_use.name} cost calculation",
+            description = f"Cost to go from level **{start}** to level **{end}** for {perk_use.name}:\n{cost_description}",
+            timestamp = datetime.datetime.fromtimestamp(time.time())
+        )
+
+        await ctx.reply(embed=embed)
+
+        
+            
+
+        
+    ######################################################################################################################################################
+    ##### SKYBLOCK MAYOR #################################################################################################################################
+    ######################################################################################################################################################
+    
+    @skyblock.command(
+        name = "mayor",
+        aliases = ["election"],
+        brief = "Provides information about the current mayor.",
+        description = "Provides information about the current mayor and the next election."
+    )
+    async def skyblock_mayor(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext
+        ):
+        async with aiohttp.ClientSession() as session:
+            async with session.get("https://api.hypixel.net/v2/resources/skyblock/election") as resp:
+                if resp.status != 200:
+                    await ctx.reply("Something went wrong.")
+                    return
+                
+                ret_json = await resp.json()
+            
+            if not ret_json.get("success", False):
+                await ctx.reply("Something went wrong.")
+                return
+        
+        def get_perks(data: dict) -> list[str]:
+            out = []
+
+            for perk in data:
+                perk_name = perk.get("name", "*Unknown.*")
+                perk_description = perk.get("description", "*Unknown.*")
+
+                perk_description = re.sub(r"§.", "", perk_description)
+
+                out.append(f"- {perk_name} - *{perk_description}*")
+            
+            return out
+        
+        mayor_data = ret_json.get("mayor", {})
+
+        mayor_name = mayor_data.get("name", "*Unknown.*")
+
+        mayor_perks = get_perks(mayor_data.get("perks", []))
+        
+        election_fields = []
+        next_election_chosen = False
+
+        if "current" in ret_json:
+            next_election_chosen = True
+            
+            next_candidate_data = ret_json.get("current", {})
+
+            total_votes = sum([candidate.get("votes", 0) for candidate in next_candidate_data.get("candidates", [])])
+
+            for candidate in next_candidate_data.get("candidates", []):
+                candidate_name = candidate.get("name", "*Unknown.*")
+
+                candidate_perks = get_perks(candidate.get("perks", []))
+                vote_count = candidate.get("votes", 0)
+
+                election_fields.append(
+                    (
+                        candidate_name,
+                        "Votes: {vote_count} ({vote_percent}%)\nPerks:\n{perks}".format(
+                            vote_count = u_text.smart_number(vote_count),
+                            vote_percent = round(vote_count / total_votes * 100, 2),
+                            perks = "\n".join(candidate_perks)
+                        ),
+                        True
+                    )
+                )
+        
+        embed = u_interface.gen_embed(
+            title = "Skyblock Mayors",
+            description = "Current mayor:\n# **{mayor_name}**\nPerks:\n{perks}\n\n**Year {next_year} candidates:**\n{next_election_chosen}".format(
+                mayor_name = mayor_name,
+                perks = "\n".join(mayor_perks),
+                next_year = u_text.smart_number(mayor_data.get("election", {}).get("year", -1) + 1),
+                next_election_chosen = "" if next_election_chosen else "*Candidates not selected yet. Election booth not open.*"
+            ),
+            fields = election_fields,
+            timestamp = datetime.datetime.fromtimestamp(time.time())
+        )
+
+        await ctx.reply(embed=embed)
+
+        
+            
+
+        
+    ######################################################################################################################################################
+    ##### SKYBLOCK BAZAAR ################################################################################################################################
+    ######################################################################################################################################################
+    
+    @skyblock.command(
+        name = "bazaar",
+        brief = "Searches the Skyblock Bazaar.",
+        description = "Searches the Skyblock Bazaar."
+    )
+    async def skyblock_bazaar(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext,
+            *, item_name: typing.Optional[str] = commands.parameter(description = "The name or id of the item to search for.")
+        ):
+        if item_name is None:
+            await ctx.reply("Please provide the name or id of the item to search for.")
+            return
+        
+        final_item_id = None
+        bazaar_data = None
+        
+        async with aiohttp.ClientSession() as session:
+            async with session.get("https://api.hypixel.net/v2/skyblock/bazaar") as resp:
+                if not resp.ok:
+                    await ctx.reply("Sorry, something went wrong making the request, please try again later.")
+                    return
+                
+                bazaar_data = await resp.json()
+            
+            # If the given item name is an id, return it.
+            if item_name.upper() in bazaar_data.get("products", {}):
+                final_item_id = item_name.upper()
+            else:
+                items = await self.get_skyblock_items()
+
+                for item in items.get("items", []):
+                    if item.get("name").lower() == item_name.lower():
+                        final_item_id = item.get("id")
+        
+        if final_item_id is None:
+            await ctx.reply("Please provide the name or id of the item to search for.")
+            return
+        
+        if bazaar_data is None:
+            await ctx.reply("Sorry, something went wrong making the request, please try again later.")
+            return
+
+        if final_item_id not in bazaar_data.get("products", {}):
+            await ctx.reply("That item is not in the Bazaar.")
+            return
+        
+        fields = []
+
+        def sell_buy_data(data: list) -> str:
+            if len(data) == 0:
+                return "Count: 0\nCurrent price: **?**"
+
+            return f"Count: {data[0]['orders']}\nCurrent price: **{u_text.smart_number(data[0]['pricePerUnit'])}**"
+        
+        item_data = bazaar_data.get("products", {}).get(final_item_id, {})
+
+        fields.append(
+            (
+                "Sell Summary",
+                sell_buy_data(item_data.get("sell_summary", [])),
+                False
+            )
+        )
+
+        fields.append(
+            (
+                "Buy Summary",
+                sell_buy_data(item_data.get("buy_summary", [])),
+                False
+            )
+        )
+
+        quick_data = item_data.get("quick_status", {})
+
+        fields.append(
+            (
+                "Quick Buy/Sell",
+                "Buy price: **{buy_price}**\nBuy orders: {buy_orders}\nBuy stock: {buy_stock}\n\nSell price: **{sell_price}**\nSell orders: {sell_orders}\nSell stock: {sell_stock}".format(
+                    buy_price = u_text.smart_number(round(quick_data.get("buyPrice", 0), 1)),
+                    sell_price = u_text.smart_number(round(quick_data.get("sellPrice", 0), 1)),
+                    buy_orders = u_text.smart_number(quick_data.get("buyOrders", 0)),
+                    sell_orders = u_text.smart_number(quick_data.get("sellOrders", 0)),
+                    buy_stock = u_text.smart_number(quick_data.get("buyVolume", 0)),
+                    sell_stock = u_text.smart_number(quick_data.get("sellVolume", 0))
+                ),
+                False
+            )
+        )
+
+        embed = u_interface.gen_embed(
+            title = "Hypixel Bazaar",
+            description = f"*Last updated <t:{bazaar_data.get('lastUpdated') // 1000}:R>*\n\nSearching for item with id {final_item_id}:",
+            fields = fields,
+            timestamp = datetime.datetime.fromtimestamp(time.time())
+        )
+
+        await ctx.reply(embed=embed)
+
+        
+            
+
+        
+    ######################################################################################################################################################
+    ##### SKYBLOCK TIME ##################################################################################################################################
+    ######################################################################################################################################################
+    
+    @skyblock.command(
+        name = "time",
+        brief = "Provides the current time in Skyblock.",
+        description = "Provides the current time in Skyblock."
+    )
+    async def skyblock_time(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext
+        ):
+        base_time = time.time()
+
+        # The time at which Skyblock started,
+        # used to offset the unix timestamp
+        # when calculating the time in Skyblock.
+        START_TIME = 1560275700
+
+        SECONDS_IN_YEAR = 446400 # 60 * 20 * 31 * 3 * 4 | Seconds in a day, times 31 days, times 3 months in a season, times 4 seasons.
+        SECONDS_IN_SEASON = 111600 # 60 * 20 * 31 * 3 | Seconds in a day, times 31 days, times 3 months in a season.
+        SECONDS_IN_MONTH = 37200 # 60 * 20 * 31 | Seconds in a day, times 31 days.
+        SECONDS_IN_DAY = 1200 # 60 * 20
+
+        MONTH_NAMES = [
+            "Early Spring",
+            "Spring",
+            "Late Spring",
+            "Early Summer",
+            "Summer",
+            "Late Summer",
+            "Early Autumn",
+            "Autumn",
+            "Late Autumn",
+            "Early Winter",
+            "Winter",
+            "Late Winter"
+        ]
+
+        raw_year = (base_time - START_TIME) / (60 * 20) / 372
+        raw_month = (raw_year % 1 * 372) / 31
+        raw_day = raw_month % 1 * 31
+        raw_hour = raw_day % 1 * 24
+        raw_minute = raw_hour % 1 * 60
+        
+        year = int(raw_year + 1)
+        month = int(raw_month)
+        day = int(raw_day + 1)
+        hour = int(raw_hour)
+        minute = int(raw_minute)
+
+        if str(day).endswith("1") and not str(day).endswith("11"):
+            suffix = "st"
+        elif str(day).endswith("2") and not str(day).endswith("12"):
+            suffix = "nd"
+        elif str(day).endswith("3") and not str(day).endswith("13"):
+            suffix = "rd"
+        else:
+            suffix = "th"
+
+        next_year = int(SECONDS_IN_YEAR - ((raw_year % 1) * SECONDS_IN_YEAR) + base_time)
+        next_season = int(SECONDS_IN_SEASON - ((((raw_year % 1) / 0.25) % 1) * SECONDS_IN_SEASON) + base_time)
+        next_month = int(SECONDS_IN_MONTH - ((raw_month % 1) * SECONDS_IN_MONTH) + base_time)
+        next_day = int(SECONDS_IN_DAY - ((raw_day % 1) * SECONDS_IN_DAY) + base_time)
+
+        embed = u_interface.gen_embed(
+            title = "Time in Skyblock",
+            description = "It is currently {hour}:{minute:02} {ampm} on the {day}{suffix} of {month} in the year {year}.\n\nThe next year is <t:{next_year}:R>.\nThe next season is <t:{next_season}:R>.\nThe next month is <t:{next_month}:R>.\nThe next day is <t:{next_day}:R>.".format(
+                hour = (hour + 11) % 12 + 1,
+                minute = minute,
+                ampm = "am" if hour < 12 else "pm",
+                day = day,
+                suffix = suffix,
+                month = MONTH_NAMES[month],
+                year = year,
+                next_year = next_year,
+                next_season = next_season,
+                next_month = next_month,
+                next_day = next_day
+            ),
+            timestamp = datetime.datetime.fromtimestamp(base_time)
+        )
+
+        await ctx.reply(embed=embed)
+
+        
+            
+
+        
+    ######################################################################################################################################################
+    ##### SKYBLOCK COLLECTIONS ###########################################################################################################################
+    ######################################################################################################################################################
+    
+    @skyblock.command(
+        name = "collections",
+        aliases = ["collection"],
+        brief = "View information regarding Skyblock collections.",
+        description = "View information regarding Skyblock collections."
+    )
+    async def skyblock_collections(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext,
+            *, item_name: typing.Optional[str] = commands.parameter(description = "The name or id of the item to search for.")
+        ):
+        if item_name is None:
+            await ctx.reply("Please provide the item name to get the collection for.")
+            return
+        
+        collections_data = await self.get_skyblock_collections()
+
+        item_data = None
+        
+        lower = item_name.lower()
+
+        for skill in collections_data.get("collections", {}).values():
+            items = skill.get("items", {})
+            if lower in items:
+                item_data = items.get(item_name)
+                break
+
+            for item in skill.get("items", {}).values():
+                if item.get("name").lower() == lower:
+                    item_data = item
+                    break
+            else:
+                continue
+
+            break
+
+        if item_data is None:
+            await ctx.reply("Please provide the item name to get the collection for.")
+            return
+        
+        tiers = []
+
+        for tier in item_data.get("tiers", []):
+            tiers.append("**Tier {}:**\nRequired items: {}\nRewards:\n{}".format(
+                u_text.smart_number(tier.get("tier", 0)),
+                u_text.smart_number(tier.get("amountRequired", 0)),
+                "\n".join(
+                    [
+                        f"- {reward}"
+                        for reward in tier.get("unlocks", [])
+                    ]
+                )
+            ))
+        
+        fields = []
+
+        if len(tiers) <= 8:
+            fields.append(
+                (
+                    "",
+                    "\n".join(tiers[:len(tiers) // 2]),
+                    True
+                )
+            )
+            fields.append(
+                (
+                    "",
+                    "\n".join(tiers[len(tiers) // 2:]),
+                    True
+                )
+            )
+        else:
+            fields.append(
+                (
+                    "",
+                    "\n".join(tiers[:len(tiers) // 3]),
+                    True
+                )
+            )
+            fields.append(
+                (
+                    "",
+                    "\n".join(tiers[len(tiers) // 3:len(tiers) // 3 * 2]),
+                    True
+                )
+            )
+            fields.append(
+                (
+                    "",
+                    "\n".join(tiers[len(tiers) // 3 * 2:]),
+                    True
+                )
+            )
+
+        embed = u_interface.gen_embed(
+            title = f"{item_data.get('name')} collection:",
+            # description = "\n".join(description_lines),
+            fields = fields,
+            timestamp = datetime.datetime.fromtimestamp(collections_data.get("lastUpdated", 0) / 1000)
+        )
+
+        await ctx.reply(embed=embed)
+
+        
+            
+
+        
+    ######################################################################################################################################################
+    ##### SKYBLOCK SKILLS ################################################################################################################################
+    ######################################################################################################################################################
+    
+    @skyblock.command(
+        name = "skills",
+        aliases = ["skill"],
+        brief = "View information regarding Skyblock skills.",
+        description = "View information regarding Skyblock skills."
+    )
+    async def skyblock_skills(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext,
+            skill_name: typing.Optional[str] = commands.parameter(description = "The name of the skill to get information about."),
+            skill_level: typing.Optional[int] = commands.parameter(description = "The level of the skill to get information about.")
+        ):
+        if skill_name is None:
+            await ctx.reply("Please provide the skill name.")
+            return
+        
+        if skill_level is None:
+            skill_level = -1
+
+        skills_data = await self.get_skyblock_skills()
+
+        if skill_name.upper() not in skills_data.get("skills", {}):
+            await ctx.reply("Please provide the skill name.")
+            return
+        
+        skill_data = skills_data.get("skills", {}).get(skill_name.upper(), {})
+        max_level = skill_data.get("maxLevel", 25)
+        skill_level = min(skill_level, max_level)
+        
+        if skill_level < 0:
+            skill_level = skill_level % max_level + 1
+        
+        if skill_level == 0:
+            skill_level = 1
+
+        level = skill_data.get("levels", [])[skill_level - 1]
+        xp = level.get('totalExpRequired', 0)
+
+        embed = u_interface.gen_embed(
+            title = f"{skill_data.get('name')} skill:",
+            description = "Information for level {}/{}:\nTotal xp required: {}\nXp to the next level: {}\nRewards:\n{}".format(
+                skill_level,
+                max_level,
+                u_text.smart_number(int(xp)),
+                u_text.smart_number(int(skill_data.get("levels", [])[skill_level].get("totalExpRequired", 0) - xp)) if skill_level != max_level else "Max level.",
+                "\n".join(
+                    [
+                        f"- {reward}"
+                        for reward in level.get("unlocks", [])
+                    ]
+                )
+            )
+        )
+
+        await ctx.reply(embed=embed)
+
+
+
+
         
 
 

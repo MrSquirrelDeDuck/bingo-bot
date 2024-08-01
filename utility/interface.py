@@ -330,7 +330,7 @@ def remove_starting_ping(content: str) -> str:
         content = re.sub(r"^<@\d+> ?\n\n", "", content)
     return content
 
-def resolve_conflict(
+async def resolve_conflict(
         database: u_files.DatabaseInterface,
         ctx: commands.Context | u_custom.CustomContext,
         resolve_keys: list[str | typing.Type[u_values.Item]],
@@ -352,7 +352,7 @@ def resolve_conflict(
     parsed_data = None
     stored_data = None
 
-    def get_parsed():
+    async def get_parsed():
         nonlocal parsed_data
         if parsed_data is None:
             replied = replying_mm_checks(
@@ -365,7 +365,7 @@ def resolve_conflict(
                 parsed_data = {}
                 return parsed_data
 
-            parsed_data = u_bread.parse_stats(replied)
+            parsed_data = await u_bread.parse_stats(replied)
 
             if parsed_data.get("parse_successful"):
                 parsed_data = parsed_data.get("stats")
@@ -389,7 +389,7 @@ def resolve_conflict(
     for stat in resolve:
         if resolve[stat] is None:
             if parsed_data is None:
-                get_parsed()
+                await get_parsed()
             
             if stat in parsed_data:
                 resolve[stat] = parsed_data[stat]

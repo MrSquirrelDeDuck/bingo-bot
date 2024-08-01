@@ -363,13 +363,14 @@ def stonk_report(database: u_files.DatabaseInterface) -> None:
 
     # Stonk algorithms.
     importlib.reload(u_algorithms)
-    check = lambda data: (data["data"]["current_total"] / 5000) ** (1 / (data["data"]["current_portfolio"]["tick"] - 2000))
+
+    stonk_values = u_stonks.current_values(database)
+    check = lambda data: u_algorithms.dough_sum(data, stonk_values) ** (1 / (data["tick"] - 2000)) # data["data"]["current_total"] / 5000)
 
     leaderboard = u_algorithms.get_leaderboard(database, check, filter_list=["hide_report"])
 
     algorithm_data = u_algorithms.get_info(database, leaderboard[0][0])
     algorithm_portfolio = algorithm_data["func"](1_000_000)["portfolio"]
-
     algorithm_choices = [ # This can be called via list[bool] to get whether it was chosen by the algorithm or not.
         ((0.75, 0.4, 0.4, 1), PIL_Image.open(f"images{SLASH}bases{SLASH}x.png").resize((90, 90)).convert("RGBA")),
         ((0.4, 0.75, 0.4, 1), PIL_Image.open(f"images{SLASH}bases{SLASH}check.png").resize((90, 90)).convert("RGBA"))
