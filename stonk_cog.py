@@ -994,8 +994,10 @@ class Stonk_cog(
             await ctx.reply("The tick number must be greater than 2,000, or negative for previous ticks.\n-1 would be the current tick, and -2 would be the previous tick.")
             return
         
+        stonk_values = u_stonks.current_values(database)
         def check(algorithm_info):
-            return algorithm_info["data"]["current_total"]
+            return u_algorithms.dough_sum(algorithm_info, stonk_values)
+            # return algorithm_info["data"]["current_total"]
         
         sorted_list = u_algorithms.get_leaderboard(database, check, tick_number=tick_number)
 
@@ -1172,7 +1174,7 @@ class Stonk_cog(
 
             algorithm = data["name"]
 
-            portfolio_history = u_algorithms.get_portfolio_history(database=database, algorithm_name=algorithm)
+            portfolio_history = u_algorithms.get_portfolio_history(algorithm_name=algorithm)
             algorithm_function = u_algorithms.get_algorithm(database=database, algorithm_name=algorithm)["func"]
 
             values = []
