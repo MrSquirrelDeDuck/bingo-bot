@@ -380,8 +380,8 @@ class Triggers_cog(
 
                 ping_id = reminder["user"]
 
-                if not ping_id.startswith("&"): # Filter out role pings.
-                    found_member = discord.utils.find(lambda m: str(m.id) == ping_id, reminder_channel.guild.members)
+                if not str(ping_id).startswith("&"): # Filter out role pings.
+                    found_member = discord.utils.find(lambda m: str(m.id) == str(ping_id), reminder_channel.guild.members)
 
                     if found_member is None:
                         continue
