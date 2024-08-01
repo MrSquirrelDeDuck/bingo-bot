@@ -162,7 +162,31 @@ class Chess_cog(
                 send_files.append(discord.File(add, filename="chess_game.pgn"))                
 
             await thread.send(embed=embed, files=send_files)
+        
+        # Sending the leaderboard.
+        all_bots = u_chess.get_bot_list()
 
+        values = []
+        for bot in all_bots.values():
+            values.append((bot, round(bot.get_elo(database))))
+
+        sorted_list = sorted(values, key=lambda g: g[1], reverse=True)
+
+        embed = u_interface.gen_embed(
+            title = "Post-match leaderboard:",
+            description = "\n".join(
+                [
+                    "{place}. {name}: {elo}".format(
+                        place = placement,
+                        name = data[0].name.replace("_", " ").title(),
+                        elo = u_text.smart_number(data[1])
+                    )
+                    for placement, data in enumerate(sorted_list, start=1)
+                ]
+            )
+        )
+
+        await thread.send(embed=embed)
         
 
 
