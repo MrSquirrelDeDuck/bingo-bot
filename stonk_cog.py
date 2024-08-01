@@ -999,7 +999,7 @@ class Stonk_cog(
             return u_algorithms.dough_sum(algorithm_info, stonk_values)
             # return algorithm_info["data"]["current_total"]
         
-        sorted_list = u_algorithms.get_leaderboard(database, check, tick_number=tick_number)
+        sorted_list = u_algorithms.get_leaderboard(database, check, tick_number=tick_number - 2000)
 
         highlight_point = -5
 
