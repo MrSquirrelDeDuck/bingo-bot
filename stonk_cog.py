@@ -764,11 +764,49 @@ class Stonk_cog(
 
 
     ######################################################################################################################################################
+    ##### STONK PORTFOLIO ################################################################################################################################
+    ######################################################################################################################################################
+    
+    @stonk.group(
+        name = "portfolio",
+        description = "Commands for analyzing portfolios.",
+        brief = "Commands for analyzing portfolios.",
+        invoke_without_command = True,
+        pass_context = True
+    )
+    async def stonk_portfolio(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext
+        ):
+        if ctx.invoked_subcommand is not None:
+            return
+        
+        await ctx.send_help(self.stonk_portfolio)
+    
+
+
+
+
+
+    ######################################################################################################################################################
     ##### STONK PORTFOLIO GRAPH ##########################################################################################################################
     ######################################################################################################################################################
     
     @stonk.command(
         name = "portfolio_graph",
+        description = "Shows a graph of a portfolio.\nThis does require you to reply to a portfolio.",
+        brief = "Shows a graph of a portfolio."
+    )
+    async def stonk_portfolio_graph_shortcut(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext,
+            start: typing.Optional[u_converters.parse_int] = commands.parameter(description = "The start tick of the graph."),
+            end: typing.Optional[u_converters.parse_int] = commands.parameter(description = "The end tick of the graph.")
+        ):
+        await self.stonk_portfolio_graph(ctx, start, end)
+    
+    @stonk_portfolio.command(
+        name = "graph",
         description = "Shows a graph of a portfolio.\nThis does require you to reply to a portfolio.",
         brief = "Shows a graph of a portfolio."
     )
@@ -837,6 +875,73 @@ class Stonk_cog(
         )
 
         await ctx.reply(file=discord.File(file_name))
+    
+
+
+
+
+
+    ######################################################################################################################################################
+    ##### STONK PORTFOLIO ANALYZE ########################################################################################################################
+    ######################################################################################################################################################
+    
+    @stonk_portfolio.command(
+        name = "analyze",
+        description = "Reply to a portfolio with this command to analyze that portfolio.",
+        brief = "Analyzes a portfolio."
+    )
+    async def stonk_portfolio_analyze(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext
+        ):
+        replied_to = u_interface.replying_mm_checks(ctx.message, require_reply=True, return_replied_to=True)
+
+        if not replied_to:
+            await ctx.reply("You must reply to a portfolio to get a graph of it.")
+            return
+        
+        parsed = await u_bread.parse_stats(replied_to)
+
+        if parsed.get("stats_type") not in ["portfolio", "dump"]:
+            await ctx.reply("You must reply to a portfolio to get a graph of it.")
+            return
+
+        portfolio = {stonk: parsed["stats"].get(stonk, 0) for stonk in u_values.stonks}
+
+        history = u_stonks.stonk_history(database)
+        current_values = u_stonks.convert_tick(history[-1])
+        previous_values = u_stonks.convert_tick(history[-2])
+        
+        stonk_values = {
+            stonk: current_values.get(stonk) * portfolio.get(stonk)
+            for stonk in portfolio
+        }
+        stonk_values_previous = {
+            stonk: previous_values.get(stonk) * portfolio.get(stonk)
+            for stonk in portfolio
+        }
+
+        total_dough = sum(stonk_values.values())
+        previous_dough = sum(stonk_values_previous.values())
+
+        embed = u_interface.gen_embed(
+            title = "Portfolio Analyzation",
+            description = "Portfolio:\n{stonk_lines}\n\nTotal value: **{value} dough**\nChanged by: **{changed} dough** ({percent_change}%)".format(
+                stonk_lines = "\n".join([
+                    f"{stonk.emoji} -- {u_text.smart_number(portfolio.get(stonk))}, worth **{u_text.smart_number(stonk_values.get(stonk))} dough** ({round((stonk_values.get(stonk) / total_dough) * 100, 2)}%)"
+                    for stonk in portfolio
+                ]),
+                value = u_text.smart_number(total_dough),
+                changed = u_text.smart_number(total_dough - previous_dough),
+                percent_change = round(((total_dough / previous_dough) - 1) * 100, 2)
+            )
+        )
+
+        await ctx.reply(embed=embed)
+
+
+
+
     
 
 
@@ -1219,7 +1324,7 @@ class Stonk_cog(
             self: typing.Self,
             ctx: commands.Context | u_custom.CustomContext,
             dough: typing.Optional[u_converters.parse_int] = commands.parameter(description = "The amount of dough to use."),
-            stonk: typing.Optional[u_values.StonkConverter] = commands.parameter(description = "The stonk to use. If nothing is provided it'll use whatever stonk is closest to the goal."),
+            stonk: typing.Optional[u_values.StonkConverter] = commands.parameter(description = "The stonk to use. If nothing is provided it'll use whatever stonk is closest to the goal."), # type: ignore
             user: typing.Optional[discord.Member] = commands.parameter(description = "Optional user to generate a gift command for.")
         ):
         if dough is None:
