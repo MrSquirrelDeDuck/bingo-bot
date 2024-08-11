@@ -1267,7 +1267,8 @@ class Bread_cog(
         "%bread tron quick",
         "%bread tron_value",
         "%bread gem_value",
-        "%bread gold_gem"
+        "%bread gold_gem",
+        "%bread omega"
     ]
     
     @bread.group(
@@ -1611,7 +1612,7 @@ class Bread_cog(
             user: typing.Optional[discord.Member] = commands.parameter(description = "The person to gift the dough to."),
             tron_value: typing.Optional[u_converters.parse_int] = commands.parameter(description = "The amount of dough you get per tron."),
             percentage: typing.Optional[u_converters.parse_percent] = commands.parameter(description = "What percentage of the tron dough to gift."),
-            stonk: typing.Optional[u_values.StonkConverter] = commands.parameter(description = "The stonk to use, will use whatever is closest if nothing is given.")
+            stonk: typing.Optional[u_values.StonkConverter] = commands.parameter(description = "The stonk to use, will use whatever is closest if nothing is given.") # type: ignore
         ):
         stored = u_bread.get_stored_data(
             database = database,
@@ -1668,6 +1669,103 @@ class Bread_cog(
             footer_text = "On mobile you can tap and hold on the commands section to copy it."
         )
 
+        await ctx.reply(embed=embed)
+
+    
+
+        
+    ######################################################################################################################################################
+    ##### BREAD OMEGA ####################################################################################################################################
+    ######################################################################################################################################################
+    
+    @bread.command(
+        name = "omega",
+        aliases = ["omega_chessatron"],
+        brief = "Solver for the creation of Omegas.",
+        description = "Solver for the creation of Omegas.\nThis does require storing data with the `%bread data` feature.\n\nModifier list:\n- `-tron`: Allows the solver to make chessatrons out of gems to increase the number of Omegas created.\n- `-chess`: The same as `-tron`, but it will allow for the use of gems and chess pieces to increase the number of Omegas made."
+    )
+    async def bread_omega(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext,
+            *, modifiers: typing.Optional[str] = commands.parameter(description = "Optional modifiers. See above for modifier list.")
+        ):
+        stored_data = u_bread.get_stored_data(
+            database = database,
+            user_id = ctx.author.id
+        )
+
+        if not stored_data.loaded:
+            await ctx.reply("You do not have any stored data.\nUse `%bread data` to get more information on how to store data.")
+            return
+
+        ################
+        # Get modifier list.
+
+        if modifiers is None:
+            modifiers = ""
+
+        modifier_list = modifiers.split(" ")
+
+        ################
+        # Setup the item list.
+        
+        items = {}
+
+        attributes = [u_values.all_shiny]
+
+        if "-chess" in modifier_list:
+            attributes.append(u_values.all_chess_pieces)
+            attributes.append(u_values.all_rares)
+            attributes.append(u_values.all_specials)
+            items[u_values.bread] = stored_data.get(u_values.bread, 0)
+
+            print(attributes)
+            
+            if "-tron" not in modifier_list:
+                modifier_list.append("-tron")
+
+
+        for attribute in attributes:
+            for item in attribute:
+                items[item] = stored_data.get(item, 0)
+
+        items[u_values.anarchy_chess] = stored_data.get(u_values.anarchy_chess, 0)
+        items[u_values.chessatron] = stored_data.get(u_values.chessatron, 0)
+        items[u_values.omega_chessatron] = stored_data.get(u_values.omega_chessatron, 0)
+
+        ################
+        # Determine disabled recipes.
+
+        disabled_recipes = []
+
+        if "-tron" not in modifier_list:
+            disabled_recipes.append("chessatron_recipe_1")
+            disabled_recipes.append("chessatron_recipe_2")
+
+        ################
+        # Run the solver.
+        
+        command_list, post_alchemy, solver_result = u_solvers.solver_wrapper(
+            items = items,
+            maximize = u_values.omega_chessatron,
+            disabled_recipes = disabled_recipes
+        )
+
+        ################
+        
+        embed = u_interface.gen_embed(
+            title = "Omega solver",
+            description = "{}\nYou should be able to make **{}** {}.".format(
+                "\n".join([f"{item}: {u_text.smart_number(items[item])} -> {u_text.smart_number(post_alchemy[item])}" for item in items]),
+                u_text.smart_number(solver_result["omega_chessatron_total"]),
+                u_values.omega_chessatron,
+            ),
+            fields = [
+                ("Commands:", "\n".join(command_list), False)
+            ],
+            footer_text = "On mobile you can tap and hold on the commands section to copy it."
+        )
+        
         await ctx.reply(embed=embed)
 
     

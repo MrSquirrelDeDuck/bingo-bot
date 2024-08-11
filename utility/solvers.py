@@ -13,7 +13,8 @@ importlib.reload(u_values)
 
 def universal_solver(
         items: dict[u_values.Item, int],
-        maximize: u_values.Item
+        maximize: u_values.Item,
+        disabled_recipes: list[str] = None
     ) -> dict[str, int]:
     """Universal solver.
 
@@ -24,6 +25,8 @@ def universal_solver(
     Returns:
         dict[str, int]: A dict version of the z3 model.
     """
+    if disabled_recipes is None:
+        disabled_recipes = []
 
     items[maximize] = 0
 
@@ -53,9 +56,11 @@ def universal_solver(
 
         for recipe_id, recipe in enumerate(recipes[item.internal_name]):
             recipe_name = f"{item.internal_name}_recipe_{recipe_id + 1}"
+            if recipe_name in disabled_recipes:
+                continue
+
             for cost_item, cost_amount in recipe["cost"]:
                 if cost_item not in modifier_data:
-                    # del item_recipes[recipe_name]
                     break
                 
                 modifier_data[cost_item].append((recipe_name, cost_amount * -1))
@@ -97,7 +102,8 @@ def universal_solver(
 
 def solver_wrapper(
         items: dict[u_values.Item, int],
-        maximize: u_values.Item
+        maximize: u_values.Item,
+        disabled_recipes: list[str] = None
     ) -> tuple[list[str], dict[u_values.Item, int], dict[str, int]]:
     """Wrapper for the universal_solver that automatically generates the command list.
 
@@ -108,8 +114,14 @@ def solver_wrapper(
     Returns:
         tuple[list[str], dict[u_values.Item, int], dict[str, int]]: The command list, post-alchemy version of the items, and the dict version of the solver.
     """
+    if disabled_recipes is None:
+        disabled_recipes = []
 
-    solver_result = universal_solver(items=items.copy(), maximize=maximize)
+    solver_result = universal_solver(
+        items = items.copy(),
+        maximize = maximize,
+        disabled_recipes = disabled_recipes
+    )
 
     # Quick alchemy simulation to determine the command order.
     command_list = []
