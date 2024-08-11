@@ -1380,7 +1380,7 @@ class RobertoBot(ChessBot):
         if board.fullmove_number < 5:
             eval_score *= random.uniform(0.95, 1.05)  # for opening spice
 
-        return eval_score
+        return eval_score * (1.0 if white else -1.0)
 
 
 #######################################################################################################################
