@@ -13,6 +13,7 @@ import copy
 import os
 import aiohttp
 import datetime
+import collections
 
 import sys
 
@@ -651,6 +652,14 @@ class Games_cog(
         self.skyblock_item_data = await self.fetch_skyblock_items()
         self.skyblock_skill_data = await self.fetch_skyblock_skills()
         self.skyblock_collection_data = await self.fetch_skyblock_collections()
+
+    def time_next(
+            self: typing.Self,
+            timestamp: float,
+            minute: int
+        ) -> int:
+        """Returns the timestamp for the next instance of that minute within an hour."""
+        return int(timestamp + 3600 - ((timestamp - (minute * 60)) % 3600))
 
     #########################################################################################################
 
@@ -1683,12 +1692,299 @@ class Games_cog(
     ##### SKYBLOCK EVENTS ################################################################################################################################
     ######################################################################################################################################################
     
-    @skyblock.command(
+    @skyblock.group(
         name = "events",
+        brief = "Provides information regarding future events.",
+        description = "Provides information regarding future events.",
+        invoke_without_command = True,
+        pass_context = True
+    )
+    async def skyblock_events(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext
+        ):
+        if ctx.invoked_subcommand is not None:
+            return
+        
+        timestamp = time.time()
+
+        START_TIME = 1560275700
+
+        SECONDS_IN_YEAR = 446400
+        SECONDS_IN_MONTH = 37200
+        SECONDS_IN_DAY = 1200
+
+        EIGHT_YEARS = SECONDS_IN_YEAR * 8
+
+        offset = timestamp - START_TIME
+
+        in_year = offset % SECONDS_IN_YEAR
+        year_start = timestamp - in_year
+
+        def event_in_year(
+                month: int,
+                day: int,
+                length: int,
+                frequency: int = 1
+            ) -> tuple[int, bool]:
+            year_modified = SECONDS_IN_YEAR // frequency
+
+            start_offset = month * SECONDS_IN_MONTH + day * SECONDS_IN_DAY
+            end_offset = start_offset + length * SECONDS_IN_DAY
+
+            year_start = timestamp - (in_year % year_modified)
+
+            start = start_offset + year_start
+            end = end_offset + year_start
+
+            if timestamp >= end:
+                start += year_modified
+                end += year_modified
+
+            active = start <= timestamp < end
+
+            return (
+                int(end if active else start),
+                active
+            )
+        
+        def event_in_year_wrapper(
+                name: str,
+                month: int,
+                day: int,
+                length: int,
+                frequency: int = 1
+            ) -> str:
+            event_timestamp, active = event_in_year(month, day, length, frequency)
+
+            return "{name}: {line} <t:{timestamp}:R>.".format(
+                name = name,
+                line = "Active! Ends" if active else "Starts",
+                timestamp = event_timestamp
+            )
+        
+        auction_timestamp = self.time_next(timestamp, -5)
+
+        spooky = event_in_year_wrapper(
+            name = "Spooky Festival",
+            month = 7,
+            day = 28,
+            length = 3
+        )
+
+        zoo = event_in_year_wrapper(
+            "Traveling Zoo",
+            month = 3,
+            day = 0,
+            length = 3,
+            frequency = 2
+        )
+
+        season_jerry = event_in_year_wrapper(
+            name = "Season of the Jerry",
+            month = 11,
+            day = 23,
+            length = 3
+        )
+
+        new_year = event_in_year_wrapper(
+            name = "New Year Celebration",
+            month = 11,
+            day = 28,
+            length = 3
+        )
+
+        hoppity = event_in_year_wrapper(
+            name = "Hoppity's Hunt",
+            month = 0,
+            day = 0,
+            length = 93
+        )
+
+        ##### Special mayors. ######
+
+        raw_year = (timestamp - START_TIME) / SECONDS_IN_YEAR + 1
+
+        mayor_names = [
+            "Jerry",
+            "Scorpius",
+            "Derpy"
+        ]
+
+        derpy_example = 344
+
+        raw_year_mod = raw_year - derpy_example
+        year_mod = int(raw_year_mod) 
+        next_mayor = (year_mod // 8) % 3
+
+        year_timestamp = (8 - (year_mod % 8)) * SECONDS_IN_YEAR + year_start
+
+        booth_offset = 5 * SECONDS_IN_MONTH + 26 * SECONDS_IN_DAY # Late Summer 27th is when the election booth opens.
+        elected_offset = 2 * SECONDS_IN_MONTH + 26 * SECONDS_IN_DAY # Late Spring 27th is when the election booth closes.
+
+        booth = year_timestamp - (SECONDS_IN_YEAR - booth_offset)
+        elected = year_timestamp + elected_offset
+
+        names = collections.deque(mayor_names)
+        names.rotate(-next_mayor)
+
+        mayors = "\n".join(
+            "- {name}: Booth opens <t:{booth}:R>. Elected <t:{elected}:R>.".format(
+                name = name,
+                booth = int(booth + EIGHT_YEARS * index),
+                elected = int(elected + EIGHT_YEARS * index)
+            )
+            for index, name in enumerate(names)
+        )
+
+        dante = '\n- Dante: Please no.' if random.randint(1, 10) == 1 else ''
+
+        ############################
+        
+        embed = u_interface.gen_embed(
+            title = "Skyblock Events",
+            description = f"The next Dark Auction will occur <t:{auction_timestamp}:R>.\nMid-year events:\n{spooky}\n{zoo}\n{season_jerry}\n{new_year}\n{hoppity}\n\nSpecial mayors:\n{mayors}{dante}",
+            footer_text = "Use '%help skyblock events' to view the list of subcommands.",
+            timestamp = datetime.datetime.fromtimestamp(time.time())
+        )
+
+        await ctx.reply(embed=embed)
+
+        
+            
+
+        
+    ######################################################################################################################################################
+    ##### SKYBLOCK EVENTS FARMING ########################################################################################################################
+    ######################################################################################################################################################
+    
+    @skyblock_events.command(
+        name = "farming",
+        brief = "Gives information about Jacob's Farming Contests.",
+        description = "Gives information about Jacob's Farming Contests.",
+    )
+    async def skyblock_events_farming(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext,
+            *, crop_name: typing.Optional[str] = commands.parameter(description = "Optional argument to search for the next contest with the given crop.")
+        ):
+        
+        timestamp = time.time()
+        
+        contest_timestamp = self.time_next(timestamp, 15)
+        contest_end = self.time_next(timestamp, -25)
+
+        if (15 * 60) <= (timestamp % 3600) < (35 * 60):
+            active = int(contest_timestamp - 3600)
+        else:
+            active = None
+
+
+        async with aiohttp.ClientSession() as session:
+            async with session.get("https://api.elitebot.dev/contests/at/now") as resp:
+                if resp.status != 200:
+                    await ctx.reply("Something went wrong.")
+                    return
+                
+                ret_json = await resp.json()
+        
+        if crop_name is not None:
+            search = crop_name.title()
+            
+            if active is not None:
+                active_data = ret_json.get("contests", {}).get(str(active), [])
+                if search in active_data:
+                    embed = u_interface.gen_embed(
+                        title = "Skyblock Farming Contests",
+                        description = f"The next time {search} is in a farming contest is right now!",
+                        timestamp = datetime.datetime.fromtimestamp(time.time())
+                    )
+                    await ctx.reply(embed=embed)
+                    return
+                
+            iterator = [(key, data) for key, data in ret_json.get("contests", {}).items() if int(key) > timestamp]
+
+            next_timestamp = None
+
+            for key, data in iterator:
+                if search in data:
+                    next_timestamp = key
+                    break
+        
+            if next_timestamp is None:
+                embed = u_interface.gen_embed(
+                    title = "Skyblock Farming Contests",
+                    description = f"Contest search for `{crop_name}` yielded no results.\nTry another crop.\nNote that multi-word crops require a space to be provided.",
+                    timestamp = datetime.datetime.fromtimestamp(time.time())
+                )
+            else:
+                embed = u_interface.gen_embed(
+                    title = "Skyblock Farming Contests",
+                    description = f"The next time {search} is in a farming contest is <t:{next_timestamp}:R>.",
+                    timestamp = datetime.datetime.fromtimestamp(time.time())
+                )
+
+            await ctx.reply(embed=embed)
+            return
+        
+        contest_key = next((x for x in ret_json.get("contests", {}).keys() if int(x) > timestamp), None)
+
+        if contest_key is None:
+            contest_lines = [f"The next farming contest will occur <t:{contest_timestamp}:R>.\nThe crops will be as follows:\n*Unknown.*"]
+        else:
+            contest_lines = [f"The next farming contest will occur <t:{contest_timestamp}:R>.\nThe crops will be as follows:"]
+            contest_lines.extend([
+                f"- {item}"
+                for item in ret_json.get("contests", {}).get(contest_key, [])
+            ])
+        
+        if active is None:
+            active_lines = ["There is not currently a farming contest active."]
+        else:
+            active_lines = [f"The current farming contest will end <t:{contest_end}:R>.\nThe crops are as follows:"]
+            active_lines.extend(
+                [
+                    f"- {item}"
+                    for item in ret_json.get("contests", {}).get(str(active), [])
+                ]
+            )
+        
+        embed = u_interface.gen_embed(
+            title = "Skyblock Farming Contests",
+            description = "You can use `%skyblock events farming <crop>` to search for a future farming contest containing that crop.",
+            fields = [
+                (
+                    "Current farming contest",
+                    "\n".join(active_lines),
+                    True
+                ),
+                (
+                    "Next farming contest",
+                    "\n".join(contest_lines),
+                    True
+                )
+            ],
+            timestamp = datetime.datetime.fromtimestamp(time.time())
+        )
+
+        await ctx.reply(embed=embed)
+        
+
+
+        
+            
+
+        
+    ######################################################################################################################################################
+    ##### SKYBLOCK EVENTS MINING #########################################################################################################################
+    ######################################################################################################################################################
+    
+    @skyblock_events.command(
+        name = "mining",
         brief = "Shows the mining events.",
         description = "Shows the current events in the Dwarven Mines, Crystal Hollows, and Glacite Mineshafts."
     )
-    async def skyblock_events(
+    async def skyblock_events_mining(
             self: typing.Self,
             ctx: commands.Context | u_custom.CustomContext
         ):
@@ -1931,12 +2227,19 @@ class Games_cog(
                 candidate_perks = get_perks(candidate.get("perks", []))
                 vote_count = candidate.get("votes", 0)
 
+                if total_votes == 0:
+                    vote_section = "*Votes hidden.*"
+                else:
+                    vote_section = "{vote_count} ({vote_percent}%)".format(
+                            vote_count = u_text.smart_number(vote_count),
+                            vote_percent = round(vote_count / total_votes * 100, 2)
+                    )
+
                 election_fields.append(
                     (
                         candidate_name,
-                        "Votes: {vote_count} ({vote_percent}%)\nPerks:\n{perks}".format(
-                            vote_count = u_text.smart_number(vote_count),
-                            vote_percent = round(vote_count / total_votes * 100, 2),
+                        "Votes: {votes}\nPerks:\n{perks}".format(
+                            votes = vote_section,
                             perks = "\n".join(candidate_perks)
                         ),
                         True
