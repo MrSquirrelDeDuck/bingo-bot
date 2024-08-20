@@ -27,7 +27,7 @@ import utility.files as u_files
 import utility.interface as u_interface
 import utility.text as u_text
 
-all_games = open("data/chess_games.txt") # Sourced from https://github.com/SebLague/Chess-Coding-Adventure/blob/Chess-V1-Unity/Assets/Book/Games.txt
+all_games = open(os.path.join("data", "chess_games.txt"), "r") # Sourced from https://github.com/SebLague/Chess-Coding-Adventure/blob/Chess-V1-Unity/Assets/Book/Games.txt
 game_lines = all_games.readlines()
 
 class ChessBot:
