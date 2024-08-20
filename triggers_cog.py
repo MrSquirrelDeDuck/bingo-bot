@@ -1003,12 +1003,13 @@ class Triggers_cog(
         
         content = message.content
 
-        content = re.sub(r"<@&?\d+>", "", content)
-        content = re.sub(r"<#\d+>", "", content)
-        content = re.sub(r"<a?:\w+:\d+>", "", content)
+        content = re.sub(r"<@&?\d+>", "", content) # Remove pings.
+        content = re.sub(r"<#\d+>", "", content) # Remove channel mentions.
+        content = re.sub(r"<a?:\w+:\d+>", "", content) # Remove custom emojis.
+        content = re.sub(r"(http|ftp|https):\/\/([\w_-]+(?:(?:\.[\w_-]+)+))([\w.,@?^=%&:\/~+#-]*[\w@?^=%&\/~+#-])?", "", content) # Remove urls. Pattern sourced from https://stackoverflow.com/questions/6038061/regular-expression-to-find-urls-within-a-string
 
         if "727" not in content:
-            # 727 was in a ping, channel mention, or emoji.
+            # 727 was in a ping, channel mention, emoji, or url.
             return
         
         if random.randint(1, 32) != 1:
