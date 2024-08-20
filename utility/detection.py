@@ -28,6 +28,10 @@ ALTERNATE_CHANNEL = 958705808860921906
 # If the "alternate" value is set to True in the tile list, and the objective was completed in the alternate channel, send it here.
 FINAL_BACKUP_CHANNEL = 1138583859508813955
 
+SUPRESS_CHANNELS = [
+    958763826025742336
+]
+
 eleven_plus_messages = {
     11: "Eleven breads? How strange.",
     12: "TWELVE BREADS??",
@@ -1930,7 +1934,7 @@ async def handle_completed(
     
     content_lines = []
 
-    if u_checks.sensitive_check(message.channel) or alternate:
+    if u_checks.sensitive_check(message.channel) or alternate or message.channel.id in SUPRESS_CHANNELS:
         content_lines.append(f"{message.jump_url}\n") # `\n` added between each item, so this'll end up being two linebreaks.
 
         if message.channel.id == ALTERNATE_CHANNEL or (isinstance(message.channel, discord.Thread) and message.channel.parent.id == ALTERNATE_CHANNEL):

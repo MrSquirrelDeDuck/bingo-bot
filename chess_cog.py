@@ -18,6 +18,7 @@ import utility.bread as u_bread
 import utility.files as u_files
 import utility.custom as u_custom
 import utility.chess_utils as u_chess
+import utility.converters as u_converters
 import utility.interface as u_interface
 import utility.images as u_images
 import utility.text as u_text
@@ -37,29 +38,24 @@ class Chess_cog(
         bread_time = u_bread.bst_time()
 
         # If it's not the correct time (noon in EDT,) then stop here.
-        if bread_time != 18:
-            return
+        # if bread_time != 18:
+        #     return
         
         # If it's here, then time to play a game of Chess!
-        all_bots = list(u_chess.get_bot_list().values())
+        game_data = u_chess.determine_matches(database)
 
-        games = []
-
-        for game_index in range(len(all_bots) // 2):
-            game_white = random.choice(all_bots)
-            all_bots.remove(game_white)
-
-            game_black = random.choice(all_bots)
-            all_bots.remove(game_black)
-
-            games.append({
-                "white": game_white,
-                "black": game_black
-            })
+        if game_data[-1][1] is None:
+            bye_bot = game_data.pop(-1)[0]
+        else:
+            bye_bot = None
         
-        bye_bot = None
-        if len(all_bots) != 0:
-            bye_bot = all_bots[0]
+        games = [
+            {
+                "white": white,
+                "black": black
+            }
+            for white, black in game_data
+        ]
 
         ping_list_channel = await self.bot.fetch_channel(PING_LISTS_CHANNEL)
 
@@ -86,6 +82,17 @@ class Chess_cog(
             name = f"{u_chess.get_date()}: Daily Chess matches",
             reason = "Auto-thread creation for the daily Chess game."
         )
+
+        # Copy current ratings to the history.
+
+        history = u_chess.get_rating_history(database)
+        ratings = u_chess.get_all_elos(database, return_classes=False)
+
+        history.append(ratings)
+
+        database.save("chess", "rating_history", data = history)
+
+        ######################################
 
 
         for data in games:
@@ -164,11 +171,8 @@ class Chess_cog(
             await thread.send(embed=embed, files=send_files)
         
         # Sending the leaderboard.
-        all_bots = u_chess.get_bot_list()
-
-        values = []
-        for bot in all_bots.values():
-            values.append((bot, round(bot.get_elo(database))))
+        
+        values = tuple(u_chess.get_all_elos(database).items())
 
         sorted_list = sorted(values, key=lambda g: g[1], reverse=True)
 
@@ -179,7 +183,7 @@ class Chess_cog(
                     "{place}. {name}: {elo}".format(
                         place = placement,
                         name = data[0].name.replace("_", " ").title(),
-                        elo = u_text.smart_number(data[1])
+                        elo = u_text.smart_number(round(data[1]))
                     )
                     for placement, data in enumerate(sorted_list, start=1)
                 ]
@@ -580,11 +584,7 @@ class Chess_cog(
             ctx: commands.Context | u_custom.CustomContext,
             highlight: typing.Optional[u_chess.ChessBotConverter] = commands.parameter(description = "Optional name of a bot to highlight.")
         ):
-        all_bots = u_chess.get_bot_list()
-
-        values = []
-        for bot in all_bots.values():
-            values.append((bot, round(bot.get_elo(database))))
+        values = tuple(u_chess.get_all_elos(database).items())
 
         sorted_list = sorted(values, key=lambda g: g[1], reverse=True)
 
@@ -615,7 +615,7 @@ class Chess_cog(
             
             title = name.name.replace("_", " ").title()
 
-            lines.append("{}. {}{}: {}{}".format(index + 1, highlight_text, title, u_text.smart_number(value), highlight_text))
+            lines.append("{}. {}{}: {}{}".format(index + 1, highlight_text, title, u_text.smart_number(round(value)), highlight_text))
 
             bots_shown += 1
         
@@ -628,6 +628,159 @@ class Chess_cog(
             footer_text = "You can use '%chess lb <name>' to highlight a specific bot."
         )
         await ctx.reply(embed=embed)
+
+
+        
+
+
+        
+        
+            
+
+        
+    ######################################################################################################################################################
+    ##### CHESS GRAPH ####################################################################################################################################
+    ######################################################################################################################################################
+        
+    @chess.command(
+        name = "graph",
+        brief = "Graph the bot elos.",
+        description = "Graph the bot elos.\n\nParameters:\n- The bots you want to use, replace any spaces with underscores. You can also use 'all' to use all the bots. Putting an exclamation mark before a bot name will remove it. If none are provided it will use them all.\n- To mark the start of the graph, use '-start <start point>'. If none is provided it will use 0.\n- To mark the end, '-end <end point>'. If none is provided it will use the latest ratings.\n- '-log' can be used to set the Y axis to a log scale."
+    )
+    async def chess_graph(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext,
+            *, parameters: typing.Optional[str] = commands.parameter(description = "The parameters to use. See above for more information.")
+        ):
+        history = u_chess.get_rating_history(database)
+
+        # Account for the fact that the history doesn't have the current elo values.
+        history.append(u_chess.get_all_elos(database, return_classes=False))
+
+        current_match = len(history)
+        all_bots = list(u_chess.get_bot_list().keys())
+
+        log_scale = False
+        start_match = 0
+        end_match = current_match
+        bot_list = []
+        
+        if parameters is None:
+            bot_list = all_bots
+        else:
+            parameters = parameters.split(" ")
+
+            negated = []
+
+            for param_id, param in enumerate(parameters):
+                if param == "all":
+                    bot_list = all_bots
+                    continue
+
+                if param == "-log":
+                    log_scale = True
+                    continue
+
+                if param == "-start":
+                    if param_id == len(parameters) - 1:
+                        continue # "start" is not going to be the name of a stonk, and does not start with an exclamation mark.
+                    
+                    if u_converters.is_digit(parameters[param_id + 1]):
+                        start_match = u_converters.parse_int(parameters[param_id + 1])
+
+                    continue
+
+                if param == "-end":
+                    if param_id == len(parameters) - 1:
+                        continue # "end" is not going to be the name of a stonk, and does not start with an exclamation mark.
+                    
+                    if u_converters.is_digit(parameters[param_id + 1]):
+                        end_match = u_converters.parse_int(parameters[param_id + 1])
+
+                    continue
+                
+                if param.startswith("!"):
+                    param = param.replace("!", "", 1)
+                    modify = negated # Set "modify" to a reference to "negated".
+                else:
+                    modify = bot_list # Set "modify" to a reference to "bot_list".
+
+                get_item = u_chess.get_bot(param)
+
+                if get_item:
+                    if get_item not in modify:
+                        modify.append(get_item.name)
+                    continue
+            
+            if len(bot_list) == 0:
+                bot_list = all_bots
+            
+            for bot in negated:
+                if bot in bot_list:
+                    bot_list.remove(bot)
+        
+        if end_match <= start_match:
+            await ctx.reply("The start must be before the end.")
+            return
+        
+        start_match = max(start_match, 0)
+        end_match = min(end_match, current_match)
+
+        lines = []
+
+        for bot in bot_list:
+            values = []
+
+            for match_number, match in enumerate(history[start_match:end_match + 1]):
+                if bot not in match:
+                    continue
+
+                values.append((match_number + start_match, match[bot]))
+            
+            if len(values) == 0:
+                continue
+
+            bot_class = u_chess.get_bot(bot)
+
+            lines.append({
+                "label": bot_class.formatted_name(),
+                "color": bot_class.get_color_rgb(),
+                "values": values
+            })
+        
+        file_name = u_images.generate_graph(
+            lines = lines,
+            x_label = "Match number",
+            y_label = "Bot elo",
+            log_scale = log_scale
+        )
+
+        await ctx.reply(file=discord.File(file_name))
+
+
+        
+
+
+        
+        
+            
+
+        
+    ######################################################################################################################################################
+    ##### CHESS RUN MATCHES ##############################################################################################################################
+    ######################################################################################################################################################
+        
+    @chess.command(
+        name = "run_matches",
+        brief = "Runs the daily Chess matches.",
+        description = "Runs the daily Chess matches."
+    )
+    @commands.is_owner()
+    async def chess_run_matches(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext
+        ):
+        await self.hourly_task()
 
         
 

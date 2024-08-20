@@ -13,6 +13,7 @@ import pytz
 import copy
 import math
 import os
+import numpy as np
 
 # pip install chess
 import chess
@@ -26,10 +27,14 @@ import utility.files as u_files
 import utility.interface as u_interface
 import utility.text as u_text
 
+all_games = open(os.path.join("data", "chess_games.txt"), "r") # Sourced from https://github.com/SebLague/Chess-Coding-Adventure/blob/Chess-V1-Unity/Assets/Book/Games.txt
+game_lines = all_games.readlines()
+
 class ChessBot:
     name = "generic_bot"
     description = """Generic Chess bot."""
     creator = "Duck"
+    color = 0x000000
 
     def __init__(
             self: typing.Self,
@@ -37,6 +42,12 @@ class ChessBot:
         ) -> None:
         self.load(database_data)
     
+    # Not needed for subclasses, this one is fine.
+    @classmethod
+    def get_color_rgb(cls: typing.Callable) -> tuple[int, int, int]:
+        h = cls.color
+        return (h >> 16, h >> 8 & 255, h & 255)
+
     # Not needed for subclasses, this one is fine.
     @classmethod
     def formatted_name(cls: typing.Callable) -> str:
@@ -106,6 +117,7 @@ class RandomSimple(ChessBot):
     name = "random_simple"
     description = """Gets a list of all possible moves, and chooses a random one.."""
     creator = "Duck"
+    color = 0x2eccb7
 
     def turn(
             self: typing.Self,
@@ -117,6 +129,7 @@ class RandomBot(ChessBot):
     name = "random"
     description = """Chooses a random piece, and then from there a random move that piece can make.\nThis means each piece has an equal chance of being moved.\nFor a bot that chooses a random move from a giant list of all the possible moves `random_simple` is what you're looking for."""
     creator = "Duck"
+    color = 0x2ecc68
 
     def turn(
             self: typing.Self,
@@ -152,6 +165,7 @@ class MoveCount(ChessBot):
     name = "move_count"
     creator = "Duck"
     description = "Tries to maximize the amount of moves it has."
+    color = 0x1e4b70
 
     def count_moves(
             self: typing.Self,
@@ -216,6 +230,7 @@ class Pi(ChessBot):
     name = "pi"
     creator = "Duck"
     description = "π"
+    color = 0x314159
 
     def __init__(
             self: typing.Self,
@@ -310,6 +325,7 @@ class E(ChessBot):
     name = "e"
     creator = "Duck"
     description = "e"
+    color = 0x271828
 
     def __init__(
             self: typing.Self,
@@ -404,6 +420,7 @@ class Tau(ChessBot):
     name = "tau"
     creator = "Duck"
     description = "τ"
+    color = 0x628318
 
     def __init__(
             self: typing.Self,
@@ -498,6 +515,7 @@ class CCPBot(ChessBot):
     name = "ccpbot"
     description = """BORN TO BLUNDER / TOURNAMENT IS A FUCK / 將死 Capture Em All 1989 / I am martin / 410,757,864,530 HUNG QUEENS"""
     creator = "ph03n1x"
+    color = 0xde2810
 
     CCP_DIST_CAP = 5**0.5 # Adjust this to ensure pieces don't get TOO close.
     CCP_PIECE_VALUES = [1,3,3,9,5,5]
@@ -619,6 +637,7 @@ class PacifistBot(ChessBot):
     name = "pacifistbot"
     description = """With the power of friendship I shall win!"""
     creator = "ph03n1x"
+    color = 0xdddddd
 
     PAC_PIECE_VALUES = [1,3,3,5,9,3] # For use in distance calc. P,N,B,R,Q,K
 
@@ -699,6 +718,7 @@ class BrokenCloset(ChessBot):
     name = "brokencloset"
     description = """Tries to put its king as close as possible to his boyfriend: The enemy king."""
     creator = "ph03n1x"
+    color = 0x078d70
 
     BC_DIST_CAP = 0 # Adjust this if the bot seems to prioritize getting to the enemy king *too* much.
 
@@ -762,6 +782,7 @@ class RandomCheckmate(ChessBot):
     name = "random_checkmate"
     description = """The same as `random`, but if it has mate in 1 it will take it."""
     creator = "Duck"
+    color = 0x43cc2e
 
     def turn(
             self: typing.Self,
@@ -808,6 +829,7 @@ class GiveawayBot(ChessBot):
     name = "giveaway"
     description = """This bot is convinced it's playing giveaway/antichess, and will attempt to abide by the variant's rules as best it can."""
     creator = "Duck"
+    color = 0xd369ae
 
     def turn(
             self: typing.Self,
@@ -860,9 +882,10 @@ class GiveawayBot(ChessBot):
             return (8 - rank) / 8 + 1
 
 class NyaaBot(ChessBot):
-    name = "NyaaBot"
+    name = "nyaabot"
     description = """Basic chess skills. Nyaaaaa ^w^"""
     creator = "ph03n1x"
+    color = 0xacfffc
 
     PHO_DIST_CAP = 10**0.5 # If a piece is at least this close to the king, cap the reward gain.
     PHO_FORCED_EP = True # Take en passant if possible.
@@ -1211,6 +1234,7 @@ class RobertoBot(ChessBot):
     name = "roberto_bot"
     description = """A python version of my Roberto bot (https://github.com/lythd/RobertoChessBot) that placed 293/624 in Sebastians competition. Don't look at my code there please its genuinely embarassing."""
     creator = "Booby"
+    color = 0x843316
 
     def turn(
             self: typing.Self,
@@ -1428,6 +1452,12 @@ def get_bot_list() -> dict[str, typing.Type[ChessBot]]:
     
     return out
 
+def get_random_moves(amount: int) -> list[str]:
+    """Gets a list of random moves from `data/Games.txt` and returns a random list of opening moves from it.
+    
+    If you want to force a set of opening moves have this return the output from `parse_san`."""
+    return random.choice(copy.deepcopy(game_lines)).split(" ")[:amount + 1]
+
 def run_match(
         white: ChessBot,
         black: ChessBot
@@ -1442,6 +1472,14 @@ def run_match(
     black_obj = black(black_data) # type: ChessBot
 
     moves = []
+    
+    # Get 6 random moves from the list of Chess games, 3 for each side.
+    starting_moves = get_random_moves(amount=6)
+
+    # Play the moves.
+    for move in starting_moves:
+        board.push_san(move)
+        moves.append(move)
     
     move_number = 1
     while board.outcome() is None:
@@ -1804,3 +1842,93 @@ def handle_match_outcome(
     set_bot_elo(database, bot_2, new_2)
 
     return new_1, new_2
+
+def determine_matches(database: u_files.DatabaseInterface) -> list[tuple[typing.Type[ChessBot], typing.Type[ChessBot] | None]]:
+    """Generates a set of bot matchups in a way that hopefully means bots of similar ratings will be paired with each other.
+    I cannot provide any reference to the method used to do this as I made it up.
+
+    Args:
+        database (u_files.DatabaseInterface): The database.
+
+    Returns:
+        list[tuple[typing.Type[ChessBot], typing.Type[ChessBot] | None]]: List of the generated matchups, with 2 item tuples containing the bot classes. If there is a bot that has a bye it will be at the end with the other tuple element being `None`.
+    """
+    standard_deviation = 128 # Higher standard deviation means it's more likely to be paired with a bot with a larger elo difference.
+
+    def equation(
+            current: int,
+            check: int
+        ) -> float:
+        return 1/(math.sqrt(2 * math.pi * standard_deviation)) * (math.e ** (-(((check - current) ** 2) / (2 * standard_deviation ** 2))))
+
+    def random(
+            weights_dict: dict[str, float],
+            remove: list[str]
+        ) -> str:
+        weights = {n: v for n, v in weights_dict.items() if n not in remove}
+
+        weight_sum = sum(weights.values())
+        
+        weights = {n: v / weight_sum for n, v in weights.items()}
+
+        return str(np.random.choice(
+            a = list(weights.keys()),
+            p = list(weights.values()),
+            size = 1
+        )[0])
+
+    elos = {bot: instance.get_elo(database) for bot, instance in get_bot_list().items()}
+
+    weights = {}
+
+    for name, elo in elos.items():
+        weight = {}
+        
+        for c_name, c_elo in elos.items():
+            if c_name == name:
+                continue
+            
+            weight[c_name] = equation(elo, c_elo)
+        
+        weights[name] = weight
+
+    removed = []
+    order = list(elos.keys())
+    np.random.shuffle(order)
+
+    matches = []
+
+    for bot in order:
+        if bot in removed:
+            continue
+
+        if len(order) - len(removed) == 1:
+            matches.append((get_bot(bot), None))
+            break
+
+        chosen = random(weights[bot], removed)
+
+        removed.append(bot)
+        removed.append(chosen)
+
+        matches.append((
+            get_bot(bot),
+            get_bot(chosen)
+        ))
+
+    return matches
+
+def get_rating_history(database: u_files.DatabaseInterface) -> list[dict[str, float]]:
+    return database.load("chess", "rating_history", default = [])
+
+def get_all_elos(
+        database: u_files.DatabaseInterface,
+        return_classes: bool = True
+    ) -> dict[typing.Type[ChessBot], float]:
+    out = {}
+
+    for name, bot in get_bot_list().items():
+        out[bot if return_classes else name] = bot.get_elo(database)
+
+
+    return out
