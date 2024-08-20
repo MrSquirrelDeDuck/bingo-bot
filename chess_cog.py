@@ -38,8 +38,8 @@ class Chess_cog(
         bread_time = u_bread.bst_time()
 
         # If it's not the correct time (noon in EDT,) then stop here.
-        # if bread_time != 18:
-        #     return
+        if bread_time != 18:
+            return
         
         # If it's here, then time to play a game of Chess!
         game_data = u_chess.determine_matches(database)
