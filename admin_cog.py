@@ -158,6 +158,9 @@ class Admin_cog(
         
         if ctx.author.guild_permissions.administrator:
             return True
+        
+        if u_checks.in_authority(ctx):
+            return True
 
         # Don't send the message if the check was invoked via the help command.
         if ctx.invoked_with != "help":
