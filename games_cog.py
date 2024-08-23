@@ -1811,7 +1811,7 @@ class Games_cog(
             "Derpy"
         ]
 
-        derpy_example = 344
+        derpy_example = 345
 
         raw_year_mod = raw_year - derpy_example
         year_mod = int(raw_year_mod) 
