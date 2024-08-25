@@ -2432,6 +2432,7 @@ class Games_cog(
         else:
             suffix = "th"
 
+        next_century = int((SECONDS_IN_YEAR * 100) - ((raw_year % 100) * SECONDS_IN_YEAR) + base_time)
         next_year = int(SECONDS_IN_YEAR - ((raw_year % 1) * SECONDS_IN_YEAR) + base_time)
         next_season = int(SECONDS_IN_SEASON - ((((raw_year % 1) / 0.25) % 1) * SECONDS_IN_SEASON) + base_time)
         next_month = int(SECONDS_IN_MONTH - ((raw_month % 1) * SECONDS_IN_MONTH) + base_time)
@@ -2439,7 +2440,7 @@ class Games_cog(
 
         embed = u_interface.gen_embed(
             title = "Time in Skyblock",
-            description = "It is currently {hour}:{minute:02} {ampm} on the {day}{suffix} of {month} in the year {year}.\n\nThe next year is <t:{next_year}:R>.\nThe next season is <t:{next_season}:R>.\nThe next month is <t:{next_month}:R>.\nThe next day is <t:{next_day}:R>.".format(
+            description = "It is currently {hour}:{minute:02} {ampm} on the {day}{suffix} of {month} in the year {year}.\n\nThe next century is <t:{next_century}:R>.\nThe next year is <t:{next_year}:R>.\nThe next season is <t:{next_season}:R>.\nThe next month is <t:{next_month}:R>.\nThe next day is <t:{next_day}:R>.".format(
                 hour = (hour + 11) % 12 + 1,
                 minute = minute,
                 ampm = "am" if hour < 12 else "pm",
@@ -2447,6 +2448,7 @@ class Games_cog(
                 suffix = suffix,
                 month = MONTH_NAMES[month],
                 year = year,
+                next_century = next_century,
                 next_year = next_year,
                 next_season = next_season,
                 next_month = next_month,
