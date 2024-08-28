@@ -1998,7 +1998,7 @@ class Games_cog(
         
         embed = u_interface.gen_embed(
             title = "Skyblock Farming Contests",
-            description = "You can use `%skyblock events farming <crop>` to search for a future farming contest containing that crop.",
+            description = "You can use `%skyblock events farming <crop>` to get more information about that crop in farming contests.",
             fields = [
                 (
                     "Current farming contest",
