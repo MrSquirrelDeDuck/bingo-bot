@@ -1694,6 +1694,7 @@ class Games_cog(
     
     @skyblock.group(
         name = "events",
+        aliases = ["event"],
         brief = "Provides information regarding future events.",
         description = "Provides information regarding future events.",
         invoke_without_command = True,
@@ -1857,6 +1858,50 @@ class Games_cog(
     ######################################################################################################################################################
     ##### SKYBLOCK EVENTS FARMING ########################################################################################################################
     ######################################################################################################################################################
+
+    async def get_medal_requirements(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext,
+            crop: str
+        ) -> str:
+        """Returns the Jacob's Farming Contest medal requirements for the given crop as a string."""
+        async with aiohttp.ClientSession() as session:
+            async with session.get("https://api.elitebot.dev/graph/medals/now") as resp:
+                if resp.status != 200:
+                    await ctx.reply("Something went wrong.")
+                    return
+                
+                medal_json = await resp.json()
+
+        medal_conversion = {
+            "Sugar Cane": "cane",
+            "Wheat": "wheat",
+            "Pumpkin": "pumpkin",
+            "Carrot": "carrot",
+            "Nether Wart": "wart",
+            "Mushroom": "mushroom",
+            "Cocoa Beans": "cocoa",
+            "Potato": "potato",
+            "Cactus": "cactus",
+            "Melon": "melon"
+        }
+        
+        medal_info = medal_json.get("brackets", {}).get(medal_conversion.get(crop))
+
+        if medal_info is None:
+            medal_text = "*Unknown, something went wrong.*"
+        else:
+            medal_text = "Average medal requirements between <t:{start}> and <t:{end}>:\n- Diamond: {diamond}\n- Platinum: {platinum}\n- Gold: {gold}\n- Silver: {silver}\n- Bronze: {bronze}".format(
+                start = medal_json.get("start", 0),
+                end = medal_json.get("end", 0),
+                diamond = u_text.smart_number(medal_info.get("diamond", "???")),
+                platinum = u_text.smart_number(medal_info.get("platinum", "???")),
+                gold = u_text.smart_number(medal_info.get("gold", "???")),
+                silver = u_text.smart_number(medal_info.get("silver", "???")),
+                bronze = u_text.smart_number(medal_info.get("bronze", "???"))
+            )
+        
+        return medal_text
     
     @skyblock_events.command(
         name = "farming",
@@ -1897,7 +1942,8 @@ class Games_cog(
                     embed = u_interface.gen_embed(
                         title = "Skyblock Farming Contests",
                         description = f"The next time {search} is in a farming contest is right now!",
-                        timestamp = datetime.datetime.fromtimestamp(time.time())
+                        timestamp = datetime.datetime.fromtimestamp(time.time()),
+                        fields = [("Medals", await self.get_medal_requirements(ctx, search), False)]
                     )
                     await ctx.reply(embed=embed)
                     return
@@ -1921,7 +1967,8 @@ class Games_cog(
                 embed = u_interface.gen_embed(
                     title = "Skyblock Farming Contests",
                     description = f"The next time {search} is in a farming contest is <t:{next_timestamp}:R>.",
-                    timestamp = datetime.datetime.fromtimestamp(time.time())
+                    timestamp = datetime.datetime.fromtimestamp(time.time()),
+                    fields = [("Medals", await self.get_medal_requirements(ctx, search), False)]
                 )
 
             await ctx.reply(embed=embed)
@@ -1951,7 +1998,7 @@ class Games_cog(
         
         embed = u_interface.gen_embed(
             title = "Skyblock Farming Contests",
-            description = "You can use `%skyblock events farming <crop>` to search for a future farming contest containing that crop.",
+            description = "You can use `%skyblock events farming <crop>` to get more information about that crop in farming contests.",
             fields = [
                 (
                     "Current farming contest",
@@ -2085,6 +2132,8 @@ class Games_cog(
             start: typing.Optional[str] = commands.parameter(description = "The starting level."),
             end: typing.Optional[str] = commands.parameter(description = "The ending level.")
         ):
+        await ctx.reply("This command has been disabled, it is going to be inaccurate soon with the next mining update.\nTo be fair, it was already inaccurate but that's just because Duck is bad at math.")
+        return
         if perk_name is None:
             await ctx.reply("Please provide the perk name, start level, and end level.")
             return
@@ -2172,7 +2221,7 @@ class Games_cog(
     
     @skyblock.command(
         name = "mayor",
-        aliases = ["election"],
+        aliases = ["election", "mayors", "elections"],
         brief = "Provides information about the current mayor.",
         description = "Provides information about the current mayor and the next election."
     )
@@ -2432,6 +2481,7 @@ class Games_cog(
         else:
             suffix = "th"
 
+        next_century = int((SECONDS_IN_YEAR * 100) - ((raw_year % 100) * SECONDS_IN_YEAR) + base_time)
         next_year = int(SECONDS_IN_YEAR - ((raw_year % 1) * SECONDS_IN_YEAR) + base_time)
         next_season = int(SECONDS_IN_SEASON - ((((raw_year % 1) / 0.25) % 1) * SECONDS_IN_SEASON) + base_time)
         next_month = int(SECONDS_IN_MONTH - ((raw_month % 1) * SECONDS_IN_MONTH) + base_time)
@@ -2439,7 +2489,7 @@ class Games_cog(
 
         embed = u_interface.gen_embed(
             title = "Time in Skyblock",
-            description = "It is currently {hour}:{minute:02} {ampm} on the {day}{suffix} of {month} in the year {year}.\n\nThe next year is <t:{next_year}:R>.\nThe next season is <t:{next_season}:R>.\nThe next month is <t:{next_month}:R>.\nThe next day is <t:{next_day}:R>.".format(
+            description = "It is currently {hour}:{minute:02} {ampm} on the {day}{suffix} of {month} in the year {year}.\n\nThe next century is <t:{next_century}:R>.\nThe next year is <t:{next_year}:R>.\nThe next season is <t:{next_season}:R>.\nThe next month is <t:{next_month}:R>.\nThe next day is <t:{next_day}:R>.".format(
                 hour = (hour + 11) % 12 + 1,
                 minute = minute,
                 ampm = "am" if hour < 12 else "pm",
@@ -2447,6 +2497,7 @@ class Games_cog(
                 suffix = suffix,
                 month = MONTH_NAMES[month],
                 year = year,
+                next_century = next_century,
                 next_year = next_year,
                 next_season = next_season,
                 next_month = next_month,
