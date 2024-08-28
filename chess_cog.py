@@ -166,18 +166,63 @@ class Chess_cog(
 
                 add = io.StringIO(ending_pgn)
 
-                send_files.append(discord.File(add, filename="chess_game.pgn"))                
+                send_files.append(discord.File(add, filename="chess_game.pgn"))
 
             await thread.send(embed=embed, files=send_files)
         
-        # Sending the leaderboard.
+        ##### Sending the leaderboard and graph. #####
         
+        ### Generating the leaderboard. ###
         values = tuple(u_chess.get_all_elos(database).items())
 
         sorted_list = sorted(values, key=lambda g: g[1], reverse=True)
 
+        ### Generating the graph. ###
+        history = u_chess.get_rating_history(database)
+
+        # Account for the fact that the history doesn't have the current elo values.
+        history.append(u_chess.get_all_elos(database, return_classes=False))
+
+        current_match = len(history)
+        
+        start_match = 0
+        end_match = current_match
+        bot_list = list(u_chess.get_bot_list().keys())
+
+        lines = []
+
+        for bot in bot_list:
+            values = []
+
+            for match_number, match in enumerate(history[start_match:end_match + 1]):
+                if bot not in match:
+                    continue
+
+                values.append((match_number + start_match, match[bot]))
+            
+            if len(values) == 0:
+                continue
+
+            bot_class = u_chess.get_bot(bot)
+
+            lines.append({
+                "label": bot_class.formatted_name(),
+                "color": bot_class.get_color_rgb(),
+                "values": values
+            })
+        
+        file_name = u_images.generate_graph(
+            lines = lines,
+            x_label = "Match number",
+            y_label = "Bot elo"
+        )
+        send_file = discord.File(file_name, filename="graph.png")
+        send_file_link = "attachment://graph.png"
+        
+        ### Generating the embed. ###
+
         embed = u_interface.gen_embed(
-            title = "Post-match leaderboard:",
+            title = "Post-match leaderboard and graph:",
             description = "\n".join(
                 [
                     "{place}. {name}: {elo}".format(
@@ -187,10 +232,11 @@ class Chess_cog(
                     )
                     for placement, data in enumerate(sorted_list, start=1)
                 ]
-            )
+            ),
+            image_link = send_file_link
         )
 
-        await thread.send(embed=embed)
+        await thread.send(embed=embed, file=send_file)
         
 
 
