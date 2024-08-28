@@ -1407,7 +1407,7 @@ class RobertoBot(ChessBot):
         return eval_score * (1.0 if white else -1.0)
 
 class OwObot_v1(ChessBot):
-    name = "OwObot_v1"
+    name = "owobot_v1"
     description = """Duck's failed attempt at dethroning NyaaBot, but the first version."""
     creator = "Duck"
     color = 0xee362e
@@ -1538,7 +1538,7 @@ class OwObot_v1(ChessBot):
         return attacked_pieces > 0
 
 class OwObot_v2(ChessBot):
-    name = "OwObot_v2"
+    name = "owobot_v2"
     description = """Duck's failed attempt at dethroning NyaaBot, but the second version."""
     creator = "Duck"
     color = 0xb200ff
@@ -1722,7 +1722,7 @@ class OwObot_v2(ChessBot):
         return attacked_pieces > 0
 
 class OwObot_v3(ChessBot):
-    name = "OwObot_v3"
+    name = "owobot_v3"
     description = """Duck's failed attempt at dethroning NyaaBot, but the third version."""
     creator = "Duck"
     color = 0x0a6564
