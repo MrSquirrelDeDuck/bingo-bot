@@ -1,11 +1,16 @@
 """Bread Game solvers using z3."""
 
+from discord.ext import commands
+import discord
 import re
 
 # pip install z3-solver
 import z3
 
 import utility.values as u_values
+import utility.custom as u_custom
+import utility.interface as u_interface
+import utility.text as u_text
 
 import importlib
 
@@ -153,9 +158,13 @@ def solver_wrapper(
                 recipes.remove(recipe_name)
                 break
     
+    if len(recipes) >= 1:
+        print(f"WARNING! Unused recipes! {recipes}")
+    
     final_replacements: list[tuple[str, str]] = [ # (<old pattern>, <replacement pattern>)
         (r"\$bread \w+ (\d+) chessatron 1 .+", r"$bread chessatron \1"),
-        (r"\$bread \w+ (\d+) chessatron 2 .+", r"$bread gem_chessatron \1")
+        (r"\$bread \w+ (\d+) chessatron 2 .+", r"$bread gem_chessatron \1"),
+        (r"\$bread \w+ (\d+) anarchy_chessatron 1 .+", r"$bread anarchy_chessatron \1"),
     ]
 
     for old, new in final_replacements:
@@ -163,3 +172,41 @@ def solver_wrapper(
             command_list[index] = re.sub(old, new, command)
     
     return (command_list, item_copy, solver_result)
+
+async def solver_embed(
+        ctx: commands.Context | u_custom.CustomContext,
+        inventory: dict[u_values.Item, int],
+        goal_item: u_values.Item,
+        disabled_recipes: list[str]
+    ) -> discord.Embed:
+    """Given an inventory item dictionary, goal item, and disabled recipies it will run the solver and generate the output embed."""
+    # Run the solver.
+    try:
+        await ctx.message.add_reaction("✅")
+    except:
+        pass
+    
+    command_list, post_alchemy, solver_result = solver_wrapper(
+        items = inventory,
+        maximize = goal_item,
+        disabled_recipes = disabled_recipes
+    )
+
+    ################
+    
+    return u_interface.gen_embed(
+        title = f"{goal_item.name} solver",
+        description = "Inventory changes:\n{}\nYou should be able to make **{}** {}.".format(
+            "\n".join([
+                f"{item}: {u_text.smart_number(inventory[item])} -> {u_text.smart_number(post_alchemy[item])}"
+                for item in inventory
+                if inventory[item] != post_alchemy[item]
+            ]),
+            u_text.smart_number(solver_result[f"{goal_item.internal_name}_total"]),
+            goal_item,
+        ),
+        fields = [
+            ("Commands:", "\n".join(command_list), False)
+        ],
+        footer_text = "On mobile you can tap and hold on the commands section to copy it."
+    )

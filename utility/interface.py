@@ -187,7 +187,11 @@ def is_mm(message: discord.Message) -> bool:
     Returns:
         bool: Whether the message was sent by Machine-Mind or a known Machine-Mind clone.
     """
-    mm_ids = [960869046323134514, 1144833820940578847]
+    mm_ids = [
+        960869046323134514, # Actual Machine-Mind.
+        1144833820940578847, # Development clone of Machine-Mind.
+        1101193520733241376, # Bread Space bot.
+    ]
 
     return message.author.id in mm_ids
 
