@@ -340,7 +340,7 @@ def calculate_tron_value(
     """
     active_shadowmegas = max(active_shadowmegas, min(shadowmegas, chessatron_contraption * 5))
 
-    return round((2000 + (250 * omega_count) + (100 * active_shadowmegas)) * (1 + (0.1 * ascension)))
+    return round((2000 + (100 * omega_count) * (1.05 ** active_shadowmegas)) * (1 + (0.1 * ascension)))
 
 def get_ascension(
         tokens: int = 0,
@@ -351,7 +351,9 @@ def get_ascension(
         hrt: int = 0,
         cc: int = 0,
         es: int = 0,
-        fcotd: int = 0
+        fcotd: int = 0,
+        fr: int = 0,
+        cn: int = 0
     ) -> int:
     """Determines the ascension of a player based on their current ascension tokens and hidden bakery purchases.
 
@@ -365,6 +367,8 @@ def get_ascension(
         cc (int, optional): Level of Chessatron Contraption. Defaults to 0.
         es (int, optional): Level of Ethereal Shine. Defaults to 0.
         fcotd (int, optional): Level of First Catch of the Day. Defaults to 0.
+        fr (int, optional): Level of Fuel Refinement. Defaults to 0.
+        cn (int, optional): Level of Corruption Negation. Defaults to 0.
 
     Returns:
         int: The ascension the player is on.
@@ -379,6 +383,8 @@ def get_ascension(
         int((cc + 2) / 2) * cc - 2 * (int(cc / 2) * (int(cc / 2) + 1) / 2), # CC
         int((es + 2) / 2) * es - 2 * (int(es / 2) * (int(es / 2) + 1) / 2), # ES
         int((fcotd + 2) / 2) * fcotd - 2 * (int(fcotd / 2) * (int(fcotd / 2) + 1) / 2), # FCotD
+        int((cn + 4) / 4) * cn - 4 * (int(cn / 4) * (int(cn / 4) + 1) / 2), # FR
+        int((cn + 2) / 2) * cn - 2 * (int(cn / 2) * (int(cn / 2) + 1) / 2), # CN
         tokens
     ]
 
@@ -435,6 +441,7 @@ async def parse_stats(message: discord.Message) -> dict[str | typing.Type[u_valu
     - $bread stats (Main, individual items if it's split, and continued.)
     - $bread stats chess
     - $bread stats gambit
+    - $bread stats space
     - $bread portfolio
     - $bread invest
     - $bread divest
@@ -459,6 +466,7 @@ async def parse_stats(message: discord.Message) -> dict[str | typing.Type[u_valu
     - "dough": `$bread dough`.
     - "chess": `$bread stats chess`.
     - "gambit": `$bread stats gambit`.
+    - "space": `$bread stats space`.
     - "stonks": `$bread stonks`.
     - "portfolio": `$bread portfolio`.
     - "invest": `$bread invest`.
@@ -533,8 +541,9 @@ async def parse_stats(message: discord.Message) -> dict[str | typing.Type[u_valu
         pattern = surrounding
         if escape:
             pattern = re.escape(pattern)
-        
-        pattern = pattern.replace("\#\#", "([\d,]+)").replace("\&\&", emoji_discord)
+            pattern = pattern.replace("\#\#", "([\d,]+)").replace("\&\&", emoji_discord)
+        else:
+            pattern = pattern.replace("##", "([\d,]+)").replace("&&", emoji_discord)
 
         search_result = re.search(pattern, text)
 
@@ -545,8 +554,9 @@ async def parse_stats(message: discord.Message) -> dict[str | typing.Type[u_valu
             pattern = surrounding
             if escape:
                 pattern = re.escape(pattern)
-            
-            pattern = pattern.replace("\#\#", "([\d,]+)").replace("\&\&", emoji_ascii)
+                pattern = pattern.replace("\#\#", "([\d,]+)").replace("\&\&", emoji_ascii)
+            else:
+                pattern = pattern.replace("##", "([\d,]+)").replace("&&", emoji_ascii)
 
             search_result = re.search(pattern, text)
         
@@ -676,6 +686,8 @@ async def parse_stats(message: discord.Message) -> dict[str | typing.Type[u_valu
         chessatron_contraption = extract("With level ## of the Chessatron Contraption", default = 0)
         ethereal_shine = extract("With level ## of Ethereal Shine", default = 0)
         first_catch_of_the_day = extract("With First Catch of the Day, your first ## special item", default = 0)
+        fuel_refinement = extract("more fuel with ## level", default = 0)
+        corruption_negation = extract("lower chance of a loaf becoming corrupted with ## level", default = 0)
 
         ascension_number = extract("**##**\u2b50:", default=0) # \u2b50 is the star emoji.
 
@@ -690,6 +702,8 @@ async def parse_stats(message: discord.Message) -> dict[str | typing.Type[u_valu
             "chessatron_shadow_boost": chessatron_contraption,
             "shadow_gold_gem_luck_boost": ethereal_shine,
             "first_catch_level": first_catch_of_the_day,
+            "fuel_refinement": fuel_refinement,
+            "corruption_negation": corruption_negation,
         }
 
         stats.update(append)
@@ -724,7 +738,7 @@ async def parse_stats(message: discord.Message) -> dict[str | typing.Type[u_valu
         chess_piece_equalizer_levels = [25, 33, 42, 50]
         high_roller_table_levels = [50, 500, 1500, 5000, 10000, 100000, 10000000, 1000000000, 1000000000000]
 
-        ascension_token_count = extract(f"You have **## {u_values.ascension_token.internal_emoji}**.")
+        ascension_token_count = extract(f"You have **## {u_values.ascension_token.internal_emoji}**.", default=0)
 
         daily_discount_card = (124 - extract("Reduces the cost of a daily roll by ##, to ##.", group_id=2, default = 4)) // 4
         self_converting_yeast = (244 - extract("Reduces the cost of each loaf converter level by ##, to ##.", group_id=2, default = 16)) // 12
@@ -734,6 +748,26 @@ async def parse_stats(message: discord.Message) -> dict[str | typing.Type[u_valu
         chessatron_contraption = extract("for each shadowmega chessatron you own. Works for up to ## shadowmega chessatrons.", default = 250) // 5 - 1
         ethereal_shine = extract("Allows your shadow gold gems to help you find new gems. Up to ## shadow gold gems will", default = 500) // 10 - 1
         first_catch_of_the_day = extract("The first ## special items you find each day will be", default = -1) - 1
+        fuel_refinement = extract("Increases the amount of fuel you create to ##% of base.")
+        corruption_negation = extract("Decreases the amount of corrupted loaves by ##%, to ##% of base.", group_id=2)
+
+        if fuel_refinement is None:
+            # If it's in the message, but the part about it is the "here's what you must do" thing.
+            if "Fuel Refinement" in content:
+                fuel_refinement = 0
+            else:
+                fuel_refinement = 8
+        else:
+            fuel_refinement = (fuel_refinement - 100) // 25 - 1
+
+        if corruption_negation is None:
+            # If it's in the message, but the part about it is the "here's what you must do" thing.
+            if "Corruption Negation" in content:
+                corruption_negation = 0
+            else:
+                corruption_negation = 5
+        else:
+            corruption_negation = (100 - corruption_negation) // 10 - 1
 
         if first_catch_of_the_day == -1:
             first_catch_of_the_day = 50
@@ -755,7 +789,19 @@ async def parse_stats(message: discord.Message) -> dict[str | typing.Type[u_valu
         
         ### Figuring out what ascension you're on. ###
         
-        ascension_number = get_ascension(ascension_token_count, daily_discount_card, self_converting_yeast, moak_booster, chess_piece_equalizer, high_roller_table, chessatron_contraption, ethereal_shine, first_catch_of_the_day)
+        ascension_number = get_ascension(
+            tokens = ascension_token_count,
+            ddc = daily_discount_card,
+            scy = self_converting_yeast,
+            mb = moak_booster,
+            cpe = chess_piece_equalizer,
+            hrt = high_roller_table,
+            cc = chessatron_contraption,
+            es = ethereal_shine,
+            fcotd = first_catch_of_the_day,
+            fr = fuel_refinement,
+            cn = corruption_negation,
+        )
 
         ##############################################
         
@@ -771,6 +817,8 @@ async def parse_stats(message: discord.Message) -> dict[str | typing.Type[u_valu
             "chessatron_shadow_boost": chessatron_contraption,
             "shadow_gold_gem_luck_boost": ethereal_shine,
             "first_catch_level": first_catch_of_the_day,
+            "fuel_refinement": fuel_refinement,
+            "corruption_negation": corruption_negation
         }
 
         return {
@@ -866,7 +914,7 @@ async def parse_stats(message: discord.Message) -> dict[str | typing.Type[u_valu
     if content.startswith("Chess pieces of") and not content[-1] in ".?!":
         stats = {}
 
-        for chess_piece in u_values.all_chess_pieces:
+        for chess_piece in u_values.every_chess_piece:
             extracted = extract(f"{chess_piece.internal_emoji} - ##")
 
             if extracted is None:
@@ -927,6 +975,53 @@ async def parse_stats(message: discord.Message) -> dict[str | typing.Type[u_valu
                 "stats": {"bling": bling, "dough_boosts": stats}
             }
 
+    ##########################
+    ### $bread stats space ###
+    ##########################
+    
+    if content.startswith("Space stats for:"):
+        stats = {}
+        
+        def direct(key: str, surrounding: str, **kwargs) -> None:
+            """Uses `extract()` to get a number, and then sets the value in `stats` for the key `key` to it only if the result is not None. 
+
+            Args:
+                key (str): The key in `stats` that will be used.
+                surrounding (str): The regex pattern. It should be a normal string, with the location of the number signified by `##`. Things like asterisks and periods will be escaped automatically unless `escape` is set to False.
+            """
+            nonlocal stats
+
+            result = extract(surrounding, **kwargs)
+
+            if result is not None:
+                stats[key] = result
+        
+        ######
+
+        parse_list = {
+            "space_level": "You have a tier ## Bread Rocket",
+            "autopilot_level": "With a level ## autopilot",
+            "fuel_tank": "with ## Fuel Tank level(s?)",
+            "fuel_research": "By having ## level(s?) of fuel research",
+            "telescope_level": "With ## telescope level(s?)",
+            "advanced_exploration": "With ## level(s?) of Advanced Exploration",
+            "engine_efficiency": "less fuel with ## level(s?) of Engine Efficiency",
+            "trade_hubs_created": "Throughout your time in space you've created ## Trade",
+            "projects_completed": "and helped contribute to ## completed project"
+        }
+
+        for key, value in parse_list.items():
+            direct(key, value, default=0, escape=False)
+
+        if len(stats) == 0:
+            return {"parse_successful": False}
+
+        return {
+            "parse_successful": True,
+            "stats_type": "space",
+            "stats": stats
+        }
+    
     #####################
     ### $bread stonks ###
     #####################

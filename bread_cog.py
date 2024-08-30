@@ -996,7 +996,7 @@ class Bread_cog(
         
         gem_sum = sum([red_gems, blue_gems, purple_gems, green_gems, gold_gems * 4])
 
-        possible_trons = gem_sum // 32
+        possible_trons = gem_sum // 64
 
         # Generate the commands list.
         command_list = []
@@ -1233,6 +1233,11 @@ class Bread_cog(
         if any([value > 1_000_000_000_000 for value in gems.values() if value is not None]):
             await ctx.reply("For optimization purposes, you can only provide up to 1 trillion of each gem.")
             return
+        
+        try:
+            await ctx.message.add_reaction("✅")
+        except:
+            pass
 
         command_list, post_alchemy, solver_result = u_solvers.solver_wrapper(items = gems, maximize = u_values.gem_gold)
 
@@ -1242,7 +1247,11 @@ class Bread_cog(
             title = "Gold gem solver",
             description = "{}{}\nYou should be able to make **{}**.\nDough gain: {} ({} with [Gold Ring](<https://bread.miraheze.org/wiki/Gold_Ring>).)".format(
                 "(Using stored data, use `%bread data` for more info.)\n" if using_stored_data else "",
-                "\n".join([f"{gem}: {u_text.smart_number(gems[gem])} -> {u_text.smart_number(post_alchemy[gem])}" for gem in gems]),
+                "\n".join([
+                    f"{gem}: {u_text.smart_number(gems[gem])} -> {u_text.smart_number(post_alchemy[gem])}"
+                    for gem in gems
+                    if gems[gem] != post_alchemy[gem] # Kinda useless, but whatever.
+                ]),
                 u_text.smart_text(solver_result["gem_gold_total"], "gold gem"),
                 u_text.smart_number(round(solver_result["gem_gold_total"] * 5000 * ascension_multiplier)),
                 u_text.smart_number(round(solver_result["gem_gold_total"] * 10000 * ascension_multiplier))
@@ -1268,7 +1277,8 @@ class Bread_cog(
         "%bread tron_value",
         "%bread gem_value",
         "%bread gold_gem",
-        "%bread omega"
+        "%bread omega",
+        "%bread solver",
     ]
     
     @bread.group(
@@ -1526,6 +1536,10 @@ class Bread_cog(
         items[u_values.chessatron] = stored_data.get(u_values.chessatron, 0)
 
         # Run the solver.
+        try:
+            await ctx.message.add_reaction("✅")
+        except:
+            pass
         
         command_list, post_alchemy, solver_result = u_solvers.solver_wrapper(
             items = items,
@@ -1537,7 +1551,11 @@ class Bread_cog(
         embed = u_interface.gen_embed(
             title = "Chessatron solver",
             description = "{}\nYou should be able to make **{}** {} with an estimated gain of **{} dough**.".format(
-                "\n".join([f"{item}: {u_text.smart_number(items[item])} -> {u_text.smart_number(post_alchemy[item])}" for item in items]),
+                "\n".join([
+                    f"{item}: {u_text.smart_number(items[item])} -> {u_text.smart_number(post_alchemy[item])}"
+                    for item in items
+                    if items[item] != post_alchemy[item]
+                ]),
                 u_text.smart_number(solver_result["chessatron_total"]),
                 u_values.chessatron,
                 u_text.smart_number(round(solver_result["chessatron_total"] * stored_data.tron_value))
@@ -1645,7 +1663,7 @@ class Bread_cog(
         pawn_contribution_final = pawn_contribution_initial / 16
 
         gem_contribution_initial = sum(gems.values()) + (gems.get(u_values.gem_gold) * 3)
-        gem_contribution_final = gem_contribution_initial / 32
+        gem_contribution_final = gem_contribution_initial / 64
 
         total_trons = int(pawn_contribution_final + gem_contribution_final)
         total_dough = round(total_trons * tron_value)
@@ -1663,7 +1681,7 @@ class Bread_cog(
             description = f"{u_values.bpawn}: {sm(bpawns)}, {u_values.wpawn}: {sm(wpawns)}\n{', '.join([f'{gem}: {sm(gems[gem])}' for gem in u_values.all_shiny])}",
             fields = [
                 ("", f"Trons from pieces: {sm(round(pawn_contribution_final, 2))}\nTrons from gem chessatron: {sm(round(gem_contribution_final, 2))}\nTotal chessatrons: **{u_text.smart_text(total_trons, 'chessatron')}**, which, at a rate of {sm(tron_value)} per chessatron, is worth **{sm(total_dough)} dough**.\n\nWith a percentage of {percentage * 100}%, it results in **{sm(after_percentage)} dough**.\n\nGifting {sm(gift_amount)} {stonk} results in {sm(remaining)} remaining dough.", False),
-                ("Equation:", f"- {sm(bpawns)} + {sm(wpawns)} = {sm(pawn_contribution_initial)}\n- {sm(pawn_contribution_initial)} / 16 = {sm(pawn_contribution_final)}\n\n- {sm(gem_contribution_initial)} (Sum of gems in red gems.)\n- {sm(gem_contribution_initial)} / 32 = {sm(gem_contribution_final)}\n\n- {sm(pawn_contribution_final)} + {sm(gem_contribution_final)} = {sm(total_trons)}\n- {sm(tron_value)} * {sm(total_trons)} = {sm(total_dough)}\n\n- {percentage * 100}% * {sm(total_dough)} = {sm(after_percentage)}", True),
+                ("Equation:", f"- {sm(bpawns)} + {sm(wpawns)} = {sm(pawn_contribution_initial)}\n- {sm(pawn_contribution_initial)} / 16 = {sm(pawn_contribution_final)}\n\n- {sm(gem_contribution_initial)} (Sum of gems in red gems.)\n- {sm(gem_contribution_initial)} / 64 = {sm(gem_contribution_final)}\n\n- {sm(pawn_contribution_final)} + {sm(gem_contribution_final)} = {sm(total_trons)}\n- {sm(tron_value)} * {sm(total_trons)} = {sm(total_dough)}\n\n- {percentage * 100}% * {sm(total_dough)} = {sm(after_percentage)}", True),
                 ("Commands:", f"$bread gift {user.id} {gift_amount} {stonk}", True)
             ],
             footer_text = "On mobile you can tap and hold on the commands section to copy it."
@@ -1718,8 +1736,6 @@ class Bread_cog(
             attributes.append(u_values.all_rares)
             attributes.append(u_values.all_specials)
             items[u_values.bread] = stored_data.get(u_values.bread, 0)
-
-            print(attributes)
             
             if "-tron" not in modifier_list:
                 modifier_list.append("-tron")
@@ -1745,27 +1761,93 @@ class Bread_cog(
         ################
         # Run the solver.
         
-        command_list, post_alchemy, solver_result = u_solvers.solver_wrapper(
-            items = items,
-            maximize = u_values.omega_chessatron,
+        embed = await u_solvers.solver_embed(
+            ctx = ctx,
+            inventory = items,
+            goal_item = u_values.omega_chessatron,
             disabled_recipes = disabled_recipes
         )
 
+        await ctx.reply(embed=embed)
+
+    
+
+        
+    ######################################################################################################################################################
+    ##### BREAD SOLVER ###################################################################################################################################
+    ######################################################################################################################################################
+    
+    @bread.command(
+        name = "solver",
+        aliases = ["solve", "universal_solver"],
+        brief = "Universal solver to maximize an item.",
+        description = "Universal solver to maximize an item.\nThis does require storing data with the `%bread data` feature.\n\nModifiers:\n- `!<item>_recipe_<recipe number>` can be used to disallow the solver from using that particular recipe. Internally chessatrons are stored as alchemy recipes, so recipe 1 is from chess pieces and recipe 2 is from 64 red gems."
+    )
+    async def bread_solver(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext,
+            goal_item: typing.Optional[u_values.ItemConverter] = commands.parameter(description = "What item to try and maximize."),
+            *, modifiers: typing.Optional[str] = commands.parameter(description = "Optional modifiers.")
+        ):
+        if goal_item is None:
+            await ctx.reply("Please provide the item to maximize.")
+            return
+        
         ################
-        
-        embed = u_interface.gen_embed(
-            title = "Omega solver",
-            description = "{}\nYou should be able to make **{}** {}.".format(
-                "\n".join([f"{item}: {u_text.smart_number(items[item])} -> {u_text.smart_number(post_alchemy[item])}" for item in items]),
-                u_text.smart_number(solver_result["omega_chessatron_total"]),
-                u_values.omega_chessatron,
-            ),
-            fields = [
-                ("Commands:", "\n".join(command_list), False)
-            ],
-            footer_text = "On mobile you can tap and hold on the commands section to copy it."
+        # Get stored data.
+
+        stored_data = u_bread.get_stored_data(
+            database = database,
+            user_id = ctx.author.id
         )
+
+        if not stored_data.loaded:
+            await ctx.reply("You do not have any stored data.\nUse `%bread data` to get more information on how to store data.")
+            return
+
+        ################
+        # Get modifier list.
+
+        if modifiers is None:
+            modifiers = ""
+
+        modifier_list = modifiers.split(" ")
+
+        ################
+        # Setup the item list.
         
+        items = {}
+
+        for item in u_values.all_items:
+            items[item] = stored_data.get(item, 0)
+
+        ################
+        # Determine disabled recipes.
+
+        disabled_recipes = []
+        pattern = re.compile("^!(.+)_recipe_(\d+)$")
+
+        for modifier in modifier_list:
+            if not modifier.startswith("!"):
+                continue
+            
+            found = pattern.match(modifier)
+
+            if not found:
+                continue
+
+            disabled_recipes.append(f"{found.group(1)}_recipe_{found.group(2)}")
+
+        ################
+        # Run the solver.
+        
+        embed = await u_solvers.solver_embed(
+            ctx = ctx,
+            inventory = items,
+            goal_item = goal_item,
+            disabled_recipes = disabled_recipes
+        )
+
         await ctx.reply(embed=embed)
 
     

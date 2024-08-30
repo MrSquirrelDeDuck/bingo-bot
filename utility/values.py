@@ -105,7 +105,6 @@ class StonkItem(Item):
         self.base_value = base_value
         self.graph_color = graph_color
 
-
     def value(self: typing.Self, database: u_files.DatabaseInterface) -> int:
         """Returns this stonk's current value."""
         current_values = u_stonks.current_values(database=database)
@@ -118,6 +117,7 @@ class ChessItem(Item):
             internal_name: str,
             internal_emoji: str,
             is_white: bool,
+            is_anarchy: bool,
             emoji: str = None,
             attributes: list[str] = [],
             gambit_bonus: int = None,
@@ -141,6 +141,7 @@ class ChessItem(Item):
         super().__init__(name, internal_name, internal_emoji, emoji, attributes, gambit_bonus, aliases, gamble_multiplier)
 
         self.is_white = is_white
+        self.is_anarchy = is_anarchy
 
 #####################
 ##### ITEM LIST #####
@@ -189,7 +190,7 @@ sandwich = Item(
 )
 
 french_bread = Item(
-    name = "french_bread",
+    name = "French Bread",
     internal_name = "french_bread",
     internal_emoji = ":french_bread:",
     emoji = "🥖",
@@ -247,7 +248,8 @@ bpawn = ChessItem(
     gambit_bonus = 20,
     attributes = ["chess_piece", "black_chess_piece", "rollable", "gamble_item", "gamble_chess_piece"],
     aliases = ["black_pawn"],
-    gamble_multiplier = 4
+    gamble_multiplier = 4,
+    is_anarchy = False
 )
 
 bknight = ChessItem(
@@ -258,7 +260,8 @@ bknight = ChessItem(
     gambit_bonus = 20,
     attributes = ["chess_piece", "black_chess_piece", "rollable", "gamble_item", "gamble_chess_piece"],
     aliases = ["black_knight"],
-    gamble_multiplier = 4
+    gamble_multiplier = 4,
+    is_anarchy = False
 )
 
 bbishop = ChessItem(
@@ -269,7 +272,8 @@ bbishop = ChessItem(
     gambit_bonus = 20,
     attributes = ["chess_piece", "black_chess_piece", "rollable", "gamble_item", "gamble_chess_piece"],
     aliases = ["black_bishop"],
-    gamble_multiplier = 4
+    gamble_multiplier = 4,
+    is_anarchy = False
 )
 
 brook = ChessItem(
@@ -280,7 +284,8 @@ brook = ChessItem(
     gambit_bonus = 20,
     attributes = ["chess_piece", "black_chess_piece", "rollable", "gamble_item", "gamble_chess_piece"],
     aliases = ["black_rook"],
-    gamble_multiplier = 4
+    gamble_multiplier = 4,
+    is_anarchy = False
 )
 
 bqueen = ChessItem(
@@ -291,7 +296,8 @@ bqueen = ChessItem(
     gambit_bonus = 20,
     attributes = ["chess_piece", "black_chess_piece", "rollable", "gamble_item", "gamble_chess_piece"],
     aliases = ["black_queen"],
-    gamble_multiplier = 4
+    gamble_multiplier = 4,
+    is_anarchy = False
 )
 
 bking = ChessItem(
@@ -302,7 +308,8 @@ bking = ChessItem(
     gambit_bonus = 20,
     attributes = ["chess_piece", "black_chess_piece", "rollable", "gamble_item", "gamble_chess_piece"],
     aliases = ["black_king"],
-    gamble_multiplier = 4
+    gamble_multiplier = 4,
+    is_anarchy = False
 )
 
 ##### White chess pieces. #####
@@ -314,7 +321,8 @@ wpawn = ChessItem(
     is_white = True,
     gambit_bonus = 40,
     attributes = ["chess_piece", "white_chess_piece", "rollable"],
-    aliases = ["white_pawn"]
+    aliases = ["white_pawn"],
+    is_anarchy = False
 )
 
 wknight = ChessItem(
@@ -324,7 +332,8 @@ wknight = ChessItem(
     is_white = True,
     gambit_bonus = 40,
     attributes = ["chess_piece", "white_chess_piece", "rollable"],
-    aliases = ["white_knight"]
+    aliases = ["white_knight"],
+    is_anarchy = False
 )
 
 wbishop = ChessItem(
@@ -334,7 +343,8 @@ wbishop = ChessItem(
     is_white = True,
     gambit_bonus = 40,
     attributes = ["chess_piece", "white_chess_piece", "rollable"],
-    aliases = ["white_bishop"]
+    aliases = ["white_bishop"],
+    is_anarchy = False
 )
 
 wrook = ChessItem(
@@ -344,7 +354,8 @@ wrook = ChessItem(
     is_white = True,
     gambit_bonus = 40,
     attributes = ["chess_piece", "white_chess_piece", "rollable"],
-    aliases = ["white_rook"]
+    aliases = ["white_rook"],
+    is_anarchy = False
 )
 
 wqueen = ChessItem(
@@ -354,7 +365,8 @@ wqueen = ChessItem(
     is_white = True,
     gambit_bonus = 40,
     attributes = ["chess_piece", "white_chess_piece", "rollable"],
-    aliases = ["white_queen"]
+    aliases = ["white_queen"],
+    is_anarchy = False
 )
 
 wking = ChessItem(
@@ -364,7 +376,144 @@ wking = ChessItem(
     is_white = True,
     gambit_bonus = 40,
     attributes = ["chess_piece", "white_chess_piece", "rollable"],
-    aliases = ["white_king"]
+    aliases = ["white_king"],
+    is_anarchy = False
+)
+
+##### Anarchy black pieces. #####
+
+bpawn_anarchy = ChessItem(
+    name = "Anarchy Black Pawn",
+    internal_name = "bpawn_anarchy",
+    internal_emoji = "<:Bpawnanarchy:971046900038004736>",
+    is_white = False,
+    gambit_bonus = 900,
+    attributes = ["anarchy_piece", "black_anarchy_piece", "rollable"],
+    aliases = ["black_pawn_anarchy", "bpawn anarchy", "anarchy bpawn", "anarchy_bpawn", "anarchy_black_pawn"],
+    is_anarchy = True
+)
+
+bknight_anarchy = ChessItem(
+    name = "Anarchy Black Knight",
+    internal_name = "bknight_anarchy",
+    internal_emoji = "<:Bknightanarchy:971046888486891642>",
+    is_white = False,
+    gambit_bonus = 900,
+    attributes = ["anarchy_piece", "black_anarchy_piece", "rollable"],
+    aliases = ["black_knight_anarchy", "bknight anarchy", "anarchy bknight", "anarchy_bknight", "anarchy_black_knight"],
+    is_anarchy = True
+)
+
+bbishop_anarchy = ChessItem(
+    name = "Anarchy Black Bishop",
+    internal_name = "bbishop_anarchy",
+    internal_emoji = "<:Bbishopanarchy:971046862134050887>",
+    is_white = False,
+    gambit_bonus = 900,
+    attributes = ["anarchy_piece", "black_anarchy_piece", "rollable"],
+    aliases = ["black_bishop_anarchy", "bbishop anarchy", "anarchy bbishop", "anarchy_bbishop", "anarchy_black_bishop"],
+    is_anarchy = True
+)
+
+brook_anarchy = ChessItem(
+    name = "Anarchy Black rook",
+    internal_name = "brook_anarchy",
+    internal_emoji = "<:Brookanarchy:971046920166457364>",
+    is_white = False,
+    gambit_bonus = 900,
+    attributes = ["anarchy_piece", "black_anarchy_piece", "rollable"],
+    aliases = ["black_rook_anarchy", "brook anarchy", "anarchy brook", "anarchy_brook", "anarchy_black_rook"],
+    is_anarchy = True
+)
+
+bqueen_anarchy = ChessItem(
+    name = "Anarchy Black Queen",
+    internal_name = "bqueen_anarchy",
+    internal_emoji = "<:Bqueenanarchy:971046911551356948>",
+    is_white = False,
+    gambit_bonus = 900,
+    attributes = ["anarchy_piece", "black_anarchy_piece", "rollable"],
+    aliases = ["black_queen_anarchy", "bqueen anarchy", "anarchy bqueen", "anarchy_bqueen", "anarchy_black_queen"],
+    is_anarchy = True
+)
+
+bking_anarchy = ChessItem(
+    name = "Anarchy Black King",
+    internal_name = "bking_anarchy",
+    internal_emoji = "<:Bkinganarchy:971046879540445275>",
+    is_white = False,
+    gambit_bonus = 900,
+    attributes = ["anarchy_piece", "black_anarchy_piece", "rollable"],
+    aliases = ["black_king_anarchy", "bking anarchy", "anarchy bking", "anarchy_bking", "anarchy_black_king"],
+    is_anarchy = True
+)
+
+##### Anarchy white pieces. #####
+
+wpawn_anarchy = ChessItem(
+    name = "Anarchy White Pawn",
+    internal_name = "wpawn_anarchy",
+    internal_emoji = "<:wpawnanarchy:971046900038004736>",
+    is_white = True,
+    gambit_bonus = 900,
+    attributes = ["anarchy_piece", "white_anarchy_piece", "rollable"],
+    aliases = ["white_pawn_anarchy", "wpawn anarchy", "anarchy wpawn", "anarchy_wpawn", "anarchy_white_pawn"],
+    is_anarchy = True
+)
+
+wknight_anarchy = ChessItem(
+    name = "Anarchy White Knight",
+    internal_name = "wknight_anarchy",
+    internal_emoji = "<:wknightanarchy:971046888486891642>",
+    is_white = True,
+    gambit_bonus = 900,
+    attributes = ["anarchy_piece", "white_anarchy_piece", "rollable"],
+    aliases = ["white_knight_anarchy", "wknight anarchy", "anarchy wknight", "anarchy_wknight", "anarchy_white_knight"],
+    is_anarchy = True
+)
+
+wbishop_anarchy = ChessItem(
+    name = "Anarchy White Bishop",
+    internal_name = "wbishop_anarchy",
+    internal_emoji = "<:wbishopanarchy:971046862134050887>",
+    is_white = True,
+    gambit_bonus = 900,
+    attributes = ["anarchy_piece", "white_anarchy_piece", "rollable"],
+    aliases = ["white_bishop_anarchy", "wbishop anarchy", "anarchy wbishop", "anarchy_wbishop", "anarchy_white_bishop"],
+    is_anarchy = True
+)
+
+wrook_anarchy = ChessItem(
+    name = "Anarchy White rook",
+    internal_name = "wrook_anarchy",
+    internal_emoji = "<:wrookanarchy:971046920166457364>",
+    is_white = True,
+    gambit_bonus = 900,
+    attributes = ["anarchy_piece", "white_anarchy_piece", "rollable"],
+    aliases = ["white_rook_anarchy", "wrook anarchy", "anarchy wrook", "anarchy_wrook", "anarchy_white_rook"],
+    is_anarchy = True
+)
+
+wqueen_anarchy = ChessItem(
+    name = "Anarchy White Queen",
+    internal_name = "wqueen_anarchy",
+    internal_emoji = "<:wqueenanarchy:971046911551356948>",
+    is_white = True,
+    gambit_bonus = 900,
+    attributes = ["anarchy_piece", "white_anarchy_piece", "rollable"],
+    aliases = ["white_queen_anarchy", "wqueen anarchy", "anarchy wqueen", "anarchy_wqueen", "anarchy_white_queen"],
+    is_anarchy = True
+)
+
+wking_anarchy = ChessItem(
+    name = "Anarchy White King",
+    internal_name = "wking_anarchy",
+    internal_emoji = "<:wkinganarchy:971046879540445275>",
+    is_white = True,
+    gambit_bonus = 900,
+    attributes = ["anarchy_piece", "white_anarchy_piece", "rollable"],
+    aliases = ["white_king_anarchy", "wking anarchy", "anarchy wking", "anarchy_wking", "anarchy_white_king"],
+    is_anarchy = True
 )
 
 ##### Gems. #####
@@ -431,6 +580,12 @@ chessatron = Item(
     internal_emoji = "<:chessatron:996668260210708491>"
 )
 
+anarchy_chessatron = Item(
+    name = "Anarchy Chessatron",
+    internal_name = "anarchy_chessatron",
+    internal_emoji = "<<:anarchy_chessatron:1271191972627087370>"
+)
+
 omega_chessatron = Item(
     name = "Omega Chessatron",
     internal_name = "omega_chessatron",
@@ -438,10 +593,30 @@ omega_chessatron = Item(
     aliases = "omega"
 )
 
+anarchy_omega_chessatron = Item(
+    name = "Anarchy Omega Chessatron",
+    internal_name = "anarchy_omega_chessatron",
+    internal_emoji = "<:anarchy_omega_chessatron:1271191852330123274>",
+    aliases = ["anarchy_omega"]
+)
+
 ascension_token = Item(
     name = "Ascension Token",
     internal_name = "ascension_token",
     internal_emoji = "<:ascension_token:1023695148380602430>"
+)
+
+fuel = Item(
+    name = "Fuel",
+    internal_name = "fuel",
+    internal_emoji = ":oil:",
+    emoji = "🛢️"
+)
+
+corrupted_bread = Item(
+    name = "Corrupted Bread",
+    internal_name = "corrupted_bread",
+    internal_emoji = "<:corrupted_bread:1129289000843235378>"
 )
 
 ##### Shadow items. #####
@@ -649,12 +824,42 @@ bcapy = ChessItem(
     internal_emoji = "<:Bcapy:1003061938684711092>",
     is_white = False,
     attributes = ["gamble_item", "gamble_chess_piece"],
-    gamble_multiplier = 4
+    gamble_multiplier = 4,
+    is_anarchy = False
 )
 
 ### BASE LISTS ###
     
-all_items = [bread, flatbread, stuffed_flatbread, sandwich, french_bread, croissant, bagel, doughnut, waffle, bpawn, bknight, bbishop, brook, bqueen, bking, wpawn, wknight, wbishop, wrook, wqueen, wking, gem_red, gem_blue, gem_purple, gem_green, gem_gold, anarchy_chess, chessatron, omega_chessatron, ascension_token, shadow_moak, shadow_gem_gold, shadowmega_chessatron, anarchy, holy_hell, horsey, pretzel, cookie, fortune_cookie, pancakes, cake, pizza, pie, cupcake, bricks, brick_fide, fide_brick, brick_gold, cherries, grapes, lemon, bcapy]
+all_items = [
+    # Bread.
+    bread,
+    # Special breads.
+    flatbread, stuffed_flatbread, sandwich, french_bread, croissant,
+    # Rare breads.
+    bagel, doughnut, waffle,
+    # Black chess picees.
+    bpawn, bknight, bbishop, brook, bqueen, bking,
+    # White chess pieces.
+    wpawn, wknight, wbishop, wrook, wqueen, wking,
+    # Black anarchy pieces.
+    bpawn_anarchy, bknight_anarchy, bbishop_anarchy, brook_anarchy, bqueen_anarchy, bking_anarchy,
+    # White anarchy pieces.
+    wpawn_anarchy, wknight_anarchy, wbishop_anarchy, wrook_anarchy, wqueen_anarchy, wking_anarchy,
+    # Gems.
+    gem_red, gem_blue, gem_purple, gem_green, gem_gold,
+    # Misc. items.
+    anarchy_chess, chessatron, omega_chessatron, ascension_token, anarchy_chessatron, anarchy_omega_chessatron, corrupted_bread, fuel,
+    # Shadow items.
+    shadow_moak, shadow_gem_gold, shadowmega_chessatron,
+    # OoaKs.
+    anarchy, holy_hell, horsey,
+    # Main stonks.
+    pretzel, cookie, fortune_cookie, pancakes,
+    # Shadow stonks.
+    cake, pizza, pie, cupcake,
+    # Gambling items.
+    bricks, brick_fide, fide_brick, brick_gold, cherries, grapes, lemon, bcapy,
+]
 bling_items = [gem_red, gem_blue, gem_purple, gem_green, gem_gold, anarchy_chess]
 
 #############################
@@ -757,13 +962,17 @@ RareBreadConverter = ItemConverter("rare_bread")
 GemConverter = ItemConverter("shiny")
 StonkConverter = ItemConverter("stonk")
 ChessPieceConverter = ItemConverter("chess_piece")
+AnarchyPieceConverter = ItemConverter("anarchy_piece")
 OneOfAKindConverter = ItemConverter("one_of_a_kind")
 ShadowItemConverter = ItemConverter("shadow")
 
 BlackChessPieceConverter = ItemConverter("black_chess_piece")
 WhiteChessPieceConverter = ItemConverter("white_chess_piece")
 
-InGambitShopConverter = ItemConverter(["special_bread", "rare_bread", "chess_piece", "shiny"])
+BlackAnarchyPieceConverter = ItemConverter("black_anarchy_piece")
+WhiteAnarchyPieceConverter = ItemConverter("white_anarchy_piece")
+
+InGambitShopConverter = ItemConverter(["special_bread", "rare_bread", "chess_piece", "shiny", "anarchy_chess_piece"])
 
 ###########################
 ##### ATTRIBUTE LISTS #####
@@ -783,6 +992,17 @@ black_chess_pieces = attribute_item_list("black_chess_piece")
 black_chess_biased = [bpawn] * 8 + [bknight] * 2 + [bbishop] * 2 + [brook] * 2 + [bqueen, bking]
 
 all_chess_pieces = white_chess_pieces + black_chess_pieces
+
+white_anarchy_pieces = attribute_item_list("white_anarchy_piece")
+white_anarchy_biased = [wpawn_anarchy] * 8 + [wknight_anarchy] * 2 + [wbishop_anarchy] * 2 + [wrook_anarchy] * 2 + [wqueen_anarchy, wking_anarchy]
+
+black_anarchy_pieces = attribute_item_list("black_anarchy_piece")
+black_anarchy_biased = [bpawn_anarchy] * 8 + [bknight_anarchy] * 2 + [bbishop_anarchy] * 2 + [brook_anarchy] * 2 + [bqueen_anarchy, bking_anarchy]
+
+all_anarchy_pieces = white_anarchy_pieces + black_anarchy_pieces
+
+every_chess_piece = all_chess_pieces + all_anarchy_pieces
+"""This is all regular chess pieces and all anarchy pieces."""
 
 all_shiny = attribute_item_list("shiny")
 
@@ -825,7 +1045,7 @@ alchemy_recipes = {
             "cost": [(bpawn, 3)]
         },
         {
-            "cost": [(gem_red, 1)]
+            "cost": [(gem_red, 2)]
         }
     ],
     "wrook": [
@@ -842,10 +1062,10 @@ alchemy_recipes = {
             "cost": [(brook, 2), (waffle, 75)]
         },
         {
-            "cost": [(gem_red, 1)]
+            "cost": [(gem_red, 2)]
         }
     ],
-        "wknight" : [
+        "wknight": [
         {
 			"cost": [(bknight, 1), (croissant, 50), (bagel, 25)]
 		},
@@ -859,11 +1079,11 @@ alchemy_recipes = {
 			"cost": [(bknight, 2), (bagel, 75)]
 		},
         {
-			"cost": [(gem_red, 1)]
+			"cost": [(gem_red, 2)]
 		}
     ],
 
-    "wbishop" : [
+    "wbishop": [
         {
 			"cost": [(bbishop, 1), (french_bread, 50), (doughnut, 25)]
 		},
@@ -877,11 +1097,11 @@ alchemy_recipes = {
 			"cost": [(bbishop, 2), (doughnut, 75)]
 		},
         {
-			"cost": [(gem_red, 1)]
+			"cost": [(gem_red, 2)]
 		}
     ],
 
-    "wqueen" : [
+    "wqueen": [
         {
 			"cost": [(bqueen, 1), (stuffed_flatbread, 50), (doughnut, 25)]
 		},
@@ -895,11 +1115,11 @@ alchemy_recipes = {
 			"cost": [(bqueen, 2), (doughnut, 75)]
 		},
         {
-			"cost": [(gem_red, 1)]
+			"cost": [(gem_red, 2)]
 		}
     ],
 
-    "wking" : [
+    "wking": [
         {
 			"cost": [(bking, 1), (flatbread, 50), (bagel, 25)]
 		},
@@ -913,66 +1133,70 @@ alchemy_recipes = {
 			"cost": [(bking, 2), (bagel, 75)]
 		},
         {
-			"cost": [(gem_red, 1)]
+			"cost": [(gem_red, 2)]
 		}
     ],
 
-    "bpawn" : [
+    ######################################################################################
+
+    "bpawn": [
         {
 			"cost": [(wpawn, 1)]
 		},
         {
-			"cost": [(gem_red, 1)]
+			"cost": [(gem_red, 2)]
 		}
     ],
 
-    "brook" : [
+    "brook": [
         {
 			"cost": [(wrook, 1)]
 		},
         {
-			"cost": [(gem_red, 1)]
+			"cost": [(gem_red, 2)]
 		}
     ],
 
-    "bknight" : [
+    "bknight": [
         {
 			"cost": [(wknight, 1)]
 		},
         {
-			"cost": [(gem_red, 1)]
+			"cost": [(gem_red, 2)]
 		}
     ],
 
-    "bbishop" : [
+    "bbishop": [
         {
 			"cost": [(wbishop, 1)]
 		},
         {
-			"cost": [(gem_red, 1)]
+			"cost": [(gem_red, 2)]
 		}
     ],
 
-    "bqueen" : [
+    "bqueen": [
         {
 			"cost": [(wqueen, 1)]
 		},
         {
-			"cost": [(gem_red, 1)]
+			"cost": [(gem_red, 2)]
 		}
     ],
 
-    "bking" : [
+    "bking": [
         {
 			"cost": [(wking, 1)]
 		},
         {
-			"cost": [(gem_red, 1)]
+			"cost": [(gem_red, 2)]
 		}
     ],
 
+    ######################################################################################
 
-    "gem_gold" : [
+
+    "gem_gold": [
         {
 			"cost": [(gem_green, 2), (gem_purple, 4), (gem_blue, 8), (gem_red, 16)]
 		},
@@ -988,7 +1212,7 @@ alchemy_recipes = {
         }
     ],
 
-    "gem_green" : [
+    "gem_green": [
         {
 			"cost": [(gem_purple, 2)]
 		},
@@ -998,7 +1222,7 @@ alchemy_recipes = {
 		}
     ],
 
-    "gem_purple" : [
+    "gem_purple": [
         {
 			"cost": [(gem_blue, 2)]
 		},
@@ -1007,7 +1231,7 @@ alchemy_recipes = {
 		}
     ],
 
-    "gem_blue" : [
+    "gem_blue": [
         {
 			"cost": [(gem_red, 2)]
 		},
@@ -1016,13 +1240,15 @@ alchemy_recipes = {
 		}
     ],
 
-    "gem_red" : [
+    "gem_red": [
         {
 			"cost": [(gem_blue, 1)]
 		}
     ],
 
-    "omega_chessatron" : [
+    ######################################################################################
+
+    "omega_chessatron": [
         {
 			"cost": [(chessatron, 5), (anarchy_chess, 1), 
             (gem_gold, 1), (gem_green, 1), (gem_purple, 1), (gem_blue, 1), (gem_red, 1),
@@ -1030,71 +1256,435 @@ alchemy_recipes = {
 		}
     ],
 
-    "holy_hell" : [
+    "anarchy_omega_chessatron": [
+        {
+            "cost": [(chessatron, 25), (omega_chessatron, 1), (anarchy_chessatron, 5)]
+        }
+    ],
+
+    "fuel": [
+        {
+            "cost": [(gem_red, 2)],
+            "requirement": [("space_level", 1)]
+        },
+        {
+            "cost": [(gem_blue, 2)],
+            "requirement": [("space_level", 1), ("fuel_research", 1)],
+            "result": 3
+        },
+        {
+            "cost": [(gem_purple, 2)],
+            "requirement": [("space_level", 1), ("fuel_research", 2)],
+            "result": 9
+        },
+        {
+            "cost": [(gem_green, 2)],
+            "requirement": [("space_level", 1), ("fuel_research", 3)],
+            "result": 27
+        },
+        {
+            "cost": [(gem_gold, 2)],
+            "requirement": [("space_level", 1), ("fuel_research", 4)],
+            "result": 150
+        }
+    ],
+
+    ######################################################################################
+
+    "holy_hell": [
         {
 			"cost": [ (anarchy_chess, 5) ]
 		}
     ],
 
-    "anarchy" : [
+    "anarchy": [
         {
 			"cost": [(anarchy_chess, 5)]
 		}
     ],
 
-    "horsey" : [
+    "horsey": [
         {
 			"cost": [(anarchy_chess, 5)]
 		}
     ],
 
-    "doughnut" : [
+    ######################################################################################
+
+    "bread": [
+        {
+            "cost": [(corrupted_bread, 10)],
+            "requirement": [("space_level", 1)]
+        }
+    ],
+
+    ######################################################################################
+
+    "doughnut": [
         {
 			"cost": [(bread, 25)]
-		}
+		},
+        {
+			"cost": [(bread, 10), (bagel, 2)]
+		},
+        {
+			"cost": [(bread, 10), (waffle, 2)]
+		},
+        {
+            "cost": [(corrupted_bread, 75)],
+            "requirement": [("space_level", 1)]
+        }
     ],
 
-    "bagel" : [
+    "bagel": [
         {
 			"cost": [(bread, 25)]
-		}
+		},
+        {
+			"cost": [(bread, 10), (doughnut, 2)]
+		},
+        {
+			"cost": [(bread, 10), (waffle, 2)]
+		},
+        {
+            "cost": [(corrupted_bread, 75)],
+            "requirement": [("space_level", 1)]
+        }
     ],
 
-    "waffle" : [
+    "waffle": [
         {
 			"cost": [(bread, 25)]
-		}
+		},
+        {
+			"cost": [(bread, 10), (doughnut, 2)]
+		},
+        {
+			"cost": [(bread, 10), (bagel, 2)]
+		},
+        {
+            "cost": [(corrupted_bread, 75)],
+            "requirement": [("space_level", 1)]
+        }
     ],
 
-    "flatbread" : [
+    ######################################################################################
+
+    "flatbread": [
         {
 			"cost": [(bread, 10)]
-		}
+		},
+        {
+			"cost": [(bread, 5), (stuffed_flatbread, 2)]
+		},
+        {
+			"cost": [(bread, 5), (sandwich, 2)]
+		},
+        {
+			"cost": [(bread, 5), (french_bread, 2)]
+		},
+        {
+			"cost": [(bread, 5), (croissant, 2)]
+		},
+        {
+            "cost": [(corrupted_bread, 25)],
+            "requirement": [("space_level", 1)]
+        }
     ],
 
-    "stuffed_flatbread" : [
+    "stuffed_flatbread": [
         {
 			"cost": [(bread, 10)]
-		}
+		},
+        {
+			"cost": [(bread, 5), (flatbread, 2)]
+		},
+        {
+			"cost": [(bread, 5), (sandwich, 2)]
+		},
+        {
+			"cost": [(bread, 5), (french_bread, 2)]
+		},
+        {
+			"cost": [(bread, 5), (croissant, 2)]
+		},
+        {
+            "cost": [(corrupted_bread, 25)],
+            "requirement": [("space_level", 1)]
+        }
     ],
 
-    "sandwich" : [
+    "sandwich": [
         {
 			"cost": [(bread, 10)]
-		}
+		},
+        {
+			"cost": [(bread, 5), (flatbread, 2)]
+		},
+        {
+			"cost": [(bread, 5), (stuffed_flatbread, 2)]
+		},
+        {
+			"cost": [(bread, 5), (french_bread, 2)]
+		},
+        {
+			"cost": [(bread, 5), (croissant, 2)]
+		},
+        {
+            "cost": [(corrupted_bread, 25)],
+            "requirement": [("space_level", 1)]
+        }
     ],
 
-    "french_bread" : [
+    "french_bread": [
         {
 			"cost": [(bread, 10)]
-		}
+		},
+        {
+			"cost": [(bread, 5), (flatbread, 2)]
+		},
+        {
+			"cost": [(bread, 5), (stuffed_flatbread, 2)]
+		},
+        {
+			"cost": [(bread, 5), (sandwich, 2)]
+		},
+        {
+			"cost": [(bread, 5), (croissant, 2)]
+		},
+        {
+            "cost": [(corrupted_bread, 25)],
+            "requirement": [("space_level", 1)]
+        }
     ],
 
-    "croissant" : [
+    "croissant": [
         {
 			"cost": [(bread, 10)]
-		}
-    ]
+		},
+        {
+			"cost": [(bread, 5), (flatbread, 2)]
+		},
+        {
+			"cost": [(bread, 5), (stuffed_flatbread, 2)]
+		},
+        {
+			"cost": [(bread, 5), (sandwich, 2)]
+		},
+        {
+			"cost": [(bread, 5), (french_bread, 2)]
+		},
+        {
+            "cost": [(corrupted_bread, 25)],
+            "requirement": [("space_level", 1)]
+        }
+    ],
+
+    ######################################################################################
+
+    "wpawn_anarchy": [
+        {
+            "cost": [(bpawn_anarchy, 2), (wpawn, 50), (doughnut, 100), (bagel, 100), (waffle, 100), (gem_purple, 3)],
+            "requirement": [("space_level", 1)]
+        },
+        {
+            "cost": [(bpawn_anarchy, 2), (wpawn, 50), (croissant, 100), (stuffed_flatbread, 100), (flatbread, 100), (sandwich, 100), (french_bread, 100), (gem_purple, 3)],
+            "requirement": [("space_level", 1)]
+        },
+        {
+            "cost": [(bpawn_anarchy, 3), (wpawn, 25), (gem_purple, 1)],
+            "requirement": [("space_level", 1)]
+        },
+        {
+            "cost": [(wpawn, 250), (gem_green, 10)],
+            "requirement": [("space_level", 1)]
+        }
+    ],
+
+    "wknight_anarchy": [
+        {
+            "cost": [(bknight_anarchy, 1), (wknight, 75), (croissant, 500), (bagel, 250), (gem_purple, 5)],
+            "requirement": [("space_level", 1)]
+        },
+        {
+            "cost": [(bknight_anarchy, 2), (wknight, 50), (croissant, 500), (gem_purple, 3)],
+            "requirement": [("space_level", 1)]
+        },
+        {
+            "cost": [(bknight_anarchy, 3), (wknight, 25), (gem_purple, 1)],
+            "requirement": [("space_level", 1)]
+        },
+        {
+            "cost": [(bknight_anarchy, 2), (wknight, 50), (bagel, 750), (gem_purple, 3)],
+            "requirement": [("space_level", 1)]
+        },
+        {
+            "cost": [(wknight, 250), (gem_green, 10)],
+            "requirement": [("space_level", 1)]
+        }
+    ],
+
+    "wbishop_anarchy": [
+        {
+            "cost": [(bbishop_anarchy, 1), (wbishop, 75), (french_bread, 500), (doughnut, 250), (gem_purple, 5)],
+            "requirement": [("space_level", 1)]
+        },
+        {
+            "cost": [(bbishop_anarchy, 2), (wbishop, 50), (french_bread, 500), (gem_purple, 3)],
+            "requirement": [("space_level", 1)]
+        },
+        {
+            "cost": [(bbishop_anarchy, 3), (wbishop, 25), (gem_purple, 1)],
+            "requirement": [("space_level", 1)]
+        },
+        {
+            "cost": [(bbishop_anarchy, 2), (wbishop, 50), (doughnut, 750), (gem_purple, 3)],
+            "requirement": [("space_level", 1)]
+        },
+        {
+            "cost": [(wbishop, 250), (gem_green, 10)],
+            "requirement": [("space_level", 1)]
+        }
+    ],
+
+    "wrook_anarchy": [
+        {
+            "cost": [(brook_anarchy, 1), (wrook, 75), (sandwich, 500), (waffle, 250), (gem_purple, 5)],
+            "requirement": [("space_level", 1)]
+        },
+        {
+            "cost": [(brook_anarchy, 2), (wrook, 50), (sandwich, 500), (gem_purple, 3)],
+            "requirement": [("space_level", 1)]
+        },
+        {
+            "cost": [(brook_anarchy, 3), (wrook, 25), (gem_purple, 1)],
+            "requirement": [("space_level", 1)]
+        },
+        {
+            "cost": [(brook_anarchy, 2), (wrook, 50), (waffle, 750), (gem_purple, 3)],
+            "requirement": [("space_level", 1)]
+        },
+        {
+            "cost": [(wrook, 250), (gem_green, 10)],
+            "requirement": [("space_level", 1)]
+        }
+    ],
+
+    "wqueen_anarchy": [
+        {
+            "cost": [(bqueen_anarchy, 1), (wqueen, 75), (stuffed_flatbread, 500), (doughnut, 250), (gem_purple, 5)],
+            "requirement": [("space_level", 1)]
+        },
+        {
+            "cost": [(bqueen_anarchy, 2), (wqueen, 50), (stuffed_flatbread, 500), (gem_purple, 3)],
+            "requirement": [("space_level", 1)]
+        },
+        {
+            "cost": [(bqueen_anarchy, 3), (wqueen, 25), (gem_purple, 1)],
+            "requirement": [("space_level", 1)]
+        },
+        {
+            "cost": [(bqueen_anarchy, 2), (wqueen, 50), (doughnut, 750), (gem_purple, 3)],
+            "requirement": [("space_level", 1)]
+        },
+        {
+            "cost": [(wqueen, 250), (gem_green, 10)],
+            "requirement": [("space_level", 1)]
+        }
+    ],
+
+    "wking_anarchy": [
+        {
+            "cost": [(bking_anarchy, 1), (wking, 75), (flatbread, 500), (bagel, 250), (gem_purple, 5)],
+            "requirement": [("space_level", 1)]
+        },
+        {
+            "cost": [(bking_anarchy, 2), (wking, 50), (flatbread, 500), (gem_purple, 3)],
+            "requirement": [("space_level", 1)]
+        },
+        {
+            "cost": [(bking_anarchy, 3), (wking, 25), (gem_purple, 1)],
+            "requirement": [("space_level", 1)]
+        },
+        {
+            "cost": [(bking_anarchy, 2), (wking, 50), (bagel, 750), (gem_purple, 3)],
+            "requirement": [("space_level", 1)]
+        },
+        {
+            "cost": [(wking, 250), (gem_green, 10)],
+            "requirement": [("space_level", 1)]
+        }
+    ],
+
+    ######################################################################################
+
+    "bpawn_anarchy": [
+        {
+            "cost": [(wpawn_anarchy, 1)],
+            "requirement": [("space_level", 1)]
+        },
+        {
+            "cost": [(bpawn, 250), (gem_green, 10)],
+            "requirement": [("space_level", 1)]
+        }
+    ],
+
+    "bknight_anarchy": [
+        {
+            "cost": [(wknight_anarchy, 1)],
+            "requirement": [("space_level", 1)]
+        },
+        {
+            "cost": [(bknight, 250), (gem_green, 10)],
+            "requirement": [("space_level", 1)]
+        }
+    ],
+
+    "bbishop_anarchy": [
+        {
+            "cost": [(wbishop_anarchy, 1)],
+            "requirement": [("space_level", 1)]
+        },
+        {
+            "cost": [(bbishop, 250), (gem_green, 10)],
+            "requirement": [("space_level", 1)]
+        }
+    ],
+
+    "brook_anarchy": [
+        {
+            "cost": [(wrook_anarchy, 1)],
+            "requirement": [("space_level", 1)]
+        },
+        {
+            "cost": [(brook, 250), (gem_green, 10)],
+            "requirement": [("space_level", 1)]
+        }
+    ],
+
+    "bqueen_anarchy": [
+        {
+            "cost": [(wqueen_anarchy, 1)],
+            "requirement": [("space_level", 1)]
+        },
+        {
+            "cost": [(bqueen, 250), (gem_green, 10)],
+            "requirement": [("space_level", 1)]
+        }
+    ],
+
+    "bking_anarchy": [
+        {
+            "cost": [(wking_anarchy, 1)],
+            "requirement": [("space_level", 1)]
+        },
+        {
+            "cost": [(bking, 250), (gem_green, 10)],
+            "requirement": [("space_level", 1)]
+        }
+    ],
+
+    ######################################################################################
 }
 
 ###############################################################################################################################
@@ -1111,7 +1701,12 @@ misc_conversions = {
             "cost": [(bpawn, 8), (bbishop, 2), (brook, 2), (bknight, 2), (bqueen, 1), (bking, 1), (wpawn, 8), (wbishop, 2), (wknight, 2), (wrook, 2), (wqueen, 1), (wking, 1)]
         },
         {
-            "cost": [(gem_red, 32)]
+            "cost": [(gem_red, 64)]
+        }
+    ],
+    "anarchy_chessatron": [
+        {
+            "cost": [(bpawn_anarchy, 8), (bbishop_anarchy, 2), (brook_anarchy, 2), (bknight_anarchy, 2), (bqueen_anarchy, 1), (bking_anarchy, 1), (wpawn_anarchy, 8), (wbishop_anarchy, 2), (wknight_anarchy, 2), (wrook_anarchy, 2), (wqueen_anarchy, 1), (wking_anarchy, 1)]
         }
     ]
 }
@@ -1204,12 +1799,12 @@ gambit_shop_items = {
     "bqueen": {
         "cost": [(bpawn, 25), (bqueen, 10), (gem_red, 1)],
         "level_required": 2,
-        "official_name": "Botez Gambit"
+        "official_name": "Queen's Gambit Declined"
     },
     "bking": {
         "cost": [(bpawn, 25), (bking, 10), (gem_red, 1)],
         "level_required": 2,
-        "official_name": "Bongcloud"
+        "official_name": "King's Gambit Declined"
     },
 
     ##### TIER 3 #####
@@ -1242,12 +1837,12 @@ gambit_shop_items = {
     "wqueen": {
         "cost": [(wpawn, 25), (wqueen, 10), (gem_blue, 1)],
         "level_required": 3,
-        "official_name": "Botez Gambit Accepted"
+        "official_name": "Queen's Gambit Accepted"
     },
     "wking": {
         "cost": [(wpawn, 25), (wking, 10), (gem_blue, 1)],
         "level_required": 3,
-        "official_name": "Double Bongcloud"
+        "official_name": "King's Gambit Accepted"
     },
 
     ##### TIER 4 #####
@@ -1281,6 +1876,82 @@ gambit_shop_items = {
         "cost": [(gem_red, 160), (gem_blue, 80), (gem_purple, 40), (gem_green, 20), (gem_gold, 10)],
         "level_required": 4,
         "official_name": "Gold Ring"
+    },
+
+    ##### TIER 5 #####
+
+    "gambit_shop_tier_5": {
+        "cost": [(anarchy_chessatron, 2), (gem_green, 100)],
+        "level_required": 4,
+        "official_name": "Gambit Shop Level"
+    },
+    "bpawn_anarchy": {
+        "cost": [(bpawn_anarchy, 50), (bpawn, 250), (gem_purple, 50)],
+        "level_required": 5,
+        "official_name": "En Passant"
+    },
+    "bknight_anarchy": {
+        "cost": [(bpawn_anarchy, 50), (bknight_anarchy, 25), (bknight, 250), (gem_purple, 50)],
+        "level_required": 5,
+        "official_name": "Knight Boost"
+    },
+    "bbishop_anarchy": {
+        "cost": [(bpawn_anarchy, 50), (bbishop_anarchy, 25), (bbishop, 250), (gem_purple, 50)],
+        "level_required": 5,
+        "official_name": "Il Vaticano"
+    },
+    "brook_anarchy": {
+        "cost": [(bpawn_anarchy, 50), (brook_anarchy, 25), (brook, 250), (gem_purple, 50)],
+        "level_required": 5,
+        "official_name": "Siberian Swipe"
+    },
+    "bqueen_anarchy": {
+        "cost": [(bpawn_anarchy, 50), (bqueen_anarchy, 25), (bqueen, 250), (gem_purple, 50)],
+        "level_required": 5,
+        "official_name": "Radioactive Beta Decay"
+    },
+    "bking_anarchy": {
+        "cost": [(bpawn_anarchy, 50), (bking_anarchy, 25), (bking, 250), (gem_purple, 50)],
+        "level_required": 5,
+        "official_name": "La Bastarda"
+    },
+
+    ##### TIER 6 #####
+
+    "gambit_shop_tier_6": {
+        "cost": [(anarchy_chessatron, 3), (gem_green, 100)],
+        "level_required": 5,
+        "official_name": "Gambit Shop Level"
+    },
+    "wpawn_anarchy": {
+        "cost": [(wpawn_anarchy, 50), (wpawn, 250), (gem_green, 50)],
+        "level_required": 6,
+        "official_name": "Knook Promotion"
+    },
+    "wknight_anarchy": {
+        "cost": [(wpawn_anarchy, 50), (wknight_anarchy, 25), (wknight, 250), (gem_green, 50)],
+        "level_required": 6,
+        "official_name": "Anti-Queen"
+    },
+    "wbishop_anarchy": {
+        "cost": [(wpawn_anarchy, 50), (wbishop_anarchy, 25), (wbishop, 250), (gem_green, 50)],
+        "level_required": 6,
+        "official_name": "Vacation Home"
+    },
+    "wrook_anarchy": {
+        "cost": [(wpawn_anarchy, 50), (wrook_anarchy, 25), (wrook, 250), (gem_green, 50)],
+        "level_required": 6,
+        "official_name": "Vertical Castling"
+    },
+    "wqueen_anarchy": {
+        "cost": [(wpawn_anarchy, 50), (wqueen_anarchy, 25), (wqueen, 250), (gem_green, 50)],
+        "level_required": 6,
+        "official_name": "Botez Gambit"
+    },
+    "wking_anarchy": {
+        "cost": [(wpawn_anarchy, 50), (wking_anarchy, 25), (wking, 250), (gem_green, 50)],
+        "level_required": 6,
+        "official_name": "Double Bongcloud"
     }
 }
 
@@ -1291,3 +1962,57 @@ import importlib
 
 importlib.reload(u_stonks)
 importlib.reload(u_files)
+
+########################################################################################
+########################################################################################
+########################################################################################
+
+def test_suite():
+    print("Testing alchemy recipe integrity:")
+    for item, recipes in alchemy_recipes.items():
+        print(f"Getting {item}...")
+        print(f"{get_item(item).name}:")
+
+        for index, recipe in enumerate(recipes):
+            print(f"- Recipe {index}:")
+            print(f"--- Items: {recipe.get('cost')}")
+            print(f"--- Result: {recipe.get('result')}")
+            print(f"--- Requirements: {recipe.get('requirement')}")
+
+    print("Done.")
+
+    #################################################################
+
+    print("Testing misc. conversion recipe integrity:")
+    for item, recipes in misc_conversions.items():
+        print(f"Getting {item}...")
+        print(f"{get_item(item).name}:")
+
+        for index, recipe in enumerate(recipes):
+            print(f"- Recipe {index}:")
+            print(f"--- Items: {recipe.get('cost')}")
+            print(f"--- Result: {recipe.get('result')}")
+            print(f"--- Requirements: {recipe.get('requirement')}")
+
+    print("Done.")
+
+    #################################################################
+
+    print("Testing Gambit Shop item integrity:")
+    for item, data in gambit_shop_items.items():
+        print(f"Getting {item}...")
+        
+        if item.startswith("gambit_shop_tier"):
+            print("Found gambit shop tier:")
+            print(f"- Cost: {data.get('cost')}")
+            continue
+
+        print(f"{get_item(item).name}:")
+        print(f"- Cost {data.get('cost')}:")
+        print(f"- Required level: {data.get('level_required')}")
+        print(f"- Official name: {recipe.get('official_name')}")
+
+    print("Done.")
+
+if __name__ == "__main__":
+    test_suite()
