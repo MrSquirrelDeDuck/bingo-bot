@@ -1,4 +1,5 @@
 """Bread Game solvers using z3."""
+from __future__ import annotations
 
 from discord.ext import commands
 import discord
