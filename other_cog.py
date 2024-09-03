@@ -1108,12 +1108,13 @@ class Other_cog(
         name = "askouija",
         aliases = ["ask_ouija"],
         brief = "Ask the spirits a question.",
-        description = "Ask the spirits a question."
+        description = "Ask the spirits a question.\n\nModifier list:\n- `-strict` will not allow the creator to participate (including `goodbye`) and not allow someone to go twice in a row."
     )
     @commands.check(u_checks.hide_from_help)
     async def askouija(
             self: typing.Self,
             ctx: commands.Context | u_custom.CustomContext,
+            modifiers: typing.Optional[typing.Literal['-strict']] = commands.parameter(description = "Optional modifiers."),
             *, question: typing.Optional[str] = commands.parameter(description = "The question to ask the spirits.")
         ):
         if u_checks.sensitive_check(ctx.channel):
@@ -1142,7 +1143,9 @@ class Other_cog(
             active = True,
             letters = "",
             message_id = ctx.message.id,
-            author_id = ctx.author.id
+            author_id = ctx.author.id,
+            strict = modifiers == "-strict",
+            last_sender = 0
         )
 
         await ctx.send("Spirits, you are being asked a question:\n{}".format(question))

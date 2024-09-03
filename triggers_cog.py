@@ -827,6 +827,15 @@ class Triggers_cog(
         if not ouija_data["active"]:
             return
         
+        if ouija_data.get("strict"):
+            # Going twice in a row.
+            if message.author.id == ouija_data.get("last_sender"):
+                return
+            
+            # Author going.
+            if message.author.id == ouija_data.get("author_id"):
+                return
+        
         if message.content.lower() == "goodbye":
             database.set_ouija_data(message.channel.id, active = False)
 
@@ -847,7 +856,11 @@ class Triggers_cog(
         if content == "** **":
             content = " "
 
-        database.set_ouija_data(message.channel.id, letters = "{}{}".format(ouija_data["letters"], content))
+        database.set_ouija_data(
+            channel_id = message.channel.id,
+            letters = "{}{}".format(ouija_data["letters"], content),
+            last_sender = message.author.id
+        )
     
     async def counting(
             self: typing.Self,
