@@ -827,14 +827,13 @@ class Triggers_cog(
         if not ouija_data["active"]:
             return
         
-        if ouija_data.get("strict"):
-            # Going twice in a row.
-            if message.author.id == ouija_data.get("last_sender"):
+        # Contributing twice in a row is disallowed when strict mode is enabled.
+        if ouija_data.get("strict") and message.author.id == ouija_data.get("last_sender"):
                 return
             
-            # Author going.
-            if message.author.id == ouija_data.get("author_id"):
-                return
+        # Author contributing.
+        if message.author.id == ouija_data.get("author_id"):
+            return
         
         if message.content.lower() == "goodbye":
             database.set_ouija_data(message.channel.id, active = False)
