@@ -388,7 +388,9 @@ class DatabaseInterface:
             active: bool = None,
             letters: str = None,
             message_id: int = None,
-            author_id: int = None
+            author_id: int = None,
+            strict: bool = None,
+            last_sender: int = None
         ) -> dict[str, str | int | bool]:
         """Modifies a piece of ouija data.
 
@@ -398,6 +400,8 @@ class DatabaseInterface:
             letters (str, optional): New letters. Defaults to None.
             message_id (int, optional): New message id. Defaults to None.
             author_id (int, optional): New author id. Defaults to None.
+            strict (bool, optional): Whether to use the strict mode. Defaults to None.
+            last_sender (int, optional): The last person to add something to the letters. Defaults to None.
 
         Returns:
             dict[str, str | int | bool]: The updated dict for the channel.
@@ -409,7 +413,9 @@ class DatabaseInterface:
                 "active": active,
                 "letters": letters,
                 "message_id": message_id,
-                "author_id": author_id
+                "author_id": author_id,
+                "strict": strict,
+                "last_sender": last_sender
             }
             ouija_data[str(channel_id)] = new
             self.save("askouija", data=ouija_data)
@@ -425,6 +431,10 @@ class DatabaseInterface:
             new["message_id"] = message_id
         if author_id is not None:
             new["author_id"] = author_id
+        if strict is not None:
+            new["strict"] = strict
+        if last_sender is not None:
+            new["last_sender"] = last_sender
         
         ouija_data[str(channel_id)].update(new)
         self.save("askouija", data=ouija_data)
