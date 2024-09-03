@@ -822,6 +822,11 @@ class Triggers_cog(
         if hasattr(message, "webhook_id") and message.webhook_id is not None:
             return
         
+        # Allow custom emojis.
+        if message.content.startswith("<"):
+            if len(re.sub("<a?:\w+:\d+>", "", message.content)) != 0:
+                return
+        
         ouija_data = database.get_ouija_data(message.channel.id)
 
         if not ouija_data["active"]:
@@ -1283,7 +1288,7 @@ class Triggers_cog(
             await self.counting(message)
         
         # AskOuija
-        if len(message.content) == 1 or message.content.strip() == "** **" or message.content.lower() == "goodbye":
+        if len(message.content) == 1 or message.content.strip() == "** **" or message.content.lower() == "goodbye" or message.content.startswith("<"):
             await self.ask_ouija(message)
 
         # ???
