@@ -822,19 +822,23 @@ class Triggers_cog(
         if hasattr(message, "webhook_id") and message.webhook_id is not None:
             return
         
+        # Allow custom emojis.
+        if message.content.startswith("<"):
+            if len(re.sub("<a?:\w+:\d+>", "", message.content)) != 0:
+                return
+        
         ouija_data = database.get_ouija_data(message.channel.id)
 
         if not ouija_data["active"]:
             return
         
-        if ouija_data.get("strict"):
-            # Going twice in a row.
-            if message.author.id == ouija_data.get("last_sender"):
+        # Contributing twice in a row is disallowed when strict mode is enabled.
+        if ouija_data.get("strict") and message.author.id == ouija_data.get("last_sender"):
                 return
             
-            # Author going.
-            if message.author.id == ouija_data.get("author_id"):
-                return
+        # Author contributing.
+        if message.author.id == ouija_data.get("author_id"):
+            return
         
         if message.content.lower() == "goodbye":
             database.set_ouija_data(message.channel.id, active = False)
@@ -873,7 +877,14 @@ class Triggers_cog(
         if message.author.bot:
             return
         
-        sent_number = u_converters.parse_int(message.content)
+        if u_text.is_math_equation(message.content):
+            try:
+                sent_number = u_text.evaulate_problem(message.content)
+                print(sent_number)
+            except (RuntimeError, ValueError):
+                return
+        else:
+            sent_number = u_converters.parse_int(message.content)
 
         counting_data = database.get_counting_data(message.channel.id)
 
@@ -891,17 +902,28 @@ class Triggers_cog(
             )
             embed = u_interface.gen_embed(
                 title = "You broke the counting!",
-                description = "The counting was broken at **{}** by {}!\nYou must restart at 1.\nGet ready for the brick <:trol:1015821884450947173>".format(
+                description = "The counting was broken at **{}** by {}!\nYou must restart at 1.\nGet ready for the brick <:trol:1015821884450947173>\n\nShockingly, {} is not equal to {} + 1.".format(
                     u_text.smart_number(counting_data["count"]),
-                    message.author.mention
+                    message.author.mention,
+                    u_text.smart_number(int(sent_number) if round(sent_number, 2).is_integer() else round(sent_number, 2)),
+                    u_text.smart_number(counting_data["count"]),
+
                 )
             )
             try:
-                await message.add_reaction("<:blunder:958752015188656138>") # <a:you_cant_count:1134902783095603300>
-                await u_interface.smart_reply(message, embed=embed)
+                try:
+                    await message.add_reaction("<:blunder:958752015188656138>") # <a:you_cant_count:1134902783095603300>
+                except:
+                    await message.add_reaction("💀")
+                finally:
+                    await u_interface.smart_reply(message, embed=embed)
             except discord.errors.Forbidden:
                 database.set_counting_data(channel_id = message.channel.id, count = counting_data["count"], sender = counting_data["sender"])
             
+            return
+        
+        # So 1.5 doesn't get counted for 2.
+        if int(sent_number) != int(counting_data["count"] + 1):
             return
         
         if message.author.id == counting_data["sender"]:
@@ -909,7 +931,7 @@ class Triggers_cog(
         
         database.set_counting_data(
             channel_id = message.channel.id,
-            count = sent_number,
+            count = int(sent_number),
             sender = message.author.id
         )
         try:
@@ -1280,11 +1302,11 @@ class Triggers_cog(
         await self.pk_explanation(message)
 
         # Counting
-        if u_converters.is_digit(message.content):
+        if u_converters.is_digit(message.content) or u_text.is_math_equation(message.content):
             await self.counting(message)
         
         # AskOuija
-        if len(message.content) == 1 or message.content.strip() == "** **" or message.content.lower() == "goodbye":
+        if len(message.content) == 1 or message.content.strip() == "** **" or message.content.lower() == "goodbye" or message.content.startswith("<"):
             await self.ask_ouija(message)
 
         # ???

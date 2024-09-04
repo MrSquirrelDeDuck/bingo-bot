@@ -6,6 +6,8 @@ from discord.ext import commands
 import typing
 import re
 import datetime
+import time
+import operator
 
 import utility.interface as u_interface
 import utility.converters as u_converters
@@ -284,3 +286,168 @@ def format_timedelta(duration: datetime.timedelta) -> tuple[int, int, int, int]:
     minutes = (seconds % 3600) // 60
     seconds = (seconds % 60)
     return days, hours, minutes, seconds
+
+def evaulate_problem(
+        equation: str,
+        timeout_time: int | float = 1.0
+    ) -> float:
+    """Attempts to parse and solve a math equation like `2 - 7 / (4 * 9) ** (10 // 9) - 10 - (8 ** 3 * 5) + (7 + 10) / 2 // 5 ** 5`. All bitwise operations other than NOT (`~`) are allowed, but all inputs will be floored.
+
+    Args:
+        equation (str): The equation to solve.
+        timeout_time (int | float, optional): How long to give `while` loops time to run, in seconds. Defaults to 1.0.
+
+    Raises:
+        ValueError: Something went wrong when parsing the equation somewhere.
+        RuntimeError: The timeout has been triggered.
+
+    Returns:
+        float: The calculated result.
+    """
+
+    def bit_convert(f):
+        def wrapped(a, b):
+            return f(int(a), int(b))
+        
+        return wrapped
+
+    evaluate_pattern = re.compile(r"^(-?[\d,\.]+(e\+\d+)?)( *)([\^\/\+\*\-\%\&\|]|>>|<<|\*\*|\/\/)( *)(-?[\d,\.]+(e\+\d+)?)$")
+
+    """
+    1. **
+    2. */% //
+    3. +-
+    4. <<
+    5. >>
+    6. &
+    7. ^
+    8. |
+    """
+    exponents = re.compile(r"(-?[\d,\.]+(e\+\d+)?)( *)(\*\*)( *)(-?[\d,\.]+(e\+\d+)?)")
+    multiplicative = re.compile(r"(-?[\d,\.]+(e\+\d+)?)( *)([\*\/\%]|\/\/)( *)(-?[\d,\.]+(e\+\d+)?)")
+    additive = re.compile(r"(-?[\d,\.]+(e\+\d+)?)( *)([\+\-])( *)(-?[\d,\.]+(e\+\d+)?)")
+    shift_left = re.compile(r"(-?[\d,\.]+(e\+\d+)?)( *)(<<)( *)(-?[\d,\.]+(e\+\d+)?)")
+    shift_right = re.compile(r"(-?[\d,\.]+(e\+\d+)?)( *)(>>)( *)(-?[\d,\.]+(e\+\d+)?)")
+    bit_and = re.compile(r"(-?[\d,\.]+(e\+\d+)?)( *)(\&)( *)(-?[\d,\.]+(e\+\d+)?)")
+    bit_xor = re.compile(r"(-?[\d,\.]+(e\+\d+)?)( *)(\^)( *)(-?[\d,\.]+(e\+\d+)?)")
+    bit_or = re.compile(r"(-?[\d,\.]+(e\+\d+)?)( *)(\|)( *)(-?[\d,\.]+(e\+\d+)?)")
+
+    order = [exponents, multiplicative, additive, shift_left, shift_right, bit_and, bit_xor, bit_or]
+
+    operations = {
+        "+": operator.add,
+        "-": operator.sub,
+        "*": operator.mul,
+        "/": operator.truediv,
+        "//": operator.floordiv,
+        "**": operator.pow,
+        "%": operator.mod,
+        "&": bit_convert(operator.and_),
+        "|": bit_convert(operator.or_),
+        "^": bit_convert(operator.xor),
+        "<<": bit_convert(operator.lshift),
+        ">>": bit_convert(operator.rshift),
+    }
+
+    def parse_float(i: str) -> float:
+        return float(i.replace(",", ""))
+
+    def final_check(i: str) -> bool:
+        try:
+            parse_float(i)
+            return True
+        except:
+            return False
+
+    def evaluate(eq: str) -> float:
+        m = evaluate_pattern.match(eq)
+        try:
+            start = parse_float(m.group(1))
+            operation = m.group(4)
+            end = parse_float(m.group(6))
+        except AttributeError:
+            raise ValueError(f"Equation `{eq}` failed to parse.")
+
+        return operations[operation](start, end)
+
+    def evaluate_set(eq: str) -> str:
+        c = eq
+        if "(" in c:
+            while "(" in c:
+                if c.count("(") != c.count(")"):
+                    raise ValueError(f"Mismatching amount of parentheses in case `{c}` from equation `{eq}`.")
+                c = substitute_parentheses(c)
+                if time.time() > timeout:
+                    raise RuntimeError(f"Timeout of {timeout_time} reached.")
+        
+        while not final_check(c):
+            found = False
+            for pattern in order:
+                search = pattern.search(c)
+                while search is not None:
+                    found = True
+                    c = c.replace(search.group(0), str(evaluate(search.group(0))))
+                    search = pattern.search(c)
+                    if time.time() > timeout:
+                        raise RuntimeError(f"Timeout of {timeout_time} reached.")
+            
+            if not found:
+                raise ValueError(f"Invalid equation in case `{c}` from equation `{eq}`.")
+                    
+            if time.time() > timeout:
+                raise RuntimeError(f"Timeout of {timeout_time} reached.")
+
+        return c
+
+    def find_parentheses(eq: str) -> str:
+        if "(" not in eq:
+            raise ValueError(f"No parentheses found in `{eq}`.")
+        
+        start = eq.find("(")
+        current = "("
+
+        amount = 1
+        i = start + 1
+        m = len(eq)
+        while amount > 0:
+            if i >= m:
+                raise ValueError(f"Equation `{eq}` failed to find proper parentheses.")
+            
+            char = eq[i]
+            current += char
+
+            if char == "(":
+                amount += 1
+            elif char == ")":
+                amount -= 1
+            
+            i += 1
+        
+        return current
+
+    def substitute_parentheses(eq: str) -> str:
+        found = find_parentheses(eq)
+        return eq.replace(found, evaluate_set(found[1:-1]))
+    
+    timeout = time.time() + timeout_time
+    result = evaluate_set(equation)
+    return parse_float(result)
+
+def is_math_equation(input_string: str) -> bool:
+    """Determines whether the given input string is a math equation. There are certain situations where this will be incorrect, you can use `evaluate_problem()` to get a more accurate answer, but that requires more computation.
+
+    Args:
+        input_string (str): The input string.
+
+    Returns:
+        bool: Whether the string is a math equation.
+    """
+    characters = "0123456789e+-*/|&><^%,. ()"
+
+    for char in input_string:
+        if char not in characters:
+            return False
+    
+    match = re.match(r"((-?[\d,\.]+(e\+\d+)?)?([ ()]*)([\^\/\+\*\-\%\&\|]|>>|<<|\*\*|\/\/)?([ ()]*)(-?[\d,\.]+(e\+\d+)?))+", input_string)
+
+    return match is not None
