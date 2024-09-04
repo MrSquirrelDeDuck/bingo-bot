@@ -311,7 +311,7 @@ def evaulate_problem(
         
         return wrapped
 
-    evaluate_pattern = re.compile(r"^(-?[\d,\.]+(e\+\d+)?)( *)([\^\/\+\*\-\%\&\|]|>>|<<|\*\*|\/\/)( *)(-?[\d,\.]+(e\+\d+)?)$")
+    evaluate_pattern = re.compile(r"^(-?[\d,\.]+(e[\+\-]\d+)?)( *)([\^\/\+\*\-\%\&\|]|>>|<<|\*\*|\/\/)( *)(-?[\d,\.]+(e[\+\-]\d+)?)$")
 
     """
     1. **
@@ -323,14 +323,14 @@ def evaulate_problem(
     7. ^
     8. |
     """
-    exponents = re.compile(r"(-?[\d,\.]+(e\+\d+)?)( *)(\*\*)( *)(-?[\d,\.]+(e\+\d+)?)")
-    multiplicative = re.compile(r"(-?[\d,\.]+(e\+\d+)?)( *)([\*\/\%]|\/\/)( *)(-?[\d,\.]+(e\+\d+)?)")
-    additive = re.compile(r"(-?[\d,\.]+(e\+\d+)?)( *)([\+\-])( *)(-?[\d,\.]+(e\+\d+)?)")
-    shift_left = re.compile(r"(-?[\d,\.]+(e\+\d+)?)( *)(<<)( *)(-?[\d,\.]+(e\+\d+)?)")
-    shift_right = re.compile(r"(-?[\d,\.]+(e\+\d+)?)( *)(>>)( *)(-?[\d,\.]+(e\+\d+)?)")
-    bit_and = re.compile(r"(-?[\d,\.]+(e\+\d+)?)( *)(\&)( *)(-?[\d,\.]+(e\+\d+)?)")
-    bit_xor = re.compile(r"(-?[\d,\.]+(e\+\d+)?)( *)(\^)( *)(-?[\d,\.]+(e\+\d+)?)")
-    bit_or = re.compile(r"(-?[\d,\.]+(e\+\d+)?)( *)(\|)( *)(-?[\d,\.]+(e\+\d+)?)")
+    exponents = re.compile(r"(-?[\d,\.]+(e[\+\-]\d+)?)( *)(\*\*)( *)(-?[\d,\.]+(e[\+\-]\d+)?)")
+    multiplicative = re.compile(r"(-?[\d,\.]+(e[\+\-]\d+)?)( *)([\*\/\%]|\/\/)( *)(-?[\d,\.]+(e[\+\-]\d+)?)")
+    additive = re.compile(r"(-?[\d,\.]+(e[\+\-]\d+)?)( *)([\+\-])( *)(-?[\d,\.]+(e[\+\-]\d+)?)")
+    shift_left = re.compile(r"(-?[\d,\.]+(e[\+\-]\d+)?)( *)(<<)( *)(-?[\d,\.]+(e[\+\-]\d+)?)")
+    shift_right = re.compile(r"(-?[\d,\.]+(e[\+\-]\d+)?)( *)(>>)( *)(-?[\d,\.]+(e[\+\-]\d+)?)")
+    bit_and = re.compile(r"(-?[\d,\.]+(e[\+\-]\d+)?)( *)(\&)( *)(-?[\d,\.]+(e[\+\-]\d+)?)")
+    bit_xor = re.compile(r"(-?[\d,\.]+(e[\+\-]\d+)?)( *)(\^)( *)(-?[\d,\.]+(e[\+\-]\d+)?)")
+    bit_or = re.compile(r"(-?[\d,\.]+(e[\+\-]\d+)?)( *)(\|)( *)(-?[\d,\.]+(e[\+\-]\d+)?)")
 
     order = [exponents, multiplicative, additive, shift_left, shift_right, bit_and, bit_xor, bit_or]
 
@@ -448,6 +448,6 @@ def is_math_equation(input_string: str) -> bool:
         if char not in characters:
             return False
     
-    match = re.match(r"((-?[\d,\.]+(e\+\d+)?)?([ ()]*)([\^\/\+\*\-\%\&\|]|>>|<<|\*\*|\/\/)?([ ()]*)(-?[\d,\.]+(e\+\d+)?))+", input_string)
+    match = re.match(r"((-?[\d,\.]+(e[\+\-]\d+)?)?([ ()]*)([\^\/\+\*\-\%\&\|]|>>|<<|\*\*|\/\/)?([ ()]*)(-?[\d,\.]+(e[\+\-]\d+)?))+", input_string)
 
     return match is not None
