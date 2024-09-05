@@ -8,6 +8,7 @@ import re
 import datetime
 import time
 import operator
+import math
 
 import utility.interface as u_interface
 import utility.converters as u_converters
@@ -375,7 +376,7 @@ def evaulate_problem(
         if "(" in c:
             while "(" in c:
                 if c.count("(") != c.count(")"):
-                    raise ValueError(f"Mismatching amount of parentheses in case `{c}` from equation `{eq}`.")
+                    raise ValueError(f"Mismatching amount of parentheses in case `{c}`.")
                 c = substitute_parentheses(c)
                 if time.time() > timeout:
                     raise RuntimeError(f"Timeout of {timeout_time} reached.")
@@ -386,13 +387,20 @@ def evaulate_problem(
                 search = pattern.search(c)
                 while search is not None:
                     found = True
-                    c = c.replace(search.group(0), str(evaluate(search.group(0))))
+                    num = evaluate(search.group(0))
+
+                    if math.isnan(num):
+                        raise ValueError(f"Encountered NaN in case `{c}`. >:(")
+                    if math.isinf(num):
+                        raise ValueError(f"Encountered infinity in case `{c}`. >:(")
+                    
+                    c = c.replace(search.group(0), str(num))
                     search = pattern.search(c)
                     if time.time() > timeout:
                         raise RuntimeError(f"Timeout of {timeout_time} reached.")
             
             if not found:
-                raise ValueError(f"Invalid equation in case `{c}` from equation `{eq}`.")
+                raise ValueError(f"Invalid equation in case `{c}`.")
                     
             if time.time() > timeout:
                 raise RuntimeError(f"Timeout of {timeout_time} reached.")

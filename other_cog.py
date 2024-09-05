@@ -2155,6 +2155,11 @@ class Other_cog(
                 title = "Evaluation",
                 description = "The result is too large to calculate."
             )
+        except ZeroDivisionError:
+            embed = u_interface.gen_embed(
+                title = "Evaluation",
+                description = "The result involves dividing by zero."
+            )
         except (RuntimeError, ValueError) as e:
             embed = u_interface.gen_embed(
                 title = "Evaluation",
