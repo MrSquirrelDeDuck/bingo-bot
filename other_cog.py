@@ -2148,7 +2148,7 @@ class Other_cog(
             result = u_text.evaulate_problem(equation=equation)
             embed = u_interface.gen_embed(
                 title = "Evaluation",
-                description = f"The result from the equation `{equation}`:\n## {result}"
+                description = f"The result from the equation `{equation}`:\n## {u_text.smart_number(result)}"
             )
         except OverflowError:
             embed = u_interface.gen_embed(

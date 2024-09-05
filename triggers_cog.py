@@ -879,7 +879,7 @@ class Triggers_cog(
         
         if u_text.is_math_equation(message.content):
             try:
-                sent_number = u_text.evaulate_problem(message.content)
+                sent_number = round(u_text.evaulate_problem(message.content), 5)
             except (RuntimeError, ValueError, ZeroDivisionError):
                 return
         else:
@@ -904,9 +904,8 @@ class Triggers_cog(
                 description = "The counting was broken at **{}** by {}!\nYou must restart at 1.\nGet ready for the brick <:trol:1015821884450947173>\n\nShockingly, {} is not equal to {} + 1.".format(
                     u_text.smart_number(counting_data["count"]),
                     message.author.mention,
-                    u_text.smart_number(int(sent_number) if round(sent_number, 2).is_integer() else round(sent_number, 2)),
+                    u_text.smart_number(int(sent_number) if round(sent_number, 5).is_integer() else round(sent_number, 5)),
                     u_text.smart_number(counting_data["count"]),
-
                 )
             )
             try:
