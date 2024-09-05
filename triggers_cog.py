@@ -880,7 +880,7 @@ class Triggers_cog(
         if u_text.is_math_equation(message.content):
             try:
                 sent_number = u_text.evaulate_problem(message.content)
-            except (RuntimeError, ValueError):
+            except (RuntimeError, ValueError, ZeroDivisionError):
                 return
         else:
             sent_number = u_converters.parse_int(message.content)
