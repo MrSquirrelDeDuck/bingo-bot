@@ -478,3 +478,6 @@ class CustomHelpCommand(commands.DefaultHelpCommand):
             error: Exception, /
         ) -> None:
         raise error
+
+class BingoError(RuntimeError):
+    pass
