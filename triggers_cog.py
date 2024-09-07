@@ -31,6 +31,7 @@ import utility.algorithms as u_algorithms
 import utility.images as u_images
 import utility.bingo as u_bingo
 import utility.detection as u_detection
+import utility.solvers as u_solvers
 # import utility.rulette as u_rulette
 
 # pip install python-dotenv
@@ -877,10 +878,10 @@ class Triggers_cog(
         if message.author.bot:
             return
         
-        if u_text.is_math_equation(message.content):
+        if u_solvers.is_math_equation_bool(message.content):
             try:
-                sent_number = round(u_text.evaulate_problem(message.content), 5)
-            except (RuntimeError, ValueError, ZeroDivisionError):
+                sent_number = round(u_solvers.evaluate_problem(message.content), 5)
+            except u_custom.BingoError:
                 return
         else:
             sent_number = u_converters.parse_int(message.content)
@@ -904,7 +905,7 @@ class Triggers_cog(
                 description = "The counting was broken at **{}** by {}!\nYou must restart at 1.\nGet ready for the brick <:trol:1015821884450947173>\n\nShockingly, {} is not equal to {} + 1.".format(
                     u_text.smart_number(counting_data["count"]),
                     message.author.mention,
-                    u_text.smart_number(int(sent_number) if round(sent_number, 5).is_integer() else round(sent_number, 5)),
+                    u_text.smart_number(int(sent_number) if round(sent_number, 5).as_integer_ratio()[-1] == 1 else round(sent_number, 5)),
                     u_text.smart_number(counting_data["count"]),
                 )
             )
@@ -1300,7 +1301,7 @@ class Triggers_cog(
         await self.pk_explanation(message)
 
         # Counting
-        if u_converters.is_digit(message.content) or u_text.is_math_equation(message.content):
+        if u_converters.is_digit(message.content) or u_solvers.is_math_equation_bool(message.content):
             await self.counting(message)
         
         # AskOuija

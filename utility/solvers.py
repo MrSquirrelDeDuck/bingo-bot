@@ -1,9 +1,13 @@
-"""Bread Game solvers using z3."""
+"""Specific Bread Game solvers using z3, and other mathematical solvers."""
 from __future__ import annotations
 
 from discord.ext import commands
 import discord
 import re
+import mpmath
+import decimal
+import time
+import operator
 
 # pip install z3-solver
 import z3
@@ -211,3 +215,488 @@ async def solver_embed(
         ],
         footer_text = "On mobile you can tap and hold on the commands section to copy it."
     )
+
+########################################################################################################################
+
+# Amount of digits to show.
+# This influences mpmath.mp.dps and decimals.getcontext().prec
+SOLVER_PRECISION = 64
+
+def floor_inputs(f):
+    def wrapped(a, b):
+        return decimal.Decimal(f(int(a), int(b)))
+    
+    return wrapped
+
+def clamp_inputs(f, clamp):
+    def wrapped(a, b):
+        if a > clamp:
+            raise u_custom.BingoError(f"Given argument `{a}` above set clamp of {clamp}.")
+        if b > clamp:
+            raise u_custom.BingoError(f"Given argument `{b}` above set clamp of {clamp}.")
+        return f(a, b)
+    
+    return wrapped
+
+def mpwrapper(f):
+    def wrapped(*args):
+        mpmath.mp.dps = 32
+        return decimal.Decimal(str(f(*args)))
+
+    return wrapped
+
+NUMBER_REGEX = r"((-?[\d,\.]+(e[\+\-]?\d+)?)|pi|e|tau|phi)"
+FUNCTION_LIST = ["sin", "tan", "cos", "asin", "atan", "acos", "ln", "log", "factorial", "sqrt", "exp", "nCr", "nPr"]
+FUNCTION_REGEX = rf"({'|'.join(FUNCTION_LIST)})"
+
+FUNCTION_LIST_SORTED = list(sorted(FUNCTION_LIST, key=lambda l: len(l), reverse=True))
+
+FULL_EQUATION_PATTERN = rf"({NUMBER_REGEX}?({FUNCTION_REGEX}|([ ()]*))([\^\/\+\*\-\%\&\|]|>>|<<|\*\*|\/\/)?({FUNCTION_REGEX}|([ ()]*)){NUMBER_REGEX}?)+"
+FUNCTION_PATTERN = rf"{FUNCTION_REGEX}\((({NUMBER_REGEX},? *)+)\)"
+
+REGEX_EVALUATE = re.compile(rf"^{NUMBER_REGEX}( *)([\^\/\+\*\-\%\&\|]|>>|<<|\*\*|\/\/)( *){NUMBER_REGEX}$")
+REGEX_FUNCTION = re.compile(rf"^{FUNCTION_PATTERN}$")
+
+"""
+Order of operations:
+1. **
+2. */% //
+3. +-
+4. <<
+5. >>
+6. &
+7. ^
+8. |
+"""
+REGEX_EXPONENTS = re.compile(rf"{NUMBER_REGEX}( *)(\*\*)( *){NUMBER_REGEX}")
+REGEX_MULTIPLICATIVE = re.compile(rf"{NUMBER_REGEX}( *)([\*\/\%]|\/\/)( *){NUMBER_REGEX}")
+REGEX_ADDITIVE = re.compile(rf"{NUMBER_REGEX}( *)([\+\-])( *){NUMBER_REGEX}")
+REGEX_SHIFT_LEFT = re.compile(rf"{NUMBER_REGEX}( *)(<<)( *){NUMBER_REGEX}")
+REGEX_SHIFT_RIGHT = re.compile(rf"{NUMBER_REGEX}( *)(>>)( *){NUMBER_REGEX}")
+REGEX_BIT_AND = re.compile(rf"{NUMBER_REGEX}( *)(\&)( *){NUMBER_REGEX}")
+REGEX_BIT_XOR = re.compile(rf"{NUMBER_REGEX}( *)(\^)( *){NUMBER_REGEX}")
+REGEX_BIT_OR = re.compile(rf"{NUMBER_REGEX}( *)(\|)( *){NUMBER_REGEX}")
+
+ORDER_OF_OPERATIONS = [REGEX_EXPONENTS, REGEX_MULTIPLICATIVE, REGEX_ADDITIVE, REGEX_SHIFT_LEFT, REGEX_SHIFT_RIGHT, REGEX_BIT_AND, REGEX_BIT_XOR, REGEX_BIT_OR]
+
+OPERATIONS = {
+    "+": operator.add,
+    "-": operator.sub,
+    "*": operator.mul,
+    "/": operator.truediv,
+    "//": operator.floordiv,
+    "**": operator.pow,
+    "%": operator.mod,
+    "&": floor_inputs(operator.and_),
+    "|": floor_inputs(operator.or_),
+    "^": floor_inputs(operator.xor),
+    "<<": clamp_inputs(floor_inputs(operator.lshift), 4096),
+    ">>": clamp_inputs(floor_inputs(operator.rshift), 4096),
+}
+
+mpmath.mp.dps = SOLVER_PRECISION + 4
+
+OTHER_CONSTANTS = {
+    "pi": decimal.Decimal(str(mpmath.pi)),
+    "tau": decimal.Decimal(str(mpmath.mp.pi * 2)), # i'm sorry savings, mpmath doesnt have tau
+    "e": decimal.Decimal(str(mpmath.mp.e)),
+    "phi": decimal.Decimal(str(mpmath.mp.phi)),
+}
+
+def nCr(n, k):
+    f = OTHER_OPERATIONS["factorial"]
+    return f(n) / (f(k) * f(n - k))
+
+def nPr(n, k):
+    f = OTHER_OPERATIONS["factorial"]
+    return f(n) / f(n - k)
+
+OTHER_OPERATIONS = {
+    "sin": mpwrapper(mpmath.sin),
+    "cos": mpwrapper(mpmath.cos),
+    "tan": mpwrapper(mpmath.tan),
+    "asin": mpwrapper(mpmath.asin),
+    "acos": mpwrapper(mpmath.acos),
+    "atan": mpwrapper(mpmath.atan),
+    "log": mpwrapper(mpmath.log),
+    "ln": lambda n: mpwrapper(mpmath.log)(n), # math.log without a base argument is natural log
+    "factorial": mpwrapper(mpmath.factorial),
+    "sqrt": mpwrapper(mpmath.sqrt),
+    "exp": mpwrapper(mpmath.exp),
+    "nCr": nCr,
+    "nPr": nPr,
+}
+
+def evaluate_problem(
+        equation: str,
+        timeout_time: int | float = 2.5
+    ) -> decimal.Decimal:
+    """Attempts to parse and solve a math equation like `2 - 7 / (4 * 9) ** sin(10 // 9 * pi) - 10 - (8 ** 3 * 5) + (7 + 10) / 2 // 5 ** 5`. All bitwise operations other than NOT (`~`) are allowed, but all inputs will be floored.
+
+    Args:
+        equation (str): The equation to solve.
+        timeout_time (int | decimal.Decimal, optional): How long to give `while` loops time to run, in seconds. Defaults to 1.0.
+
+    Raises:
+        ValueError: Something went wrong when parsing the equation somewhere.
+        RuntimeError: The timeout has been triggered.
+
+    Returns:
+        decimal.Decimal: The calculated result.
+    """
+
+    def parse_float(i: str) -> decimal.Decimal:
+        if i in OTHER_CONSTANTS:
+            return OTHER_CONSTANTS[i]
+        return decimal.Decimal(i.replace(",", ""))
+
+    def final_check(i: str) -> bool:
+        try:
+            parse_float(i)
+            return True
+        except:
+            return False
+    
+    def evaluate_function(eq: str) -> decimal.Decimal:
+        m = REGEX_FUNCTION.match(eq)
+        try:
+            function = m.group(1)
+
+            if function not in OTHER_OPERATIONS:
+                raise u_custom.BingoError(f"Function `{function}` not found.")
+
+            arguments = [i.strip() for i in m.group(2).split(",")]
+            for index, arg in enumerate(arguments):
+                arguments[index] = parse_float(arg)
+            
+            try:
+                return OTHER_OPERATIONS[function](*arguments)
+            except ValueError:
+                raise u_custom.BingoError(f"Invalid domain for function `{function}`.")
+            except TypeError:
+                raise u_custom.BingoError(f"Incorrect argument amount for function `{function}`")
+
+            
+        except AttributeError:
+            raise u_custom.BingoError(f"Function `{eq}` failed to parse.")
+
+
+    def evaluate(eq: str) -> decimal.Decimal:
+        m = REGEX_EVALUATE.match(eq)
+        try:
+            start = parse_float(m.group(1))
+            operation = m.group(5)
+            end = parse_float(m.group(7))
+        except AttributeError:
+            raise u_custom.BingoError(f"Equation `{eq}` failed to parse.")
+
+        return OPERATIONS[operation](start, end)
+
+    def evaluate_set(eq: str) -> str:
+        c = eq
+        if "(" in c:
+            while "(" in c:
+                if c.count("(") != c.count(")"):
+                    raise u_custom.BingoError(f"Mismatching amount of parentheses in case `{c}`.")
+                
+                c = substitute_parentheses(c)
+                
+                if time.time() > timeout:
+                    raise u_custom.BingoError(f"Timeout of {timeout_time} reached.")
+        
+        while not final_check(c):
+            found = False
+            for pattern in ORDER_OF_OPERATIONS:
+                search = pattern.search(c)
+                while search is not None:
+                    found = True
+                    num = evaluate(search.group(0))
+
+                    if num.is_nan():
+                        raise u_custom.BingoError(f"Encountered NaN in case `{c}`. >:(")
+                    if num.is_infinite():
+                        raise u_custom.BingoError(f"Encountered infinity in case `{c}`. >:(")
+                    
+                    if num > 9e+4096:
+                        raise OverflowError
+                    
+                    c = c.replace(search.group(0), str(num))
+                    
+                    print("0")
+                    search = pattern.search(c)
+                    print("1")
+                    if time.time() > timeout:
+                        raise u_custom.BingoError(f"Timeout of {timeout_time} reached.")
+            
+            if not found:
+                raise u_custom.BingoError(f"Invalid equation in case `{c}`.")
+                    
+            if time.time() > timeout:
+                raise u_custom.BingoError(f"Timeout of {timeout_time} reached.")
+
+        return c
+
+    def find_parentheses(eq: str) -> str:
+        if "(" not in eq:
+            raise u_custom.BingoError(f"No parentheses found in `{eq}`.")
+        
+        start = eq.find("(")
+        current = "("
+
+        amount = 1
+        i = start + 1
+        m = len(eq)
+        while amount > 0:
+            if i >= m:
+                raise u_custom.BingoError(f"Equation `{eq}` failed to find proper parentheses.")
+            
+            char = eq[i]
+            current += char
+
+            if char == "(":
+                amount += 1
+            elif char == ")":
+                amount -= 1
+            
+            i += 1
+        
+        return current
+
+    def substitute_parentheses(eq: str) -> str:
+        found = find_parentheses(eq)
+
+        functions = [f"{i}(" in eq for i in FUNCTION_LIST_SORTED]
+        if any(functions):
+            function = FUNCTION_LIST_SORTED[functions.index(True)]
+            location = eq.index(function)
+            function_inside = find_parentheses(eq[location:])[1:-1]
+            arguments = [i.strip() for i in function_inside.split(",")]
+
+            for index, arg in enumerate(arguments):
+                arguments[index] = evaluate_set(arg)
+            
+            solved = evaluate_function(f"{function}({', '.join(arguments)})")
+
+            return eq.replace(f"{function}({function_inside})", str(solved))
+        
+        return eq.replace(found, evaluate_set(found[1:-1]))
+
+    decimal.getcontext().prec = SOLVER_PRECISION + 2
+    decimal.getcontext().capitals = 0
+    
+    timeout = time.time() + timeout_time
+    result = evaluate_set(equation)
+    out = parse_float(result)
+
+    decimal.getcontext().prec -= 2
+    return +out
+
+##############################################################################################################################################################
+
+def is_math_equation(input_string: str) -> bool:
+    """Attempts to determine whether the given input string is a math equation. There are certain situations where this may be incorrect, you can use `evaluate_problem()` to get a more accurate answer, but that requires more computation.
+
+    Args:
+        input_string (str): The input string.
+
+    Returns:
+        bool: Whether the string is a math equation.
+    """
+    NUMBERS = "0123456789"
+    OPERATORS = "+-*/%&|^<>"
+    DUPLICATES = "/*<>"
+
+    parenthesis_level = 0
+
+    NUMBER = 1
+    OPERATOR = 2
+    FUNCTION = 3
+    DELIMITER = 4
+    OPEN = 5
+    CLOSE = 6
+
+    log = [0]
+    length = len(input_string)
+
+    IN_NUMBER = 1 << 0
+    FUNCTION_NAME = 1 << 1
+    DECIMAL_FOUND = 1 << 2
+
+    state = 0
+    checkpoint = 0
+    function_stack = []
+
+    def parse_text(i):
+        nonlocal state, log
+        if not (state & FUNCTION_NAME):
+            return True
+        
+        state -= FUNCTION_NAME
+        
+        text = input_string[checkpoint:i]
+
+        if text in FUNCTION_LIST:
+            log.append(FUNCTION)
+            return False
+        if text in OTHER_CONSTANTS:
+            log.append(NUMBER)
+            return False
+        
+        raise u_custom.BingoError(f"Unrecognized function or constant `{text}`.")
+    
+    def surrounding(i):
+        return f"(`{input_string[max(0, i - 2):min(length, i + 3)]}`)"
+
+    for index, char in enumerate(input_string):
+        past = "_" + input_string[:index]
+        
+        if char == ",":
+            parse_text(index)
+            
+            if state & IN_NUMBER and len(function_stack) == 0:
+                continue
+
+            log.append(DELIMITER)
+            continue
+
+        if char == ".":
+            parse_text(index)
+            
+            if state & IN_NUMBER:
+                if state & DECIMAL_FOUND:
+                    raise u_custom.BingoError(f"Unrecognized decimal point at character {index + 1} {surrounding(index)}.")
+                else:
+                    state += DECIMAL_FOUND
+                continue
+            
+            raise u_custom.BingoError(f"Unrecognized decimal point at character {index + 1} {surrounding(index)}.")
+
+        # Ignore spaces.
+        if char == " ":
+            parse_text(index)
+
+            if state & IN_NUMBER:
+                state -= IN_NUMBER
+            continue
+
+        ##################################
+
+        if char == "(":
+            last_log = log[-1]
+            
+            if last_log == NUMBER or last_log == CLOSE:
+                raise u_custom.BingoError(f"Unexpected opening parenthesis at character {index + 1} {surrounding(index)}.")
+            
+            # This shouldn't be needed, but just in case...
+            if state & IN_NUMBER:
+                state -= IN_NUMBER
+
+            ### Dealing with functions.
+
+            if state & FUNCTION_NAME:
+                state -= FUNCTION_NAME
+
+                function_name = input_string[checkpoint:index]
+
+                if function_name not in FUNCTION_LIST:
+                    raise u_custom.BingoError(f"Unrecognized function name `{function_name}` {surrounding(index)}.")
+                
+                log.append(FUNCTION)
+
+                function_stack.append(parenthesis_level)
+
+            ###
+
+            log.append(OPEN)
+            parenthesis_level += 1
+            continue
+        
+        if char == ")":
+            parse_text(index)
+            
+            last_log = log[-1]
+
+            if last_log == OPEN:
+                raise u_custom.BingoError(f"Unexpected closing parenthesis directly after opening parenthesis at character {index + 1} {surrounding(index)}.")
+            
+            if last_log == OPERATOR:
+                raise u_custom.BingoError(f"Unexpected closing parenthesis at character {index + 1} {surrounding(index)}.")
+            
+            log.append(CLOSE)
+            parenthesis_level -= 1
+
+            if len(function_stack) > 0:
+                if parenthesis_level == function_stack[-1]:
+                    function_stack.pop()
+
+            if state & IN_NUMBER:
+                state -= IN_NUMBER
+            
+            if parenthesis_level < 0:
+                raise u_custom.BingoError(f"Unmatched closing parenthesis at character{index + 1} {surrounding(index)}.")
+            continue
+
+        if char in NUMBERS:
+            parse_text(index)
+
+            if state & IN_NUMBER:
+                continue
+            else:
+                last_log = log[-1]
+
+                if last_log == NUMBER:
+                    raise u_custom.BingoError(f"Unexpected number at character {index + 1} {surrounding(index)}.")
+                
+                if last_log == CLOSE:
+                    raise u_custom.BingoError(f"Unexpected number at character {index + 1} {surrounding(index)}.")
+                
+                state += IN_NUMBER
+                if state & DECIMAL_FOUND:
+                    state -= DECIMAL_FOUND
+                log.append(NUMBER)
+                continue
+        
+        if char in OPERATORS:
+            parse_text(index)
+            
+            if past[-1] in OPERATORS:
+                if char not in DUPLICATES:
+                    raise u_custom.BingoError(f"Unexpected operator `{char}` at character {index + 1} {surrounding(index)}.")
+                elif char != past[-1]:
+                    raise u_custom.BingoError(f"Unexpected operator `{char}` at character {index + 1} {surrounding(index)}.")
+                else: # If it is the same, and is a duplicate operator.
+                    continue
+            else:
+                if log[-1] == NUMBER or log[-1] == CLOSE:
+                    if state & IN_NUMBER:
+                        state -= IN_NUMBER
+
+                    log.append(OPERATOR)
+                    continue
+                else:
+                    raise u_custom.BingoError(f"Unexpected operator `{char}` at character {index + 1} {surrounding(index)}.")
+        
+        # If it's here then assume it's part of a function.
+        if state & FUNCTION_NAME:
+            continue
+        
+        checkpoint = index
+        state += FUNCTION_NAME\
+            
+    if parenthesis_level > 0:
+        raise u_custom.BingoError("Unmatched opening parenthesis.")
+
+    return True
+
+def is_math_equation_bool(input_string: str) -> bool:
+    """Converts `is_math_equation` into a boolean, and catches any BingoErrors that occcur.
+    
+    Args:
+        input_string (str): The input string.
+
+    Returns:
+        bool: Whether the string is a math equation."""
+    try:
+        return is_math_equation(input_string)
+    except u_custom.BingoError:
+        return False

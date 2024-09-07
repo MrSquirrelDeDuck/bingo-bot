@@ -892,6 +892,230 @@ class Games_cog(
 
         
     ######################################################################################################################################################
+    ##### LETHAL COMPANY #################################################################################################################################
+    ######################################################################################################################################################
+        
+    @commands.group(
+        name = "lethal_company",
+        aliases = ["lethal", "lc"],
+        brief = "Commands relating to Lethal Company.",
+        description = "Commands relating to Lethal Company",
+        pass_context = True,
+        invoke_without_command = True
+    )
+    @commands.check(u_checks.hide_from_help)
+    async def lethal_company(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext
+        ):
+        if ctx.invoked_subcommand is not None:
+            return
+        
+        await ctx.send_help(self.lethal_company)
+        
+
+
+        
+            
+
+        
+    ######################################################################################################################################################
+    ##### LETHAL COMPANY PARSE ###########################################################################################################################
+    ######################################################################################################################################################
+        
+    @lethal_company.command(
+        name = "parse",
+        brief = "Parses a Lethal Company transmitter code.",
+        description = "Parses a Lethal Company transmitter code."
+    )
+    @commands.check(u_checks.hide_from_help)
+    async def lethal_company_parse(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext,
+            code: typing.Optional[str] = commands.parameter(description = "The code to parse.")
+        ):
+        if code is None:
+            await ctx.reply("Please provide a code to parse.")
+            return
+        
+        initial_parser = re.compile(r"^(\|?((return|tc)|(~~([A-Z]+|`))|(\$\$([A-Z]+|`))|(care([A-Z]+|`)?\d{1,2})|(D([A-Z]+|`)\d{1,2})|(owo\d{1,2})|([X<>\^]([A-Z]+|`))|(\$([A-Z]+|`)\d*[\^<>]?)|(~([A-Z]+|`)+\d{1,2}[\^<>]?~?\$?)))+$")
+
+        found = initial_parser.search(code)
+
+        if found is None:
+            await ctx.reply("That doesn't appear to be a code I can parse.")
+            return
+        
+        MONSTERS = {
+            "0": "a Turret",
+            "1": "Unknown",
+            "2": "a Bracken",
+            "3": "a Thumper",
+            "4": "a Coil Head",
+            "5": "a Snare Flea",
+            "6": "a Masked employee",
+            "7": "an Eyeless Dog",
+            "8": "Bees",
+            "9": "a Spider",
+            "10": "the Goo",
+            "11": "a Landmine",
+            "12": "a Jester",
+            "13": "the Ghost Girl",
+            "14": "a Nutcracker",
+            "15": "a Giant",
+            "16": "a Tulip Snake",
+            "17": "a Sand Worm",
+            "18": "a Butler",
+            "19": "a Snipper",
+            "20": "a Maneater",
+            "21": "Gravity",
+            "22": "Drowning",
+            "23": "sudden disconnection due to internet issues that have plagued us for years",
+            "24": "The Company Cruiser"
+        }
+
+        split = code.split("|")
+
+        fields = []
+
+        for index, item in enumerate(split, start=1):
+            message = "i have no fucking idea"
+
+            if item.startswith("return"):
+                message = "Return to the ship right now."
+            elif item.startswith("tc"):
+                message = "Would you like to be teleported? If so, do the teleport signal."
+            elif item.startswith("$$"):
+                player = item[2]
+                message = f"Player {player} is returning to the ship, hopefully with scrap."
+            elif item.startswith("~~"):
+                player = item[2]
+                message = f"Player {player} is heading back out from the ship to collect scrap."
+            elif item.startswith("care"):
+                further = re.search(r"care([A-Z]+|`)(\d{1,2})", item)
+                
+                player = further.group(1)
+                enemy = further.group(2)
+
+                if player == "`":
+                    message = f"Everybody in the largest group should be careful about {MONSTERS[enemy]}."
+                else:
+                    message = f"{', '.join(list(player))} should be careful about {MONSTERS[enemy]}."
+            elif item.startswith("D"):
+                further = re.search(r"D([A-Z]+|`)(\d{1,2})", item)
+                
+                player = further.group(1)
+                enemy = further.group(2)
+
+                if player == "`":
+                    message = f"Everybody in the largest group died to {MONSTERS[enemy]}."
+                else:
+                    message = f"{', '.join(list(player))} died to {MONSTERS[enemy]}."
+            elif item.startswith("owo"):
+                further = re.search(r"owo(\d{1,2})", item)
+                
+                enemy = further.group(1)
+
+                message = f"The ship is currently not safe due to {MONSTERS[enemy]}."
+            elif item.startswith("X"):
+                further = re.search(r"X([A-Z]+|`)", item)
+                
+                player = further.group(1)
+
+                if player == "`":
+                    message = "Everybody in the largest group is going the wrong way."
+                else:
+                    message = f"{', '.join(list(player))}, you're going the wrong way."
+            elif item.startswith("<"):
+                further = re.search(r"<([A-Z]+|`)", item)
+                
+                player = further.group(1)
+
+                if player == "`":
+                    message = "Everybody in the largest group, go left."
+                else:
+                    message = f"{', '.join(list(player))}, go left."
+            elif item.startswith("^"):
+                further = re.search(r"^([A-Z]+|`)", item)
+                
+                player = further.group(1)
+
+                if player == "`":
+                    message = "Everybody in the largest group, go straight."
+                else:
+                    message = f"{', '.join(list(player))}, go straight."
+            elif item.startswith(">"):
+                further = re.search(r">([A-Z]+|`)", item)
+                
+                player = further.group(1)
+
+                if player == "`":
+                    message = "Everybody in the largest group, go right."
+                else:
+                    message = f"{', '.join(list(player))}, go right."
+            elif item.startswith("$"):
+                further = re.search(r"\$([A-Z]+|`)(\d*)([\^<>]?)", item)
+                
+                player = further.group(1)
+                amount = further.group(2)
+                direction = further.group(3)
+
+                if amount == "":
+                    amount = 1
+                else:
+                    amount = int(amount)
+
+                if direction != "":
+                    direction = [" straight ahead", " to the left", " to the right"]["^<>".index(direction)]
+
+                if player == "`":
+                    message = f"Everybody in the largest group, there {'are' if amount != 1 else 'is'} {amount} {u_text.word_plural('piece', amount)} of scrap{direction}."
+                else:
+                    message = f"{', '.join(list(player))}, there {'are' if amount != 1 else 'is'} {amount} {u_text.word_plural('piece', amount)} of scrap{direction}."
+            elif item.startswith("~"):
+                further = re.search(r"~([A-Z]+|`)(\d{1,2})([\^<>]?)(~?)(\$?)", item)
+                
+                player = further.group(1)
+                enemy = further.group(2)
+                direction = further.group(3)
+                trapped = further.group(4)
+                moving = further.group(5)
+
+                trapped = trapped == "~"
+                moving = moving == "$"
+
+                if direction == "":
+                    direction = "nearby"
+                else:
+                    direction = ["straight ahead", "to the left", "to the right"]["^<>".index(direction)]
+
+                if player == "`":
+                    message = f"Everybody in the largest group, {direction} there's {MONSTERS[enemy]}{', it has trapped you' if trapped else ''}{', and ' if trapped and moving else ''}{',' if moving and not trapped else ''}{'is not moving' if moving else ''}."
+                else:
+                    message = f"{', '.join(list(player))}, {direction} there's {MONSTERS[enemy]}{', it has trapped you' if trapped else ''}{', and ' if trapped and moving else ''}{',' if moving and not trapped else ''}{'is not moving' if moving else ''}."
+            
+            fields.append(
+                (
+                    f"Code {index}:",
+                    f"The code says:\n{message}",
+                    False
+                )
+            )
+
+        embed = u_interface.gen_embed(
+            title = "Code parser",
+            description = "My attempt at parsing the provided code:",
+            fields = fields
+        )
+        await ctx.reply(embed=embed)
+        
+
+
+        
+            
+
+        
+    ######################################################################################################################################################
     ##### TRAITOR #######################################################################################################################################
     ######################################################################################################################################################
         

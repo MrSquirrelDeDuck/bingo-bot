@@ -50,10 +50,9 @@ import utility.converters as u_converters
 import utility.interface as u_interface
 import utility.text as u_text
 import utility.bread as u_bread
-import utility.bingo as u_bingo
 import utility.files as u_files
 import utility.images as u_images
-import utility.stonks as u_stonks
+import utility.solvers as u_solvers
 
 database = None # type: u_files.DatabaseInterface
 
@@ -2128,6 +2127,7 @@ class Other_cog(
     
     @commands.command(
         name = "evaluate",
+        aliases = ["eval", "evaluation"],
         brief = "Evaluates a math equation.",
         description = "Evaluates a math equation using Python notation.\n\nAllowed notation:\n- `+`: Addition.\n- `-`: Subtraction.\n- `*`: Multiplication.\n- `/`: Division.\n- `//`: Floor division, so division, and then round down.\n- `**`: Exponentiation.\n- `&`: Bitwise AND.\n- `|`: Bitwise OR.\n- `^`: Bitwise XOR.\n- `<<`: Bitwise shift to the left.\n- `>>`: Bitwise shift to the right.\nNote that for bitwise operations both inputs will be rounded down to the nearest integer.\n\nExample:\n`%evaluate 2 - 7 / (4 << 9) ** (10 // 9) - 10 - (8 ** 3 ^ 5) + (7 + 10) / 2 // 5 ** 5`"
     )
@@ -2140,15 +2140,24 @@ class Other_cog(
             await ctx.reply("Please provide an equation.\nYou can use `%help evaluate` for more information.")
             return
         
-        if not u_text.is_math_equation(equation):
-            await ctx.reply("Please provide an equation.\nYou can use `%help evaluate` for more information.")
+        try:
+            if not u_solvers.is_math_equation(equation):
+                await ctx.reply("Please provide an equation.\nYou can use `%help evaluate` for more information.")
+                return
+        except u_custom.BingoError as e:
+            embed = u_interface.gen_embed(
+                title = "Equation parsing failed.",
+                description = str(e)
+            )
+            await ctx.reply(embed=embed)
             return
 
+        # Run the actual solver.
         try:
-            result = u_text.evaulate_problem(equation=equation)
+            result = u_solvers.evaluate_problem(equation=equation)
             embed = u_interface.gen_embed(
                 title = "Evaluation",
-                description = f"The result from the equation `{equation}`:\n## {u_text.smart_number(result)}"
+                description = f"The result from the equation `{equation}`:\n## {u_text.format_decimal(result)}"
             )
         except OverflowError:
             embed = u_interface.gen_embed(
@@ -2160,7 +2169,7 @@ class Other_cog(
                 title = "Evaluation",
                 description = "The result involves dividing by zero."
             )
-        except (RuntimeError, ValueError) as e:
+        except u_custom.BingoError as e:
             embed = u_interface.gen_embed(
                 title = "Evaluation",
                 description = f"The solver ran into an error:\n{e}"
