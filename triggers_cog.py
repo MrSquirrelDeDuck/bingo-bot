@@ -77,7 +77,7 @@ class Triggers_cog(
         name="Triggers",
         description="Hey there! owo\n\nyou just lost the game >:3"
     ):
-    bot = None
+    bot: commands.Bot | u_custom.CustomBot = None
 
     bingo_cache = {}
     parsed_bingo_cache = {}
@@ -747,14 +747,45 @@ class Triggers_cog(
 
             if channel_data["count"] >= 3:
                 # If the hugging emoji was in the chain, or in the message that broke the chain, react with 🫂 to give the person a hug.
-                if any(search in message.content or search in channel_data["message"] for search in [":people_hugging:", "🫂"]):
-                    # Hug <3
-                    await message.add_reaction("🫂")
-                elif message.channel.id == 958542943625556038:
-                    # Capybara <3
-                    await message.add_reaction("<:capybara:971174918840549418>")
-                else:
-                    await message.add_reaction("<a:you_broke_the_chain:1064349721361133608>")
+                try:
+                    if any(search in message.content or search in channel_data["message"] for search in [":people_hugging:", "🫂"]):
+                        # Hug <3
+                        emoji = "🫂"
+                        await message.add_reaction(emoji)
+                    elif message.channel.id == 958542943625556038:
+                        # Capybara <3
+                        emoji = "<:capybara:971174918840549418>"
+                        await message.add_reaction(emoji)
+                    else:
+                        emoji = "<a:you_broke_the_chain:1064349721361133608>"
+                        await message.add_reaction(emoji)
+                except:
+                    emoji = "❌"
+                    await message.add_reaction(emoji)
+
+
+                def proxy_check(m: discord.Message):
+                    return m == message
+                
+                try:
+                    # Attempt to find the deleted proxied message.
+                    await self.bot.wait_for(
+                        "message_delete",
+                        check = proxy_check,
+                        timeout = 2
+                    )
+
+                    async for history in message.channel.history(limit=10, after=message):
+                        if history.content != message.content:
+                            continue
+
+                        if not history.author.bot:
+                            continue
+
+                        await history.add_reaction(emoji)
+                except asyncio.TimeoutError:
+                    # No proxied message was found, so it was probably not proxied by PluralKit.
+                    pass
             return
         
         if channel_data["sender"] == message.author.id:
@@ -878,18 +909,21 @@ class Triggers_cog(
         if message.author.bot:
             return
         
-        if u_solvers.is_math_equation_bool(message.content):
+        if u_converters.is_digit(message.content):
+            sent_number = u_converters.parse_int(message.content)
+        else:
             try:
                 sent_number = round(u_solvers.evaluate_problem(message.content), 5)
             except u_custom.BingoError:
                 return
-        else:
-            sent_number = u_converters.parse_int(message.content)
 
         counting_data = database.get_counting_data(message.channel.id)
 
         if sent_number <= counting_data["count"]:
             return
+
+        def proxy_check(m: discord.Message):
+            return m == message
 
         if sent_number > counting_data["count"] + 1:
             if counting_data["count"] == 0: # If 1 hasn't been sent since the last break.
@@ -911,11 +945,34 @@ class Triggers_cog(
             )
             try:
                 try:
-                    await message.add_reaction("<:blunder:958752015188656138>") # <a:you_cant_count:1134902783095603300>
+                    emoji = "<:blunder:958752015188656138>"
+                    await message.add_reaction(emoji) # <a:you_cant_count:1134902783095603300>
                 except:
-                    await message.add_reaction("💀")
+                    emoji = "💀"
+                    await message.add_reaction(emoji)
                 finally:
                     await u_interface.smart_reply(message, embed=embed)
+
+                    try:
+                        # Attempt to find the deleted proxied message.
+                        await self.bot.wait_for(
+                            "message_delete",
+                            check = proxy_check,
+                            timeout = 2
+                        )
+
+                        async for history in message.channel.history(limit=10, after=message):
+                            if history.content != message.content:
+                                continue
+
+                            if not history.author.bot:
+                                continue
+
+                            await history.add_reaction(emoji)
+                    except asyncio.TimeoutError:
+                        # No proxied message was found, so it was probably not proxied by PluralKit.
+                        pass
+
             except discord.errors.Forbidden:
                 database.set_counting_data(channel_id = message.channel.id, count = counting_data["count"], sender = counting_data["sender"])
             
@@ -935,6 +992,27 @@ class Triggers_cog(
         )
         try:
             await message.add_reaction("<a:you_can_count:1133795506099867738>")
+
+            try:
+                # Attempt to find the deleted proxied message.
+                await self.bot.wait_for(
+                    "message_delete",
+                    check = proxy_check,
+                    timeout = 2
+                )
+
+                async for history in message.channel.history(limit=10, after=message):
+                    if history.content != message.content:
+                        continue
+
+                    if not history.author.bot:
+                        continue
+
+                    await history.add_reaction("<a:you_can_count:1133795506099867738>")
+
+            except asyncio.TimeoutError:
+                # No proxied message was found, so it was probably not proxied by PluralKit.
+                pass
         except discord.errors.Forbidden:
             database.set_counting_data(channel_id = message.channel.id, count = counting_data["count"], sender = counting_data["sender"])
                 

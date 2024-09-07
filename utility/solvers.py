@@ -422,9 +422,7 @@ def evaluate_problem(
                     
                     c = c.replace(search.group(0), str(num))
                     
-                    print("0")
                     search = pattern.search(c)
-                    print("1")
                     if time.time() > timeout:
                         raise u_custom.BingoError(f"Timeout of {timeout_time} reached.")
             

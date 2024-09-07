@@ -298,10 +298,14 @@ def format_decimal(value: decimal.Decimal) -> str:
     value = value.normalize()
     sign, digits, exponent = value.as_tuple()
 
-    if exponent < 0:
-        precision = -exponent
-    else:
-        precision = 0
+    try:
+        if exponent < 0:
+            precision = -exponent
+        else:
+            precision = 0
+    except TypeError:
+        # The only place this seems to occur is if the result is some form of infinity.
+        precision = len(exponent)
 
     formatted_value = f"{value:,.{precision}f}"
     return formatted_value

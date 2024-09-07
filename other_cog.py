@@ -2155,10 +2155,18 @@ class Other_cog(
         # Run the actual solver.
         try:
             result = u_solvers.evaluate_problem(equation=equation)
-            embed = u_interface.gen_embed(
-                title = "Evaluation",
-                description = f"The result from the equation `{equation}`:\n## {u_text.format_decimal(result)}"
-            )
+            description = f"The result from the equation `{equation}`:\n## {u_text.format_decimal(result)}"
+
+            if len(description) >= 4000:
+                embed = u_interface.gen_embed(
+                    title = "Evaluation",
+                    description = "The result is too large to send here."
+                )
+            else:
+                embed = u_interface.gen_embed(
+                    title = "Evaluation",
+                    description = description
+                )
         except OverflowError:
             embed = u_interface.gen_embed(
                 title = "Evaluation",
