@@ -938,7 +938,7 @@ class Games_cog(
             await ctx.reply("Please provide a code to parse.")
             return
         
-        initial_parser = re.compile(r"^(\|?((return|tc)|(~~([A-Z]+|`))|(\$\$([A-Z]+|`))|(care([A-Z]+|`)?\d{1,2})|(D([A-Z]+|`)\d{1,2})|(owo\d{1,2})|([X<>\^]([A-Z]+|`))|(\$([A-Z]+|`)\d*[\^<>]?)|(~([A-Z]+|`)+\d{1,2}[\^<>]?~?\$?)))+$")
+        initial_parser = re.compile(r"^(\|?((r|t)|(~~([A-Z]+|`))|(\$\$([A-Z]+|`))|(c([A-Z]+|`)\d{1,2})|(D([A-Z]+|`)\d{1,2})|(o\d{1,2})|([X<>\^]([A-Z]+|`))|(\$([A-Z]+|`)\d*[\^<>]?)|(~([A-Z]+|`)\d{1,2}[\^<>]?~?\$?)))+$")
 
         found = initial_parser.search(code)
 
@@ -981,9 +981,9 @@ class Games_cog(
         for index, item in enumerate(split, start=1):
             message = "i have no fucking idea"
 
-            if item.startswith("return"):
+            if item.startswith("r"):
                 message = "Return to the ship right now."
-            elif item.startswith("tc"):
+            elif item.startswith("t"):
                 message = "Would you like to be teleported? If so, do the teleport signal."
             elif item.startswith("$$"):
                 player = item[2]
@@ -991,7 +991,7 @@ class Games_cog(
             elif item.startswith("~~"):
                 player = item[2]
                 message = f"Player {player} is heading back out from the ship to collect scrap."
-            elif item.startswith("care"):
+            elif item.startswith("c"):
                 further = re.search(r"care([A-Z]+|`)(\d{1,2})", item)
                 
                 player = further.group(1)
@@ -1011,7 +1011,7 @@ class Games_cog(
                     message = f"Everybody in the largest group died to {MONSTERS[enemy]}."
                 else:
                     message = f"{', '.join(list(player))} died to {MONSTERS[enemy]}."
-            elif item.startswith("owo"):
+            elif item.startswith("o"):
                 further = re.search(r"owo(\d{1,2})", item)
                 
                 enemy = further.group(1)
