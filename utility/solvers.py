@@ -240,7 +240,7 @@ def clamp_inputs(f, clamp):
 
 def mpwrapper(f):
     def wrapped(*args):
-        mpmath.mp.dps = 32
+        mpmath.mp.dps = SOLVER_PRECISION + 4
         return decimal.Decimal(str(f(*args)))
 
     return wrapped
@@ -311,6 +311,11 @@ def nPr(n, k):
     f = OTHER_OPERATIONS["factorial"]
     return f(n) / f(n - k)
 
+def square_root_wrapper(n):
+    if n < 0:
+        raise u_custom.BingoError("I don't have support for complex numbers, so please avoid the square root of negative numbers.")
+    return mpwrapper(mpmath.sqrt)(n)
+
 OTHER_OPERATIONS = {
     "sin": mpwrapper(mpmath.sin),
     "cos": mpwrapper(mpmath.cos),
@@ -321,7 +326,7 @@ OTHER_OPERATIONS = {
     "log": mpwrapper(mpmath.log),
     "ln": lambda n: mpwrapper(mpmath.log)(n), # math.log without a base argument is natural log
     "factorial": mpwrapper(mpmath.factorial),
-    "sqrt": mpwrapper(mpmath.sqrt),
+    "sqrt": square_root_wrapper,
     "exp": mpwrapper(mpmath.exp),
     "nCr": nCr,
     "nPr": nPr,
@@ -512,6 +517,7 @@ def is_math_equation(input_string: str) -> bool:
     DELIMITER = 4
     OPEN = 5
     CLOSE = 6
+    NEGATIVE = 7
 
     log = [0]
     length = len(input_string)
@@ -657,7 +663,13 @@ def is_math_equation(input_string: str) -> bool:
         if char in OPERATORS:
             parse_text(index)
             
-            if past[-1] in OPERATORS:
+            if past[-1] in OPERATORS: # Can't use log[-1] here due to spaces.
+                if char == "-":
+                    if not (state & IN_NUMBER):
+                        state += IN_NUMBER
+                    log.append(NEGATIVE)
+                    continue
+
                 if char not in DUPLICATES:
                     raise u_custom.BingoError(f"Unexpected operator `{char}` at character {index + 1} {surrounding(index)}.")
                 elif char != past[-1]:
@@ -671,6 +683,9 @@ def is_math_equation(input_string: str) -> bool:
 
                     log.append(OPERATOR)
                     continue
+                elif char == "-" and (log[-1] == OPEN or log[-1] == 0 or log[-1] == OPERATOR):
+                    log.append(NEGATIVE)
+                    continue
                 else:
                     raise u_custom.BingoError(f"Unexpected operator `{char}` at character {index + 1} {surrounding(index)}.")
         
@@ -679,7 +694,7 @@ def is_math_equation(input_string: str) -> bool:
             continue
         
         checkpoint = index
-        state += FUNCTION_NAME\
+        state += FUNCTION_NAME
             
     if parenthesis_level > 0:
         raise u_custom.BingoError("Unmatched opening parenthesis.")
