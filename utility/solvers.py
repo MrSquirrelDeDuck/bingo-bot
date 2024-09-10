@@ -245,7 +245,7 @@ def mpwrapper(f):
 
     return wrapped
 
-NUMBER_REGEX = r"((-?[\d,\.]+(e[\+\-]?\d+)?)|pi|e|tau|phi)"
+NUMBER_REGEX = r"((-?[\d,\.]+(e[\+\-]?\d+)?)|pi|e|tau|phi|π|τ|φ)"
 FUNCTION_LIST = ["sin", "tan", "cos", "asin", "atan", "acos", "ln", "log", "factorial", "sqrt", "exp", "nCr", "nPr"]
 FUNCTION_REGEX = rf"({'|'.join(FUNCTION_LIST)})"
 
@@ -297,9 +297,12 @@ OPERATIONS = {
 mpmath.mp.dps = SOLVER_PRECISION + 4
 
 OTHER_CONSTANTS = {
-    "pi": decimal.Decimal(str(mpmath.pi)),
+    "π": decimal.Decimal(str(mpmath.mp.pi)),
+    "pi": decimal.Decimal(str(mpmath.mp.pi)),
     "tau": decimal.Decimal(str(mpmath.mp.pi * 2)), # i'm sorry savings, mpmath doesnt have tau
+    "τ": decimal.Decimal(str(mpmath.mp.pi * 2)),
     "e": decimal.Decimal(str(mpmath.mp.e)),
+    "φ": decimal.Decimal(str(mpmath.mp.phi)),
     "phi": decimal.Decimal(str(mpmath.mp.phi)),
 }
 
@@ -698,6 +701,8 @@ def is_math_equation(input_string: str) -> bool:
             
     if parenthesis_level > 0:
         raise u_custom.BingoError("Unmatched opening parenthesis.")
+    
+    parse_text(length)
 
     return True
 
