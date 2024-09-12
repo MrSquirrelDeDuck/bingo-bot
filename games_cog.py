@@ -2167,7 +2167,8 @@ class Games_cog(
                         title = "Skyblock Farming Contests",
                         description = f"The next time {search} is in a farming contest is right now!",
                         timestamp = datetime.datetime.fromtimestamp(time.time()),
-                        fields = [("Medals", await self.get_medal_requirements(ctx, search), False)]
+                        fields = [("Medals", await self.get_medal_requirements(ctx, search), False)],
+                        footer_text = "Data sourced from elitebot.dev."
                     )
                     await ctx.reply(embed=embed)
                     return
@@ -2185,14 +2186,16 @@ class Games_cog(
                 embed = u_interface.gen_embed(
                     title = "Skyblock Farming Contests",
                     description = f"Contest search for `{crop_name}` yielded no results.\nTry another crop.\nNote that multi-word crops require a space to be provided.",
-                    timestamp = datetime.datetime.fromtimestamp(time.time())
+                    timestamp = datetime.datetime.fromtimestamp(time.time()),
+                    footer_text = "Data sourced from elitebot.dev."
                 )
             else:
                 embed = u_interface.gen_embed(
                     title = "Skyblock Farming Contests",
                     description = f"The next time {search} is in a farming contest is <t:{next_timestamp}:R>.",
                     timestamp = datetime.datetime.fromtimestamp(time.time()),
-                    fields = [("Medals", await self.get_medal_requirements(ctx, search), False)]
+                    fields = [("Medals", await self.get_medal_requirements(ctx, search), False)],
+                    footer_text = "Data sourced from elitebot.dev."
                 )
 
             await ctx.reply(embed=embed)
@@ -2235,6 +2238,7 @@ class Games_cog(
                     True
                 )
             ],
+            footer_text = "Data sourced from elitebot.dev.",
             timestamp = datetime.datetime.fromtimestamp(time.time())
         )
 
