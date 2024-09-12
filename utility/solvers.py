@@ -246,7 +246,7 @@ def mpwrapper(f):
     return wrapped
 
 NUMBER_REGEX = r"((-?[\d,\.]+(e[\+\-]?\d+)?)|pi|e|tau|phi|π|τ|φ)"
-FUNCTION_LIST = ["sin", "tan", "cos", "asin", "atan", "acos", "ln", "log", "factorial", "sqrt", "exp", "nCr", "nPr"]
+FUNCTION_LIST = ["sin", "tan", "cos", "asin", "atan", "acos", "ln", "log", "factorial", "sqrt", "exp", "nCr", "nPr", "floor", "ceiling", "ceil"]
 FUNCTION_REGEX = rf"({'|'.join(FUNCTION_LIST)})"
 
 FUNCTION_LIST_SORTED = list(sorted(FUNCTION_LIST, key=lambda l: len(l), reverse=True))
@@ -333,6 +333,9 @@ OTHER_OPERATIONS = {
     "exp": mpwrapper(mpmath.exp),
     "nCr": nCr,
     "nPr": nPr,
+    "floor": mpwrapper(mpmath.floor),
+    "ceiling": mpwrapper(mpmath.ceil),
+    "ceil": mpwrapper(mpmath.ceil),
 }
 
 def evaluate_problem(
@@ -415,10 +418,17 @@ def evaluate_problem(
         while not final_check(c):
             found = False
             for pattern in ORDER_OF_OPERATIONS:
-                search = pattern.search(c)
-                while search is not None:
+                search = list(pattern.finditer(c))
+                while search: # If search has items in it.
+                    item = search[0]
+
+                    if item.group(0).startswith("e"):
+                        if c[item.start(0) - 1].isdigit():
+                            search.pop(0)
+                            continue
+
                     found = True
-                    num = evaluate(search.group(0))
+                    num = evaluate(item.group(0))
 
                     if num.is_nan():
                         raise u_custom.BingoError(f"Encountered NaN in case `{c}`. >:(")
@@ -428,9 +438,9 @@ def evaluate_problem(
                     if num > 9e+4096:
                         raise OverflowError
                     
-                    c = c.replace(search.group(0), str(num))
+                    c = c.replace(item.group(0), str(num))
                     
-                    search = pattern.search(c)
+                    search = list(pattern.finditer(c))
                     if time.time() > timeout:
                         raise u_custom.BingoError(f"Timeout of {timeout_time} reached.")
             
