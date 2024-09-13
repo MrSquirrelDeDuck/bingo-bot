@@ -11,6 +11,7 @@ import random
 import re
 import aiohttp
 import datetime
+import time
 
 import sys
 
@@ -715,9 +716,9 @@ class Admin_cog(
             self: typing.Self,
             ctx: commands.Context | u_custom.CustomContext
         ):
-        await ctx.reply("Resimulating stonk algorithms, this will take some time.")
+        edit = await ctx.reply("Resimulating stonk algorithms, this will take some time.")
 
-        u_algorithms.resimulate_all(database)
+        await u_algorithms.resimulate_all(database, message_edit=edit)
 
         await ctx.reply("Done.")
 
@@ -768,9 +769,13 @@ class Admin_cog(
             self: typing.Self,
             ctx: commands.Context | u_custom.CustomContext
         ):
+        start = time.time()
         u_images.stonk_report(database)
+        end = time.time()
+
+        delta = end - start
         
-        await ctx.reply(file=discord.File(f"images/generated/stonk_report.png"))
+        await ctx.reply(f"Time to generate: {delta:.5f} seconds.", file=discord.File(f"images/generated/stonk_report.png"))
 
         
             

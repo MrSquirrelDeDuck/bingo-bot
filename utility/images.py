@@ -354,12 +354,8 @@ def stonk_report(database: u_files.DatabaseInterface) -> None:
 
     current_tick = u_stonks.convert_tick(stonk_history[-1])
     previous_tick = u_stonks.convert_tick(stonk_history[-2])
-    one_day_ago_tick = u_stonks.convert_tick(stonk_history[-4])
-    three_days_ago_tick = u_stonks.convert_tick(stonk_history[-12])
 
     previous_tick = u_stonks.filter_splits(previous_tick, current_tick)["new"]
-    one_day_ago_tick = u_stonks.filter_splits(one_day_ago_tick, current_tick)["new"]
-    three_days_ago_tick = u_stonks.filter_splits(three_days_ago_tick, current_tick)["new"]
 
     # Stonk algorithms.
     importlib.reload(u_algorithms)
@@ -386,8 +382,6 @@ def stonk_report(database: u_files.DatabaseInterface) -> None:
         mcolors.LinearSegmentedColormap.from_list('gradient', [(1, 0, 0, 1.0), backgrounds[0], (0, 1, 0, 1.0)], N=100), # Dark background.
         mcolors.LinearSegmentedColormap.from_list('gradient', [(1, 0, 0, 1.0), backgrounds[1], (0, 1, 0, 1.0)], N=100) # Light background.
     ]
-
-    stonk_data = {stonk: {} for stonk in u_values.stonks}
 
     img = PIL_Image.open(f"images{SLASH}bases{SLASH}stonk_report_base.png").copy().convert("RGBA")
     font = PIL_ImageFont.truetype(f"images{SLASH}bases{SLASH}verdana.ttf", size=57)
@@ -419,13 +413,12 @@ def stonk_report(database: u_files.DatabaseInterface) -> None:
         
         out = []
         for tick_id in range(START_TICK + offset, len(stonk_history)):
-            start = u_stonks.convert_tick(stonk_history[tick_id - offset])
-            end = u_stonks.convert_tick(stonk_history[tick_id])
-
-            start = u_stonks.filter_splits(start, end)["new"].get(stonk, stonk.base_value)
-            end = end.get(stonk, stonk.base_value)
+            data = [
+                u_stonks.convert_tick(tick)
+                for tick in stonk_history[tick_id - offset:tick_id + 1]
+            ]
             
-            out.append(key(start, end))
+            out.append(key(data))
 
         return out
     
@@ -472,24 +465,28 @@ def stonk_report(database: u_files.DatabaseInterface) -> None:
         
         imgDraw.text((734 + (435 * stonk_id) - (33 * len(str(text)) / 2), 320 + (101 * vertical_position)), str(text), font=font, fill=(0, 0, 0))    
 
-    for stonk_id, stonk in enumerate(stonk_data):
+    for stonk_id, stonk in enumerate(u_values.stonks):
+        def calc(x: list[dict]):
+            x[-2] = u_stonks.filter_splits(x[-2], x[-1])["new"]
+            return x[-1].get(stonk) / x[-2].get(stonk)
+
         change_percent_list = get_data_list(
-            key = lambda x, y: y / x,
+            key = calc,
             stonk = stonk,
             offset = 1
         )
 
-        day_percent_list = get_data_list(
-            key = lambda x, y: (y / x) ** (1 / 4),
-            stonk = stonk,
-            offset = 4
-        )
+        day_percent_list = [
+            sum(change_percent_list[tick_id - 3:tick_id + 1]) / 4
+            for tick_id in range(len(change_percent_list))
+            if tick_id >= 4
+        ]
 
-        three_days_percent_list = get_data_list(
-            key = lambda x, y: (y / x) ** (1 / 12),
-            stonk = stonk,
-            offset = 12
-        )
+        three_days_percent_list = [
+            sum(change_percent_list[tick_id - 11:tick_id + 1]) / 12
+            for tick_id in range(len(change_percent_list))
+            if tick_id >= 12
+        ]
 
         change = current_tick.get(stonk, stonk.base_value) - previous_tick.get(stonk, stonk.base_value)
         change_percent = change_percent_list[-1]
