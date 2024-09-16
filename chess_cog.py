@@ -699,7 +699,8 @@ Parameters:
 - To mark the end, '-end <end point>'. If none is provided it will use the latest ratings.
 - '-log' can be used to set the Y axis to a log scale.
 - `-min <minimum>` can be used to set a minimum elo, so bots with a lower elo won't be displayed. This is the bot's *current* elo, so the bot's elo may have been outside this range at some point.
-- Likewise, `-max <maximum>` is the opposite, and will set a maximum elo for displayed bots."""
+- Likewise, `-max <maximum>` is the opposite, and will set a maximum elo for displayed bots.
+- `-around <center> <size>` will display only bots with an elo within `size` from `center`. For example, `-around 800 20` will display only bots within 20 elo points of 800, this would be the same as `-min 780 -max 820`. Using `-min` or `-max` after this in the command will overwrite it."""
     )
     async def chess_graph(
             self: typing.Self,
@@ -771,6 +772,19 @@ Parameters:
                     
                     if u_converters.is_digit(parameters[param_id + 1]):
                         elo_max = u_converters.parse_int(parameters[param_id + 1])
+
+                    continue
+
+                if param == "-around":
+                    if param_id >= len(parameters) - 2:
+                        continue 
+                    
+                    if u_converters.is_digit(parameters[param_id + 1]) and u_converters.is_digit(parameters[param_id + 2]):
+                        center = u_converters.parse_int(parameters[param_id + 1])
+                        size = u_converters.parse_int(parameters[param_id + 2])
+
+                        elo_max = center + size
+                        elo_min = center - size
 
                     continue
                 
