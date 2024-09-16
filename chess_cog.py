@@ -691,7 +691,15 @@ class Chess_cog(
     @chess.command(
         name = "graph",
         brief = "Graph the bot elos.",
-        description = "Graph the bot elos.\n\nParameters:\n- The bots you want to use, replace any spaces with underscores. You can also use 'all' to use all the bots. Putting an exclamation mark before a bot name will remove it. If none are provided it will use them all.\n- To mark the start of the graph, use '-start <start point>'. If none is provided it will use 0.\n- To mark the end, '-end <end point>'. If none is provided it will use the latest ratings.\n- '-log' can be used to set the Y axis to a log scale."
+        description = """Graph the bot elos.
+        
+Parameters:
+- The bots you want to use, replace any spaces with underscores. You can also use 'all' to use all the bots. Putting an exclamation mark before a bot name will remove it. If none are provided it will use them all.
+- To mark the start of the graph, use '-start <start point>'. If none is provided it will use 0.
+- To mark the end, '-end <end point>'. If none is provided it will use the latest ratings.
+- '-log' can be used to set the Y axis to a log scale.
+- `-min <minimum>` can be used to set a minimum elo, so bots with a lower elo won't be displayed. This is the bot's *current* elo, so the bot's elo may have been outside this range at some point.
+- Likewise, `-max <maximum>` is the opposite, and will set a maximum elo for displayed bots."""
     )
     async def chess_graph(
             self: typing.Self,
@@ -710,6 +718,9 @@ class Chess_cog(
         start_match = 0
         end_match = current_match
         bot_list = []
+
+        elo_min = float("-inf")
+        elo_max = float("inf")
         
         if parameters is None:
             bot_list = all_bots
@@ -729,7 +740,7 @@ class Chess_cog(
 
                 if param == "-start":
                     if param_id == len(parameters) - 1:
-                        continue # "start" is not going to be the name of a stonk, and does not start with an exclamation mark.
+                        continue
                     
                     if u_converters.is_digit(parameters[param_id + 1]):
                         start_match = u_converters.parse_int(parameters[param_id + 1])
@@ -738,10 +749,28 @@ class Chess_cog(
 
                 if param == "-end":
                     if param_id == len(parameters) - 1:
-                        continue # "end" is not going to be the name of a stonk, and does not start with an exclamation mark.
+                        continue
                     
                     if u_converters.is_digit(parameters[param_id + 1]):
                         end_match = u_converters.parse_int(parameters[param_id + 1])
+
+                    continue
+
+                if param == "-min":
+                    if param_id == len(parameters) - 1:
+                        continue 
+                    
+                    if u_converters.is_digit(parameters[param_id + 1]):
+                        elo_min = u_converters.parse_int(parameters[param_id + 1])
+
+                    continue
+
+                if param == "-max":
+                    if param_id == len(parameters) - 1:
+                        continue 
+                    
+                    if u_converters.is_digit(parameters[param_id + 1]):
+                        elo_max = u_converters.parse_int(parameters[param_id + 1])
 
                     continue
                 
@@ -775,6 +804,12 @@ class Chess_cog(
         lines = []
 
         for bot in bot_list:
+            bot_class = u_chess.get_bot(bot)
+
+            # If the elo is outside the given range skip this bot.
+            if not (elo_min <= bot_class.get_elo(database) <= elo_max):
+                continue
+
             values = []
 
             for match_number, match in enumerate(history[start_match:end_match + 1]):
@@ -786,13 +821,17 @@ class Chess_cog(
             if len(values) == 0:
                 continue
 
-            bot_class = u_chess.get_bot(bot)
 
             lines.append({
                 "label": bot_class.formatted_name(),
                 "color": bot_class.get_color_rgb(),
                 "values": values
             })
+        
+        # If lines is empty this will trigger.
+        if not lines:
+            await ctx.reply("The given constraints result in no bots on the graph.")
+            return
         
         file_name = u_images.generate_graph(
             lines = lines,
