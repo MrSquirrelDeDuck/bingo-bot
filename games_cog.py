@@ -2583,7 +2583,7 @@ class Games_cog(
                 (data["name"], 
                  "Id: {}\nRarity: {}\nSoulbound state: {}\nCan be put in the museum: {}".format(
                     item_id.replace("_", "\_"),
-                    data.get("type", 'Unknown').replace("_", " ").title(),
+                    data.get("tier", 'Unknown').replace("_", " ").title(),
                     data.get("soulbound", "None").replace("_", " ").title(),
                     "<:check:1189696905077325894>" if data.get("museum", False) else "<:x_:1189696918645907598>"
                  ),
