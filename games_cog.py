@@ -15,6 +15,10 @@ import aiohttp
 import datetime
 import collections
 
+# pip install fuzzywuzzy
+# pip install python-Levenshtein
+from fuzzywuzzy import fuzz
+
 import sys
 
 import utility.files as u_files
@@ -2533,6 +2537,59 @@ class Games_cog(
             ),
             fields = election_fields,
             timestamp = datetime.datetime.fromtimestamp(time.time())
+        )
+
+        await ctx.reply(embed=embed)
+
+        
+            
+
+        
+    ######################################################################################################################################################
+    ##### SKYBLOCK SEARCH ################################################################################################################################
+    ######################################################################################################################################################
+    
+    @skyblock.command(
+        name = "search",
+        brief = "Searches for a Skyblock item.",
+        description = "Searches for a Skyblock item."
+    )
+    async def skyblock_search(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext,
+            *, search_term: typing.Optional[str] = commands.parameter(description = "The search text.")
+        ):
+        if search_term is None:
+            await ctx.reply("You must provide the text to search for.")
+            return
+        
+        def fuzzy_search(search, item_list):
+            result = []
+
+            for item in item_list.get("items", []):
+                name_similarity = fuzz.partial_ratio(search.lower(), item.get("name", "").lower())
+                id_similarity = fuzz.partial_ratio(search.lower(), item.get("id", "").lower())
+
+                result.append((item, item.get("id"), max(name_similarity, id_similarity)))
+
+            return sorted(result, key=lambda x: x[2], reverse=True)
+
+        returned = fuzzy_search(search_term, await self.get_skyblock_items())
+
+        embed = u_interface.gen_embed(
+            title = "Search results:",
+            description = f"Result from searching the text `{u_text.ping_filter(search_term)}`:",
+            fields = [
+                (data["name"], 
+                 "Id: {}\nRarity: {}\nSoulbound state: {}\nCan be put in the museum: {}".format(
+                    item_id.replace("_", "\_"),
+                    data.get("type", 'Unknown').replace("_", " ").title(),
+                    data.get("soulbound", "None").replace("_", " ").title(),
+                    "<:check:1189696905077325894>" if data.get("museum", False) else "<:x_:1189696918645907598>"
+                 ),
+                True)
+                for data, item_id, similarity in returned[:6]
+            ]
         )
 
         await ctx.reply(embed=embed)
