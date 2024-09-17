@@ -2179,7 +2179,7 @@ class OwObot_v3(ChessBot):
                     return False
                 board.pop()
         
-        if ranking <= -7.5 and board.outcome(claim_draw=True) and not board.is_checkmate():
+        if board.outcome(claim_draw=True) and not board.is_checkmate():
             board.pop()
             return False
         
