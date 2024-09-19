@@ -1350,9 +1350,14 @@ class Bread_cog(
             database = database
         )
 
+        if parsed["stats_type"] != "dump":
+            guide = "Just a note, it's better to use `$bread export` for this due to it having all the stats in a single message.\n"
+        else:
+            guide = ""
+
         embed = u_interface.gen_embed(
             title = "Stored data",
-            description = "Data stored!\n\nUse `%bread data inventory` to view the current stored data.\nUse `%bread data clear` to clear the stored data.\n\nTo get a list of all the commands that use the stored data feature, use `%help bread data`."
+            description = f"Data stored!\n{guide}\nUse `%bread data inventory` to view the current stored data.\nUse `%bread data clear` to clear the stored data.\n\nTo get a list of all the commands that use the stored data feature, use `%help bread data`."
         )
 
         await ctx.reply(embed=embed)

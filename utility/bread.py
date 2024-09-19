@@ -449,7 +449,7 @@ async def parse_stats(message: discord.Message) -> dict[str | typing.Type[u_valu
     - $bread hidden
     - $bread dough
     - $bread stonks
-    - $bread dump
+    - $bread export
     - $brick stats
 
     Args:
@@ -473,6 +473,7 @@ async def parse_stats(message: discord.Message) -> dict[str | typing.Type[u_valu
     - "divest_specific": `$bread divest [all|amount] [stonk]`.
     - "divest_all": `$bread divest all`.
     - "brick_stats": `$brick stats`.
+    - "dump": `$bread export`.
     """
 
     content = message.content
