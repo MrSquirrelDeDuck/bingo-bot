@@ -1551,6 +1551,9 @@ class Bread_cog(
             maximize = u_values.chessatron
         )
 
+        if stored_data.get("auto_chessatron", False) and len(command_list) > 1: # If the length is 0 no trons are possible, and 1 is trons are possible but don't need chess piece alchemy.
+            command_list.insert(0, "$bread auto_chessatron off")
+
         ################
         
         embed = u_interface.gen_embed(
