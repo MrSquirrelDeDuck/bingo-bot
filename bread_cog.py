@@ -1077,7 +1077,7 @@ class Bread_cog(
             command_provided = list(resolve_values.values())
         )
         
-        using_stored_data, omegas, shadowmegas, cc_level, ascension = resolved
+        using_stored_data, stored_data, omegas, shadowmegas, cc_level, ascension = resolved
 
         tron_value = u_bread.calculate_tron_value(
             ascension = ascension,
@@ -1184,8 +1184,8 @@ class Bread_cog(
     @bread.command(
         name = "gold_gem",
         aliases = ["gem_gold"],
-        brief = "Figures out how many gold gems you can make.",
-        description = "Figures out how many gold gems you can make.\nYou can reply to a stats message to get information from it. You can also provide the amount of each gem you have to override the stats parser.\nIf you do not reply to a stats message you msut provide the amount of each gem you have."
+        brief = "Figures out how many gold gems you can make from other gems.",
+        description = "Figures out how many gold gems you can make from other gems.\nYou can reply to a stats message to get information from it. You can also provide the amount of each gem you have to override the stats parser.\nIf you do not reply to a stats message you msut provide the amount of each gem you have."
     )
     async def bread_gold_gem(
             self: typing.Self,
@@ -1214,7 +1214,7 @@ class Bread_cog(
             command_provided = list(resolve_values.values())
         )
         
-        using_stored_data, red_gems, blue_gems, purple_gems, green_gems, gold_gems, ascension = resolved
+        using_stored_data, stored_data, red_gems, blue_gems, purple_gems, green_gems, gold_gems, ascension = resolved
         
         if ascension is None:
             ascension = 0
@@ -1239,7 +1239,16 @@ class Bread_cog(
         except:
             pass
 
-        command_list, post_alchemy, solver_result = u_solvers.solver_wrapper(items = gems, maximize = u_values.gem_gold)
+        try:
+            disabled_recipes = stored_data.disallowed_recipes
+        except AttributeError:
+            disabled_recipes = None
+
+        command_list, post_alchemy, solver_result = u_solvers.solver_wrapper(
+            items = gems,
+            maximize = u_values.gem_gold,
+            disabled_recipes = disabled_recipes
+        )
 
         ascension_multiplier = 1 + (0.1 * ascension)
         
@@ -1350,9 +1359,14 @@ class Bread_cog(
             database = database
         )
 
+        if parsed["stats_type"] != "dump":
+            guide = "Just a note, it's better to use `$bread export` for this due to it having all the stats in a single message.\n"
+        else:
+            guide = ""
+
         embed = u_interface.gen_embed(
             title = "Stored data",
-            description = "Data stored!\n\nUse `%bread data inventory` to view the current stored data.\nUse `%bread data clear` to clear the stored data.\n\nTo get a list of all the commands that use the stored data feature, use `%help bread data`."
+            description = f"Data stored!\n{guide}\nUse `%bread data inventory` to view the current stored data.\nUse `%bread data clear` to clear the stored data.\n\nTo get a list of all the commands that use the stored data feature, use `%help bread data`."
         )
 
         await ctx.reply(embed=embed)
@@ -1543,8 +1557,12 @@ class Bread_cog(
         
         command_list, post_alchemy, solver_result = u_solvers.solver_wrapper(
             items = items,
-            maximize = u_values.chessatron
+            maximize = u_values.chessatron,
+            disabled_recipes = stored_data.disallowed_recipes
         )
+
+        if stored_data.get("auto_chessatron", False) and len(command_list) > 1: # If the length is 0 no trons are possible, and 1 is trons are possible but don't need chess piece alchemy.
+            command_list.insert(0, "$bread auto_chessatron off")
 
         ################
         
@@ -1757,6 +1775,8 @@ class Bread_cog(
         if "-tron" not in modifier_list:
             disabled_recipes.append("chessatron_recipe_1")
             disabled_recipes.append("chessatron_recipe_2")
+        
+        disabled_recipes.extend(stored_data.disallowed_recipes)
 
         ################
         # Run the solver.
@@ -1837,6 +1857,10 @@ class Bread_cog(
                 continue
 
             disabled_recipes.append(f"{found.group(1)}_recipe_{found.group(2)}")
+        
+        disabled_recipes.extend(stored_data.disallowed_recipes)
+        print(stored_data.disallowed_recipes)
+        print(disabled_recipes)
 
         ################
         # Run the solver.

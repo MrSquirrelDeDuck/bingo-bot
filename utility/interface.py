@@ -339,7 +339,7 @@ async def resolve_conflict(
         ctx: commands.Context | u_custom.CustomContext,
         resolve_keys: list[str | typing.Type[u_values.Item]],
         command_provided: list[int | None]
-    ) -> tuple[bool, ...]:
+    ) -> tuple[bool, None | u_bread.BreadDataAccount, int]:
     """Resolves the conflict of user-provided parameters, the stats parser, or stored data.
 
     Args:
@@ -349,7 +349,7 @@ async def resolve_conflict(
         command_provided (list[int | None]): The user-provided parameters. It's fine if this is just a list of None.
 
     Returns:
-        tuple[bool, ...]: A tuple containing a boolean for whether stored data was used, following by the resolved data, in the order it is provided.
+        tuple[bool, None | u_bread.BreadDataAccount, int]: A tuple containing a boolean for whether stored data was used, following by the resolved data, in the order it is provided.
     """
     using_stored_data = False
 
@@ -400,7 +400,7 @@ async def resolve_conflict(
             else:
                 resolve[stat] = get_stored(database).get(stat, 0)
     
-    return (using_stored_data,) + tuple(resolve.values())
+    return (using_stored_data, stored_data) + tuple(resolve.values())
 
 def get_role_list(guild: discord.Guild) -> dict[str, list[int]]:
     """Generates a list of member ids, each with a list of the roles they have.
