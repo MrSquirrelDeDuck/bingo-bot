@@ -120,6 +120,7 @@ def solver_wrapper(
     Args:
         items (dict[u_values.Item, int]): A dict with the amount of each item is has to play around with.
         maximize (u_values.Item): The item to maximize.
+        disabled_recipes (list[str], optional): List of recipes to disable in the format of `<item>_recipe_<recipe id>` where recipe id is 1 indexed. `None` is functionally the same as an empty list. Defaults to None.
 
     Returns:
         tuple[list[str], dict[u_values.Item, int], dict[str, int]]: The command list, post-alchemy version of the items, and the dict version of the solver.
@@ -184,7 +185,7 @@ async def solver_embed(
         goal_item: u_values.Item,
         disabled_recipes: list[str]
     ) -> discord.Embed:
-    """Given an inventory item dictionary, goal item, and disabled recipies it will run the solver and generate the output embed."""
+    """Given an inventory item dictionary, goal item, and disabled recipes it will run the solver and generate the output embed."""
     # Run the solver.
     try:
         await ctx.message.add_reaction("✅")

@@ -248,7 +248,25 @@ class BreadDataAccount:
         for item in self.data.keys:
             if isinstance(item, u_values.Item):
                 yield item
+    
+    @property
+    def disallowed_recipes(self: typing.Self) -> list[str]:
+        """Generates a list of alchemy recipes in the format `<item>_recipe_<recipe id>` that this account does not have the requirements for.
         
+        Note that recipe ids are 1 indexed, so there will be no recipe 0."""
+        out = []
+
+        for item, recipes in u_values.alchemy_recipes.items():
+            for recipe_id, recipe in enumerate(recipes, start=1):
+                if "requirement" not in recipe:
+                    continue
+
+                for stat, amount in recipe.get("requirement", []):
+                    if self.get(stat) < amount:
+                        out.append(f"{item}_recipe_{recipe_id}")
+                        break
+        
+        return out
     
 
     ###############################################################
