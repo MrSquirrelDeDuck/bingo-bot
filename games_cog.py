@@ -1812,6 +1812,97 @@ class Games_cog(
 
         
     ######################################################################################################################################################
+    ##### HYPIXEL ########################################################################################################################################
+    ######################################################################################################################################################
+    
+    @commands.group(
+        name = "hypixel",
+        brief = "Header command for Hypixel related commands.",
+        description = "Header command for Hypixel related utility commands.",
+        invoke_without_command = True,
+        pass_context = True
+    )
+    @commands.check(u_checks.hide_from_help)
+    async def hypixel(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext
+        ):
+        if ctx.invoked_subcommand is not None:
+            return
+        
+        await ctx.send_help(self.hypixel)
+
+        
+            
+
+        
+    ######################################################################################################################################################
+    ##### HYPIXEL BEDWARS ################################################################################################################################
+    ######################################################################################################################################################
+    
+    @hypixel.command(
+        name = "bedwars",
+        brief = "See the Bedwars dream variant rotation.",
+        description = "See the Bedwars dream variant rotation"
+    )
+    async def hypixel_bedwars(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext
+        ):
+        START_TIMESTAMP = 1726804800 # Lucky block.
+        SECONDS_IN_WEEK = 604800 # 60 * 60 * 24 * 7
+
+        current_time = time.time()
+
+        modified = current_time - START_TIMESTAMP
+
+        current_index = (modified / SECONDS_IN_WEEK) % 7
+
+        names = [
+            "Lucky Block",
+            "Swappage",
+            "Rush",
+            "Ultimate",
+            "Castle 40v40",
+            "Voidless",
+            "Armed"
+        ]
+
+        rotated = collections.deque(names)
+        rotated.rotate(-int(current_index))
+
+        previous = current_time - current_time % SECONDS_IN_WEEK
+
+        timestamps = [
+            f"<t:{int(previous + i * SECONDS_IN_WEEK)}:R>"
+            for i in range(len(names))
+        ]
+
+        embed = u_interface.gen_embed(
+            title = "Bedwars dream rotation",
+            description = "\n".join(
+                [
+                    "{name} (Starts {timestamp})".format(
+                        name = name,
+                        timestamp = timestamps[index]
+                    )
+                    for index, name in enumerate(rotated)
+                ]
+            ),
+            timestamp = datetime.datetime.fromtimestamp(current_time)
+        )
+
+        await ctx.reply(embed=embed)
+
+        
+    
+
+
+        
+            
+
+        
+    ######################################################################################################################################################
     ##### SKYBLOCK #######################################################################################################################################
     ######################################################################################################################################################
     
