@@ -2455,8 +2455,6 @@ class Games_cog(
             start: typing.Optional[str] = commands.parameter(description = "The starting level."),
             end: typing.Optional[str] = commands.parameter(description = "The ending level.")
         ):
-        await ctx.reply("This command has been disabled, it is going to be inaccurate soon with the next mining update.\nTo be fair, it was already inaccurate but that's just because Duck is bad at math.")
-        return
         if perk_name is None:
             await ctx.reply("Please provide the perk name, start level, and end level.")
             return
