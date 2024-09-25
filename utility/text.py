@@ -262,9 +262,11 @@ def parse_wikitext(
 
     for link_page, _, _, link_text in link_found:
         if link_page.startswith("#"):
-            link_page = f"{page_title}#{link_text[1:]}"
+            link_page_use = f"{page_title}#{link_text[1:]}"
+        else:
+            link_page_use = link_page
 
-        link_formatted = "{}{}".format(wiki_link, link_page.replace(" ", "_"))
+        link_formatted = "{}{}".format(wiki_link, link_page_use.replace(" ", "_"))
 
         if len(link_text) == 0:
             text_show = link_page
