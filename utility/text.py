@@ -234,7 +234,21 @@ def parse_wikitext(
         parsed = manual_replacements(parsed)
 
     parsed = re.sub(r"{{PAGENAME}}", page_title, parsed)
-    parsed = re.sub("<math>.*?<\/math>", "", parsed)
+
+    ## Format math equations ##
+
+    for match in re.finditer("<math>(.*?)<\/math>", parsed):
+        match_text = match.group(1)
+        match_text = re.sub(r"\\left *?\(", "(", match_text)
+        match_text = re.sub(r"\\right *?\)", ")", match_text)
+        match_text = re.sub(r"\\cdot", "*", match_text)
+        match_text = re.sub(r"\\frac\{(.*?)\}\{(.*?)\}", r"(\1)/(\2)", match_text)
+        match_text = re.sub(r"\{(.*?)\}", r"(\1)", match_text)
+        match_text = re.sub(r"\\", "", match_text)
+        parsed = parsed.replace(match.group(0), f"`{match_text}`")
+
+    ###########################
+    
     parsed = re.sub("{{[\w\W]*?}}", "", parsed)
     parsed = re.sub("\[\[File:[\w\W]+?\]\]", "", parsed)
     parsed = re.sub("\[\[Category:[\w\W]+?\]\]", "", parsed)
