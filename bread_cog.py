@@ -1351,6 +1351,9 @@ class Bread_cog(
             user_id = ctx.author.id
         )
 
+        if parsed["stats_type"] == "dump":
+            existing.clear_stored_data(database = database)
+
         existing.update_from_dict(
             parsed["stats"]
         )

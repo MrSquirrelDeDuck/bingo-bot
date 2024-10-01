@@ -401,7 +401,7 @@ def get_ascension(
         int((cc + 2) / 2) * cc - 2 * (int(cc / 2) * (int(cc / 2) + 1) / 2), # CC
         int((es + 2) / 2) * es - 2 * (int(es / 2) * (int(es / 2) + 1) / 2), # ES
         int((fcotd + 2) / 2) * fcotd - 2 * (int(fcotd / 2) * (int(fcotd / 2) + 1) / 2), # FCotD
-        int((cn + 4) / 4) * cn - 4 * (int(cn / 4) * (int(cn / 4) + 1) / 2), # FR
+        int((fr + 4) / 4) * fr - 4 * (int(fr / 4) * (int(fr / 4) + 1) / 2), # FR
         int((cn + 2) / 2) * cn - 2 * (int(cn / 2) * (int(cn / 2) + 1) / 2), # CN
         tokens
     ]
