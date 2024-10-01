@@ -1337,13 +1337,13 @@ class Bread_cog(
         replied_to = u_interface.replying_mm_checks(ctx.message, require_reply=False, return_replied_to=True)
 
         if not replied_to:
-            await ctx.reply("You must reply to stats message.")
+            await ctx.reply("You must reply to a stats message.")
             return
         
         parsed = await u_bread.parse_stats(replied_to)
 
         if not parsed["parse_successful"]:
-            await ctx.reply("You must reply to stats message.")
+            await ctx.reply("You must reply to a stats message.")
             return
         
         existing = u_bread.get_stored_data(
@@ -1533,6 +1533,8 @@ class Bread_cog(
         modifier_list = modifiers.split(" ")
 
         ################
+
+        disabled_items = []
         
         items = {}
 
@@ -1543,9 +1545,17 @@ class Bread_cog(
 
         items[u_values.bread] = stored_data.get(u_values.bread, 0) # Bread has no attributes we can search for :(
         
-        if "-gems" in modifier_list:
-            for gem in u_values.all_shiny:
-                items[gem] = stored_data.get(gem, 0)
+        for modifier in modifier_list:
+            if modifier == "-gems":
+                for gem in u_values.all_shiny:
+                    items[gem] = stored_data.get(gem, 0)
+            
+            if modifier.startswith("!"):
+                item_name = modifier.replace("!", "", 1)
+                get_item = u_values.get_item(item_name)
+                if get_item:
+                    disabled_items.append(get_item)
+
         
         items[u_values.chessatron] = stored_data.get(u_values.chessatron, 0)
 
@@ -1558,7 +1568,8 @@ class Bread_cog(
         command_list, post_alchemy, solver_result = u_solvers.solver_wrapper(
             items = items,
             maximize = u_values.chessatron,
-            disabled_recipes = stored_data.disallowed_recipes
+            disabled_recipes = stored_data.disallowed_recipes,
+            disabled_items = disabled_items
         )
 
         if stored_data.get("auto_chessatron", False) and len(command_list) > 1: # If the length is 0 no trons are possible, and 1 is trons are possible but don't need chess piece alchemy.
@@ -1746,6 +1757,7 @@ class Bread_cog(
         # Setup the item list.
         
         items = {}
+        disabled_items = []
 
         attributes = [u_values.all_shiny]
 
@@ -1757,7 +1769,13 @@ class Bread_cog(
             
             if "-tron" not in modifier_list:
                 modifier_list.append("-tron")
-
+        
+        for modifier in modifier_list:
+            if modifier.startswith("!"):
+                item_name = modifier.replace("!", "", 1)
+                get_item = u_values.get_item(item_name)
+                if get_item:
+                    disabled_items.append(get_item)
 
         for attribute in attributes:
             for item in attribute:
@@ -1785,7 +1803,8 @@ class Bread_cog(
             ctx = ctx,
             inventory = items,
             goal_item = u_values.omega_chessatron,
-            disabled_recipes = disabled_recipes
+            disabled_recipes = disabled_recipes,
+            disabled_items = disabled_items
         )
 
         await ctx.reply(embed=embed)
@@ -1837,9 +1856,17 @@ class Bread_cog(
         # Setup the item list.
         
         items = {}
+        disabled_items = []
 
         for item in u_values.all_items:
             items[item] = stored_data.get(item, 0)
+        
+        for modifier in modifier_list:
+            if modifier.startswith("!"):
+                item_name = modifier.replace("!", "", 1)
+                get_item = u_values.get_item(item_name)
+                if get_item:
+                    disabled_items.append(get_item)
 
         ################
         # Determine disabled recipes.
@@ -1859,8 +1886,7 @@ class Bread_cog(
             disabled_recipes.append(f"{found.group(1)}_recipe_{found.group(2)}")
         
         disabled_recipes.extend(stored_data.disallowed_recipes)
-        print(stored_data.disallowed_recipes)
-        print(disabled_recipes)
+        print(disabled_items)
 
         ################
         # Run the solver.
@@ -1869,7 +1895,8 @@ class Bread_cog(
             ctx = ctx,
             inventory = items,
             goal_item = goal_item,
-            disabled_recipes = disabled_recipes
+            disabled_recipes = disabled_recipes,
+            disabled_items = disabled_items
         )
 
         await ctx.reply(embed=embed)

@@ -24,7 +24,8 @@ importlib.reload(u_values)
 def universal_solver(
         items: dict[u_values.Item, int],
         maximize: u_values.Item,
-        disabled_recipes: list[str] = None
+        disabled_recipes: list[str] = None,
+        disabled_items: list[u_values.Item] = None
     ) -> dict[str, int]:
     """Universal solver.
 
@@ -37,6 +38,8 @@ def universal_solver(
     """
     if disabled_recipes is None:
         disabled_recipes = []
+    if disabled_items is None:
+        disabled_items = []
 
     items[maximize] = 0
 
@@ -64,13 +67,22 @@ def universal_solver(
         if item.internal_name not in recipes:
             continue
 
+        if item in disabled_items:
+            s.add(item_modifiers[item] == 0)
+
         for recipe_id, recipe in enumerate(recipes[item.internal_name]):
             recipe_name = f"{item.internal_name}_recipe_{recipe_id + 1}"
             if recipe_name in disabled_recipes:
                 continue
 
+            if any(filter(lambda i: i[0] in disabled_items, recipe["cost"])):
+                continue
+
             for cost_item, cost_amount in recipe["cost"]:
                 if cost_item not in modifier_data:
+                    break
+
+                if cost_item in disabled_items:
                     break
                 
                 modifier_data[cost_item].append((recipe_name, cost_amount * -1))
@@ -113,7 +125,8 @@ def universal_solver(
 def solver_wrapper(
         items: dict[u_values.Item, int],
         maximize: u_values.Item,
-        disabled_recipes: list[str] = None
+        disabled_recipes: list[str] = None,
+        disabled_items: list[u_values.Item] = None,
     ) -> tuple[list[str], dict[u_values.Item, int], dict[str, int]]:
     """Wrapper for the universal_solver that automatically generates the command list.
 
@@ -127,11 +140,14 @@ def solver_wrapper(
     """
     if disabled_recipes is None:
         disabled_recipes = []
+    if disabled_items is None:
+        disabled_items = []
 
     solver_result = universal_solver(
         items = items.copy(),
         maximize = maximize,
-        disabled_recipes = disabled_recipes
+        disabled_recipes = disabled_recipes,
+        disabled_items = disabled_items
     )
 
     # Quick alchemy simulation to determine the command order.
@@ -183,9 +199,10 @@ async def solver_embed(
         ctx: commands.Context | u_custom.CustomContext,
         inventory: dict[u_values.Item, int],
         goal_item: u_values.Item,
-        disabled_recipes: list[str]
+        disabled_recipes: list[str],
+        disabled_items: list[u_values.Item],
     ) -> discord.Embed:
-    """Given an inventory item dictionary, goal item, and disabled recipes it will run the solver and generate the output embed."""
+    """Given an inventory item dictionary, goal item, disabled recipes, and disabled items it will run the solver and generate the output embed."""
     # Run the solver.
     try:
         await ctx.message.add_reaction("✅")
@@ -195,7 +212,8 @@ async def solver_embed(
     command_list, post_alchemy, solver_result = solver_wrapper(
         items = inventory,
         maximize = goal_item,
-        disabled_recipes = disabled_recipes
+        disabled_recipes = disabled_recipes,
+        disabled_items = disabled_items
     )
 
     ################
