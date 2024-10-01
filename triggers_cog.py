@@ -44,6 +44,13 @@ try:
 except:
     print(traceback.format_exc())
     UPDATE_GIT = False
+try:
+    OUTPUT_ERRORS = u_converters.extended_bool(getenv('OUTPUT_ERRORS'))
+except:
+    print(traceback.format_exc())
+    OUTPUT_ERRORS = False
+
+ERROR_WEBHOOK = getenv('ERROR_WEBHOOK')
 
 def in_dst():
     dt = datetime.datetime.now()
@@ -1494,6 +1501,29 @@ class Triggers_cog(
 
         # Let whoever ran the command know that something went awry.
         await ctx.reply("Something went wrong processing that command.")
+
+        if OUTPUT_ERRORS:
+            try:
+                description = "\n".join(traceback.format_exception(error))
+
+                description = f"```\n{description}```"
+                
+                json_send = {
+                    "embeds": [
+                        {
+                            "title": "Bingo-Bot Error",
+                            "type": "rich",
+                            "description": description,
+                            "color": 15277667
+                        }
+                    ]
+                }
+                
+                async with aiohttp.ClientSession() as session:
+                    result = await session.post(ERROR_WEBHOOK, json=json_send)
+                    await session.close()
+            except:
+                pass
 
         
 
