@@ -234,7 +234,21 @@ def parse_wikitext(
         parsed = manual_replacements(parsed)
 
     parsed = re.sub(r"{{PAGENAME}}", page_title, parsed)
-    parsed = re.sub("<math>.*?<\/math>", "", parsed)
+
+    ## Format math equations ##
+
+    for match in re.finditer("<math>(.*?)<\/math>", parsed):
+        match_text = match.group(1)
+        match_text = re.sub(r"\\left *?\(", "(", match_text)
+        match_text = re.sub(r"\\right *?\)", ")", match_text)
+        match_text = re.sub(r"\\cdot", "*", match_text)
+        match_text = re.sub(r"\\frac\{(.*?)\}\{(.*?)\}", r"(\1)/(\2)", match_text)
+        match_text = re.sub(r"\{(.*?)\}", r"(\1)", match_text)
+        match_text = re.sub(r"\\", "", match_text)
+        parsed = parsed.replace(match.group(0), f"`{match_text}`")
+
+    ###########################
+    
     parsed = re.sub("{{[\w\W]*?}}", "", parsed)
     parsed = re.sub("\[\[File:[\w\W]+?\]\]", "", parsed)
     parsed = re.sub("\[\[Category:[\w\W]+?\]\]", "", parsed)
@@ -248,9 +262,11 @@ def parse_wikitext(
 
     for link_page, _, _, link_text in link_found:
         if link_page.startswith("#"):
-            link_page = f"{page_title}#{link_text[1:]}"
+            link_page_use = f"{page_title}#{link_text[1:]}"
+        else:
+            link_page_use = link_page
 
-        link_formatted = "{}{}".format(wiki_link, link_page.replace(" ", "_"))
+        link_formatted = "{}{}".format(wiki_link, link_page_use.replace(" ", "_"))
 
         if len(link_text) == 0:
             text_show = link_page
