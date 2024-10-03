@@ -1,5 +1,6 @@
 """Specific Bread Game solvers using z3, and other mathematical solvers."""
 from __future__ import annotations
+import multiprocessing.queues
 
 from discord.ext import commands
 import discord
@@ -8,6 +9,7 @@ import mpmath
 import decimal
 import time
 import operator
+import multiprocessing
 
 # pip install z3-solver
 import z3
@@ -25,7 +27,8 @@ def universal_solver(
         items: dict[u_values.Item, int],
         maximize: u_values.Item,
         disabled_recipes: list[str] = None,
-        disabled_items: list[u_values.Item] = None
+        disabled_items: list[u_values.Item] = None,
+        output: multiprocessing.Queue = None
     ) -> dict[str, int]:
     """Universal solver.
 
@@ -120,35 +123,63 @@ def universal_solver(
     for item in items_send:
         result_json[str(item)] = model[item].as_long()
 
-    return result_json
+    output.put(result_json)
+    # return result_json
 
 def solver_wrapper(
         items: dict[u_values.Item, int],
         maximize: u_values.Item,
         disabled_recipes: list[str] = None,
         disabled_items: list[u_values.Item] = None,
-    ) -> tuple[list[str], dict[u_values.Item, int], dict[str, int]]:
+        timeout_time: int | float = 30.0
+    ) -> tuple[list[str], dict[u_values.Item, int], dict[str, int]] | None:
     """Wrapper for the universal_solver that automatically generates the command list.
 
     Args:
         items (dict[u_values.Item, int]): A dict with the amount of each item is has to play around with.
         maximize (u_values.Item): The item to maximize.
         disabled_recipes (list[str], optional): List of recipes to disable in the format of `<item>_recipe_<recipe id>` where recipe id is 1 indexed. `None` is functionally the same as an empty list. Defaults to None.
+        disabled_items (list[u_values.Item], optional): List of items to disallow the solver from using. Defaults to None.
+        timeout_time (int | float, optional): Amount of time to give the solver before killing it. Defaults to 30.0.
 
     Returns:
-        tuple[list[str], dict[u_values.Item, int], dict[str, int]]: The command list, post-alchemy version of the items, and the dict version of the solver.
+        tuple[list[str], dict[u_values.Item, int], dict[str, int]] | None: The command list, post-alchemy version of the items, and the dict version of the solver. If `None` is returned then the timeout was encountered.
     """
     if disabled_recipes is None:
         disabled_recipes = []
     if disabled_items is None:
         disabled_items = []
 
-    solver_result = universal_solver(
-        items = items.copy(),
-        maximize = maximize,
-        disabled_recipes = disabled_recipes,
-        disabled_items = disabled_items
+    # Run the solver in a new thread.
+    queue = multiprocessing.Queue()
+
+    process = multiprocessing.Process(
+        None,
+        universal_solver,
+        args=(
+            items.copy(),
+            maximize,
+            disabled_recipes,
+            disabled_items,
+            queue
+        )
     )
+    process.start()
+
+    # solver_result = universal_solver(
+    #     items = items.copy(),
+    #     maximize = maximize,
+    #     disabled_recipes = disabled_recipes,
+    #     disabled_items = disabled_items
+    # )
+
+    process.join(timeout_time)
+
+    if process.is_alive():
+        process.terminate()
+        return None
+    
+    solver_result = queue.get()
 
     # Quick alchemy simulation to determine the command order.
     command_list = []
@@ -209,12 +240,20 @@ async def solver_embed(
     except:
         pass
     
-    command_list, post_alchemy, solver_result = solver_wrapper(
+    full_result = solver_wrapper(
         items = inventory,
         maximize = goal_item,
         disabled_recipes = disabled_recipes,
         disabled_items = disabled_items
     )
+
+    if full_result is None:
+        return u_interface.gen_embed(
+            title = f"{goal_item.name} solver",
+            description = "Timeout reached.\nThe solver took too long to run and was stopped before it found a solution. Please do not try again, as the same thing will likely occur."
+        )
+
+    command_list, post_alchemy, solver_result = full_result
 
     ################
     
@@ -235,6 +274,22 @@ async def solver_embed(
         footer_text = "On mobile you can tap and hold on the commands section to copy it."
     )
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+########################################################################################################################
+########################################################################################################################
 ########################################################################################################################
 
 # Amount of digits to show.

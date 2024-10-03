@@ -1244,11 +1244,21 @@ class Bread_cog(
         except AttributeError:
             disabled_recipes = None
 
-        command_list, post_alchemy, solver_result = u_solvers.solver_wrapper(
+        full_result = u_solvers.solver_wrapper(
             items = gems,
             maximize = u_values.gem_gold,
             disabled_recipes = disabled_recipes
         )
+
+        if full_result is None:
+            embed = u_interface.gen_embed(
+                title = "Gold gem solver",
+                description = "Timeout reached.\nThe solver took too long to run and was stopped before it found a solution. Please do not try again, as the same thing will likely occur."
+            )
+            await ctx.reply(embed=embed)
+            return
+
+        command_list, post_alchemy, solver_result = full_result
 
         ascension_multiplier = 1 + (0.1 * ascension)
         
@@ -1568,12 +1578,22 @@ class Bread_cog(
         except:
             pass
         
-        command_list, post_alchemy, solver_result = u_solvers.solver_wrapper(
+        full_result = u_solvers.solver_wrapper(
             items = items,
             maximize = u_values.chessatron,
             disabled_recipes = stored_data.disallowed_recipes,
             disabled_items = disabled_items
         )
+
+        if full_result is None:
+            embed = u_interface.gen_embed(
+                title = "Chessatron solver",
+                description = "Timeout reached.\nThe solver took too long to run and was stopped before it found a solution. Please do not try again, as the same thing will likely occur."
+            )
+            await ctx.reply(embed=embed)
+            return
+
+        command_list, post_alchemy, solver_result = full_result
 
         if stored_data.get("auto_chessatron", False) and len(command_list) > 1: # If the length is 0 no trons are possible, and 1 is trons are possible but don't need chess piece alchemy.
             command_list.insert(0, "$bread auto_chessatron off")
@@ -1889,7 +1909,6 @@ class Bread_cog(
             disabled_recipes.append(f"{found.group(1)}_recipe_{found.group(2)}")
         
         disabled_recipes.extend(stored_data.disallowed_recipes)
-        print(disabled_items)
 
         ################
         # Run the solver.
