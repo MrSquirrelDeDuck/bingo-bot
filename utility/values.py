@@ -583,7 +583,7 @@ chessatron = Item(
 anarchy_chessatron = Item(
     name = "Anarchy Chessatron",
     internal_name = "anarchy_chessatron",
-    internal_emoji = "<<:anarchy_chessatron:1271191972627087370>"
+    internal_emoji = "<:anarchy_chessatron:1271191972627087370>"
 )
 
 omega_chessatron = Item(
