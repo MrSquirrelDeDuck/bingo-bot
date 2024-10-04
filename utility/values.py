@@ -1045,7 +1045,7 @@ alchemy_recipes = {
             "cost": [(bpawn, 3)]
         },
         {
-            "cost": [(gem_red, 2)]
+            "cost": [(gem_red, 1)]
         }
     ],
     "wrook": [
@@ -1062,7 +1062,7 @@ alchemy_recipes = {
             "cost": [(brook, 2), (waffle, 75)]
         },
         {
-            "cost": [(gem_red, 2)]
+            "cost": [(gem_red, 1)]
         }
     ],
         "wknight": [
@@ -1079,7 +1079,7 @@ alchemy_recipes = {
 			"cost": [(bknight, 2), (bagel, 75)]
 		},
         {
-			"cost": [(gem_red, 2)]
+			"cost": [(gem_red, 1)]
 		}
     ],
 
@@ -1097,7 +1097,7 @@ alchemy_recipes = {
 			"cost": [(bbishop, 2), (doughnut, 75)]
 		},
         {
-			"cost": [(gem_red, 2)]
+			"cost": [(gem_red, 1)]
 		}
     ],
 
@@ -1115,7 +1115,7 @@ alchemy_recipes = {
 			"cost": [(bqueen, 2), (doughnut, 75)]
 		},
         {
-			"cost": [(gem_red, 2)]
+			"cost": [(gem_red, 1)]
 		}
     ],
 
@@ -1133,7 +1133,7 @@ alchemy_recipes = {
 			"cost": [(bking, 2), (bagel, 75)]
 		},
         {
-			"cost": [(gem_red, 2)]
+			"cost": [(gem_red, 1)]
 		}
     ],
 
@@ -1144,7 +1144,7 @@ alchemy_recipes = {
 			"cost": [(wpawn, 1)]
 		},
         {
-			"cost": [(gem_red, 2)]
+			"cost": [(gem_red, 1)]
 		}
     ],
 
@@ -1153,7 +1153,7 @@ alchemy_recipes = {
 			"cost": [(wrook, 1)]
 		},
         {
-			"cost": [(gem_red, 2)]
+			"cost": [(gem_red, 1)]
 		}
     ],
 
@@ -1162,7 +1162,7 @@ alchemy_recipes = {
 			"cost": [(wknight, 1)]
 		},
         {
-			"cost": [(gem_red, 2)]
+			"cost": [(gem_red, 1)]
 		}
     ],
 
@@ -1171,7 +1171,7 @@ alchemy_recipes = {
 			"cost": [(wbishop, 1)]
 		},
         {
-			"cost": [(gem_red, 2)]
+			"cost": [(gem_red, 1)]
 		}
     ],
 
@@ -1180,7 +1180,7 @@ alchemy_recipes = {
 			"cost": [(wqueen, 1)]
 		},
         {
-			"cost": [(gem_red, 2)]
+			"cost": [(gem_red, 1)]
 		}
     ],
 
@@ -1189,7 +1189,7 @@ alchemy_recipes = {
 			"cost": [(wking, 1)]
 		},
         {
-			"cost": [(gem_red, 2)]
+			"cost": [(gem_red, 1)]
 		}
     ],
 
