@@ -1506,7 +1506,7 @@ class Triggers_cog(
             try:
                 description = "\n".join(traceback.format_exception(error))
 
-                description = f"```\n{description}```"
+                description = f"[Trigger link.](<{ctx.message.jump_url}>)\n```\n{description}```"
                 
                 json_send = {
                     "embeds": [
