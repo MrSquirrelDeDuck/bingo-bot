@@ -11,6 +11,7 @@ import datetime
 import os
 from os.path import sep as SLASH
 import difflib
+import decimal
 
 # pip install python-dateutil
 import dateutil
@@ -2173,7 +2174,7 @@ class Other_cog(
                     title = "Evaluation",
                     description = description
                 )
-        except OverflowError:
+        except (OverflowError, decimal.Overflow):
             embed = u_interface.gen_embed(
                 title = "Evaluation",
                 description = "The result is too large to calculate."
