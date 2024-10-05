@@ -11,6 +11,7 @@ import datetime
 import os
 from os.path import sep as SLASH
 import difflib
+import decimal
 
 # pip install python-dateutil
 import dateutil
@@ -1047,6 +1048,12 @@ class Other_cog(
                 
                 if strip_id == "random":
                     strip_id = random.randint(1, json_data["num"])
+
+                    banned = [136, 387, 400, 584, 598, 940, 751, 879, 1076, 1967]
+
+                    if strip_id in banned:
+                        while strip_id in banned:
+                            strip_id = random.randint(1, json_data["num"])
             
             if strip_id is not None:
                 returned = await session.get("https://xkcd.com/{}/info.0.json".format(strip_id))
@@ -2167,7 +2174,7 @@ class Other_cog(
                     title = "Evaluation",
                     description = description
                 )
-        except OverflowError:
+        except (OverflowError, decimal.Overflow):
             embed = u_interface.gen_embed(
                 title = "Evaluation",
                 description = "The result is too large to calculate."
