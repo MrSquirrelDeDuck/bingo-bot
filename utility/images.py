@@ -5,6 +5,7 @@ from os.path import sep as SLASH
 import typing
 import importlib
 import textwrap
+import io
 
 # pip install matplotlib
 import matplotlib.pyplot as plt
@@ -662,3 +663,21 @@ def chess_match(
     img.save(f"images{SLASH}generated{SLASH}chess_match.png", quality=90)
     
     # 242, 221
+
+######################################################################################################################################
+##### COLOR ##########################################################################################################################
+######################################################################################################################################
+
+def solid_color(
+        color: tuple[int],
+        xsize: int = 255,
+        ysize: int = 255
+    ):
+    """Generates an image of a solid color."""
+    img = PIL_Image.new("RGB", (xsize, ysize), color)
+
+    output = io.BytesIO()
+    img.save(output, "png")
+    output.seek(0)
+
+    return output

@@ -1265,27 +1265,28 @@ alchemy_recipes = {
     "fuel": [
         {
             "cost": [(gem_red, 2)],
-            "requirement": [("space_level", 1)]
+            "requirement": [("space_level", 1)],
+            "result": 5
         },
         {
             "cost": [(gem_blue, 2)],
             "requirement": [("space_level", 1), ("fuel_research", 1)],
-            "result": 3
+            "result": 15
         },
         {
             "cost": [(gem_purple, 2)],
             "requirement": [("space_level", 1), ("fuel_research", 2)],
-            "result": 9
+            "result": 45
         },
         {
             "cost": [(gem_green, 2)],
             "requirement": [("space_level", 1), ("fuel_research", 3)],
-            "result": 27
+            "result": 135
         },
         {
             "cost": [(gem_gold, 2)],
             "requirement": [("space_level", 1), ("fuel_research", 4)],
-            "result": 150
+            "result": 750
         }
     ],
 
@@ -1293,7 +1294,7 @@ alchemy_recipes = {
 
     "holy_hell": [
         {
-			"cost": [ (anarchy_chess, 5) ]
+			"cost": [(anarchy_chess, 5)]
 		}
     ],
 
@@ -1496,7 +1497,7 @@ alchemy_recipes = {
             "requirement": [("space_level", 1)]
         },
         {
-            "cost": [(wpawn, 250), (gem_green, 10)],
+            "cost": [(wpawn, 1000), (gem_green, 10)],
             "requirement": [("space_level", 1)]
         }
     ],
@@ -1519,7 +1520,7 @@ alchemy_recipes = {
             "requirement": [("space_level", 1)]
         },
         {
-            "cost": [(wknight, 250), (gem_green, 10)],
+            "cost": [(wknight, 1000), (gem_green, 10)],
             "requirement": [("space_level", 1)]
         }
     ],
@@ -1542,7 +1543,7 @@ alchemy_recipes = {
             "requirement": [("space_level", 1)]
         },
         {
-            "cost": [(wbishop, 250), (gem_green, 10)],
+            "cost": [(wbishop, 1000), (gem_green, 10)],
             "requirement": [("space_level", 1)]
         }
     ],
@@ -1565,7 +1566,7 @@ alchemy_recipes = {
             "requirement": [("space_level", 1)]
         },
         {
-            "cost": [(wrook, 250), (gem_green, 10)],
+            "cost": [(wrook, 1000), (gem_green, 10)],
             "requirement": [("space_level", 1)]
         }
     ],
@@ -1588,7 +1589,7 @@ alchemy_recipes = {
             "requirement": [("space_level", 1)]
         },
         {
-            "cost": [(wqueen, 250), (gem_green, 10)],
+            "cost": [(wqueen, 1000), (gem_green, 10)],
             "requirement": [("space_level", 1)]
         }
     ],
@@ -1611,7 +1612,7 @@ alchemy_recipes = {
             "requirement": [("space_level", 1)]
         },
         {
-            "cost": [(wking, 250), (gem_green, 10)],
+            "cost": [(wking, 1000), (gem_green, 10)],
             "requirement": [("space_level", 1)]
         }
     ],
@@ -1624,7 +1625,7 @@ alchemy_recipes = {
             "requirement": [("space_level", 1)]
         },
         {
-            "cost": [(bpawn, 250), (gem_green, 10)],
+            "cost": [(bpawn, 1000), (gem_green, 10)],
             "requirement": [("space_level", 1)]
         }
     ],
@@ -1635,7 +1636,7 @@ alchemy_recipes = {
             "requirement": [("space_level", 1)]
         },
         {
-            "cost": [(bknight, 250), (gem_green, 10)],
+            "cost": [(bknight, 1000), (gem_green, 10)],
             "requirement": [("space_level", 1)]
         }
     ],
@@ -1646,7 +1647,7 @@ alchemy_recipes = {
             "requirement": [("space_level", 1)]
         },
         {
-            "cost": [(bbishop, 250), (gem_green, 10)],
+            "cost": [(bbishop, 1000), (gem_green, 10)],
             "requirement": [("space_level", 1)]
         }
     ],
@@ -1657,7 +1658,7 @@ alchemy_recipes = {
             "requirement": [("space_level", 1)]
         },
         {
-            "cost": [(brook, 250), (gem_green, 10)],
+            "cost": [(brook, 1000), (gem_green, 10)],
             "requirement": [("space_level", 1)]
         }
     ],
@@ -1668,7 +1669,7 @@ alchemy_recipes = {
             "requirement": [("space_level", 1)]
         },
         {
-            "cost": [(bqueen, 250), (gem_green, 10)],
+            "cost": [(bqueen, 1000), (gem_green, 10)],
             "requirement": [("space_level", 1)]
         }
     ],
@@ -1679,7 +1680,7 @@ alchemy_recipes = {
             "requirement": [("space_level", 1)]
         },
         {
-            "cost": [(bking, 250), (gem_green, 10)],
+            "cost": [(bking, 1000), (gem_green, 10)],
             "requirement": [("space_level", 1)]
         }
     ],

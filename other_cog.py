@@ -12,6 +12,7 @@ import os
 from os.path import sep as SLASH
 import difflib
 import decimal
+import colorsys
 
 # pip install python-dateutil
 import dateutil
@@ -1453,6 +1454,7 @@ class Other_cog(
             1023757953687363634, # Under 18.
             962128706816585789, # Event Coordinator.
             1060344654391947345, # Ping List Poster.
+            1292963091385942087, # Politics chat.
 
             # Pride roles:
             1214062437037506590, # Ace
@@ -2211,6 +2213,151 @@ class Other_cog(
             ctx: commands.Context | u_custom.CustomContext
         ):
         await ctx.reply("Current year: π+φi.")
+
+        
+            
+
+        
+    ######################################################################################################################################################
+    ##### COLOR ##########################################################################################################################################
+    ######################################################################################################################################################
+    
+    @commands.group(
+        name = "color",
+        aliases = ["colors"],
+        brief = "Color related commands.",
+        description = "Color related commands.",
+        invoke_without_command = True,
+        pass_context = True
+    )
+    @commands.check(u_checks.hide_from_help)
+    async def color_command(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext,
+            color_type: typing.Optional[typing.Literal["rgb", "hex", "hsv"]] = commands.parameter(description = "What type of color to read. If none or something invalid is given then `hex` is assumed."),
+            *, color_data: typing.Optional[str] = commands.parameter(description = "The color itself, in whatever type is stated.")
+        ):
+        if color_data is None:
+            await ctx.reply("Please provide a color, or `random` for a random color")
+            return
+        
+        if color_data == "random":
+            color_type = "hex"
+            color_data = f"#{random.randrange(0, 16 ** 6):06x}"
+        
+        if color_type is None:
+            color_type = "hex"
+
+        if color_type == "rgb":
+            split = color_data.split(" ")
+
+            try:
+                if len(split) < 3:
+                    raise ValueError
+                
+                r = u_converters.parse_float(split[0])
+                g = u_converters.parse_float(split[1])
+                b = u_converters.parse_float(split[2])
+
+                if r <= 1 and g <= 1 and b <= 1:
+                    r *= 255
+                    g *= 255
+                    b *= 255
+                
+                if not(
+                    0 <= r <= 255 and
+                    0 <= g <= 255 and
+                    0 <= b <= 255
+                ):
+                    raise ValueError
+
+                color_use = (int(r), int(g), int(b))
+            except ValueError:
+                await ctx.reply("Please provide a valid RGB color.\nColor format:\n- First number: Red channel. Between 0 and 255.\n- Second number: Green channel. Between 0 and 255.\n- Third number: Blue channel. Between 0 and 255.")
+                return
+            
+        elif color_type == "hsv":
+            split = color_data.split(" ")
+
+            try:
+                if len(split) < 3:
+                    raise ValueError
+                
+                h = u_converters.parse_float(split[0])
+                s = u_converters.parse_float(split[1])
+                v = u_converters.parse_float(split[2])
+
+                if h > 1 and s > 1 and v > 1:
+                    h /= 360
+                    s /= 100
+                    v /= 100
+                
+                if not(
+                    0 <= h <= 1 and
+                    0 <= s <= 1 and
+                    0 <= v <= 1
+                ):
+                    raise ValueError
+                
+                print(h, s, v)
+                
+                r, g, b = colorsys.hsv_to_rgb(h, s, v)
+
+                r *= 255
+                g *= 255
+                b *= 255
+
+                color_use = (int(r), int(g), int(b))
+                
+            except ValueError:
+                await ctx.reply("Please provide a valid HSV color.\nColor format:\n- First number: Hue. Between 0 and 360.\n- Second number: Saturation. Between 0 and 100.\n- Third number: Brightness. Between 0 and 100.")
+                return
+
+        else: # Assume it's a hex code.
+            try:
+                if color_data.startswith("#"):
+                    color_data = color_data[1:]
+
+                if len(color_data) != 6:
+                    raise ValueError
+
+                color_data = int(color_data, 16)
+                
+                color_use = (
+                    color_data >> 16 & 255,
+                    color_data >> 8 & 255,
+                    color_data & 255
+                )
+            except ValueError:
+                await ctx.reply("Please provide a valid hex code.\nColor format:\n`#` followed by a 6 digit hexadecimal number.")
+                return
+
+        image = u_images.solid_color(color_use)
+
+        send_file = discord.File(image, filename="image.png")
+        file_path = "attachment://image.png"
+
+        hex_code = sum([
+            color_use[2],
+            color_use[1] * 256,
+            color_use[0] * 65536
+        ])
+        hex_code = f"#{hex_code:06x}"
+
+        rgb1 = tuple(round(c / 255, 3) for c in color_use)
+
+        embed = u_interface.gen_embed(
+            title = "Color",
+            description = "Hex: {hex}\nRGB: {rgb255} | {rgb1}\nHSV: {hsv}".format(
+                hex = hex_code,
+                rgb255 = color_use,
+                rgb1 = rgb1,
+                hsv = tuple(int(c * (100 if index != 0 else 360)) for index, c in enumerate(colorsys.rgb_to_hsv(*rgb1)))
+            ),
+            image_link = file_path
+        )
+
+        await ctx.reply(embed=embed, file=send_file)
         
 
 
