@@ -75,11 +75,12 @@ def sensitive_check(channel: discord.TextChannel | discord.Thread) -> bool:
     """Returns a boolean for whether a channel is a sensitive channel.
     
     Currently this includes:
-    - #mental-health."""
+    - #mental-health.
+    - #politics."""
     if isinstance(channel, discord.Thread):
         channel = channel.parent
         
-    return channel.id in [969881291740811264]
+    return channel.id in [969881291740811264, 1292963004798865511]
     
 def serious_channel_check(channel: discord.TextChannel | discord.Thread) -> bool:
     """Returns a boolean for whether a channel is a serious channel.

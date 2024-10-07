@@ -1454,6 +1454,7 @@ class Other_cog(
             1023757953687363634, # Under 18.
             962128706816585789, # Event Coordinator.
             1060344654391947345, # Ping List Poster.
+            1292963091385942087, # Politics chat.
 
             # Pride roles:
             1214062437037506590, # Ace
