@@ -1937,6 +1937,43 @@ class Other_cog(
         emoji_list = sorted(emoji_list, key=lambda x: x[1], reverse=True)
 
         return " ".join([emoji_list[i][0] for i in range(25)])
+        
+            
+
+        
+    ######################################################################################################################################################
+    ##### STICKER ########################################################################################################################################
+    ######################################################################################################################################################
+    
+    @commands.command(
+        name = "sticker",
+        brief = "Gives the image for a sticker.",
+        description = "Gives the image for a sticker."
+    )
+    async def sticker_command(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext
+        ):
+        stickers = ctx.message.stickers
+
+        if len(stickers) == 0:
+            await ctx.reply("Please attach a sticker to your command message.")
+            return
+        
+        sticker = stickers[0]
+
+        if sticker.url.endswith(".json") or sticker.url == "":
+            await ctx.reply("Either I am unable to get a url for that sticker or it is a built-in sticker.")
+            return
+
+        embed = u_interface.gen_embed(
+            title = "Sticker image",
+            description = "Note: Animated stickers will be an animated png as that is what Discord uses for animated stickers.",
+            image_link = sticker.url
+        )
+        await ctx.reply(embed=embed)
+
+
 
         
             
