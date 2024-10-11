@@ -412,6 +412,12 @@ class CustomHelpCommand(commands.DefaultHelpCommand):
         subcommands = command.commands
         if len(subcommands) > 0:
             command_lines.append("\n**Subcommands:**")
+
+            # Probably a bad way of doing this, but it does prevent the toggle
+            # check from sending a message if a subcommand here is disabled.
+            old_invoked = ctx.invoked_with
+            ctx.invoked_with = "help"
+            
             for subcommand in subcommands:
                 try:
                     if not await subcommand.can_run(ctx):
@@ -423,6 +429,7 @@ class CustomHelpCommand(commands.DefaultHelpCommand):
                 description = subcommand.short_doc
                 command_lines.append(f"- `{name}` -- {description}")
 
+            ctx.invoked_with = old_invoked
         ####
         
         command_lines.append("")
