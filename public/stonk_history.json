@@ -17696,5 +17696,11 @@
         "cookie": 24,
         "fortune_cookie": 1076,
         "pancakes": 4296
+    },
+    {
+        "pretzel": 100,
+        "cookie": 21,
+        "fortune_cookie": 998,
+        "pancakes": 4570
     }
 ]
