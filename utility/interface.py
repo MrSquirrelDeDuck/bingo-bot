@@ -798,3 +798,25 @@ def get_channel_id(channel: discord.TextChannel | int | str) -> str:
         return str(channel.id)
     except AttributeError:
         return str(channel)
+    
+def member_id_in_guild(
+        guild: discord.Guild,
+        member_id: int
+    ) -> discord.Member | None:
+    return discord.utils.find(lambda m: m.id == member_id, guild.members)
+    
+
+class Filter_Member_In_Guild():
+    """Version of `member_id_in_guild` that can be used in a `filter`."""
+
+    def __init__(
+            self: typing.Self,
+            guild: discord.Guild
+        ):
+        self.guild = guild
+    
+    def __call__(
+            self: typing.Self,
+            member_id: int
+        ) -> discord.Member | None:
+        return member_id_in_guild(self.guild, member_id)

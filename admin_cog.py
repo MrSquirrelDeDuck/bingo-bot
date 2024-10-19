@@ -1785,6 +1785,37 @@ class Admin_cog(
 
         await ctx.reply(f"Success, old elo was {u_text.smart_number(round(old_elo))}, new elo is {u_text.smart_number(new_elo)}")
 
+        
+            
+
+        
+    ######################################################################################################################################################
+    ##### ADMIN TEST #####################################################################################################################################
+    ######################################################################################################################################################
+    
+    @admin.command(
+        name="test",
+        brief = "Generic test command.",
+        description = "Generic test command."
+    )
+    @commands.is_owner()
+    async def admin_test(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext
+        ):
+        ping_list = [
+            658290426435862619, # Main account.
+            1001177243537653923, # Test account.
+            1032867430189506641, # Development bot.
+            960869046323134514 # Machine-Mind.
+        ]
+
+        ping_list = filter(u_interface.Filter_Member_In_Guild(ctx.guild), ping_list)
+        pings = "".join(["<@{}>".format(user_id) for user_id in ping_list])
+
+        await ctx.send(pings)
+
+
 
         
 
