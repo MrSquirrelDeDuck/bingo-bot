@@ -2223,6 +2223,11 @@ class Other_cog(
                 title = "Evaluation",
                 description = "The result involves dividing by zero."
             )
+        except decimal.InvalidOperation:
+            embed = u_interface.gen_embed(
+                title = "Evaluation",
+                description = "The result involves an invalid operation."
+            )
         except u_custom.BingoError as e:
             embed = u_interface.gen_embed(
                 title = "Evaluation",
