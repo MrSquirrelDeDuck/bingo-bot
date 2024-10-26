@@ -2223,6 +2223,11 @@ class Other_cog(
                 title = "Evaluation",
                 description = "The result involves dividing by zero."
             )
+        except decimal.InvalidOperation:
+            embed = u_interface.gen_embed(
+                title = "Evaluation",
+                description = "The result involves an invalid operation."
+            )
         except u_custom.BingoError as e:
             embed = u_interface.gen_embed(
                 title = "Evaluation",
@@ -2261,7 +2266,7 @@ class Other_cog(
     
     @commands.group(
         name = "color",
-        aliases = ["colors"],
+        aliases = ["colors", "colour", "colours"],
         brief = "Color related commands.",
         description = "Color related commands.",
         invoke_without_command = True,
@@ -2395,7 +2400,326 @@ class Other_cog(
         )
 
         await ctx.reply(embed=embed, file=send_file)
+
         
+            
+
+        
+    ######################################################################################################################################################
+    ##### TIMESTAMP ######################################################################################################################################
+    ######################################################################################################################################################
+    
+    @commands.command(
+        name = "timestamp",
+        aliases = ["timestamps"],
+        brief = "Generate Discord timestamps.",
+        description = """Generate Discord timestamps.
+
+Configuration guide:
+- Dates can be provided with `dd/mm/yyyy`. `mm/dd/yyyy` will only be used if the day is greater than 12. `yyyy-mm-dd` is also accepted. Dates can also be provided as `<month name> <day> <optional year>`.
+- Times can be provided as `h:mm:ss`, however seconds is optional. It will default to 24 hour time, but if `am` or `pm` follows the time it will use that instead. For example, `3:05 pm` would not be interpreted as in the morning, but just `3:05` would.
+- If a time is provided it will default to UTC, however this can be changed by specifying the UTC offset with `utc+#` or `utc-#`, depending on the offset.
+- If a piece of information is not provided it will use the current value for it in UTC, so if a date is provided but not a time it will use the current UTC time.
+- Modifiers can be added to whatever is used in the format of `in <amount> <time frame>` for the future and `<amount> <time frame> ago` for the past.
+  The following time frames are accepted:
+  - Weeks
+  - Days
+  - Hours
+  - Minutes
+  - Seconds
+  Multiple of these should work, so `in 2 weeks and an hour` would be 1 week and 1 hour into the future.
+- The following Discord widget formatting methods are accepted:
+  - `short time`: Shows just the hour and minute. Example: `18:47`
+  - `long time`: Shows the hour, minute, and second. Example: `18:47:38`
+  - `short date`: Shows the date in either dd/mm/yyyy or mm/dd/yyyy, based on your Discord language. Example: `26/10/2024`
+  - `long date`: Shows the day, month, and year. Example: `26 October 2024`
+  - `both`: Shows the day, month, year, hour, and minute. Example: `26 October 2024 18:47`
+  - `full`: Shows the day of the week, day, month, year, hour, and minute. If nothing is specified this one is used. Example: `Saturday, 26 October 2024 18:47`
+  - `relative`: Shows the amount of time until the timestamp. Example: `in an hour`
+
+Full timestamp examples:
+- `%timestamp a week at 12:30 pm in UTC-4` would generate a timestamp for 12:30 pm EDT (UTC-4) for 1 week in the future. This has no formatting method in it, so the `full` one is used.
+- `%timestamp in an hour relative` would generate a relative timestamp 1 hour in the future.
+- `%timestamp tomorrow at 5:30 pm both` would generate a timestamp for tomorrow at 5:30 pm UTC (no offset was listed), with the `both` formatting method.
+- `%timestamp 2011-11-11 11:11:11 utc-11` would generate a timestamp for 11:11 am in UTC-11 on November 11th, 2011.
+- `%timestamp November 5th at 6:05 pm utc-4` would generate a timestamp for 6:05 pm EDT (UTC-4) on November 5th of the current year.
+"""
+    )
+    async def timestamp_command(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext,
+            *, information: typing.Optional[str] = commands.parameter(description = "The information about the timestamp. See above for info.")
+        ):
+        if information is None:
+            information = ""
+        
+        information_lower = information.lower()
+        args = information.split(" ")
+        arg_lower = information_lower.split(" ")
+
+        #####
+        
+        timezone_match = re.search(r"utc ?([+-]) ?(\d+)", information_lower)
+
+        hour_offset = 0
+        
+        if timezone_match:
+            try:
+                hour_offset = u_converters.parse_int(timezone_match.group(1) + timezone_match.group(2))
+            except ValueError:
+                pass
+        
+        #####
+
+        # Just in case new months are added. You never know!
+        # Does humanity need to complete a certain amount of years to unlock the next month
+        MONTH_LIST = ["january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "december"]
+
+
+        current = datetime.datetime.now(tz=datetime.UTC)
+
+        year = current.year
+        month = current.month
+        day = current.day
+
+        hour = current.hour
+        minute = current.minute
+        second = current.second
+
+        default_time = True
+
+        ISO_DATE_REGEX = r"(\d+)-(\d+)-(\d+)"
+        REGULAR_DATE_REGEX = r"(\d+)\/(\d+)(\/(\d+))?"
+        TIME_REGEX = r"(\d+):(\d+)(:(\d+))?"
+        MONTH_DATE_REGEX = rf"({'|'.join(MONTH_LIST)}) ([\d,]+)(st|nd|rd|th)?,?( ([\d,]+))?"
+
+        MODIFIER_REGEX_MULTI = r"(in )?((([\d,]+|an?) (day|week|hour|minute|second)s?((,? and )|(, ))?)+)( ago)?"
+        MODIFIER_REGX_SINGLE = r"([\d,]+|an?) (day|week|hour|minute|second)s?"
+
+        date_found = False
+
+        offset_delta = datetime.timedelta()
+
+        if "tomorrow" in arg_lower:
+            offset_delta += datetime.timedelta(days = 1)
+        if "yesterday" in arg_lower:
+            offset_delta -= datetime.timedelta(days = 1)
+        
+        ########################################################################################
+        
+        time_modifier_match = re.search(MODIFIER_REGEX_MULTI, information_lower)
+        if time_modifier_match:
+            multiplier = 0
+            if time_modifier_match.group(1) == "in ":
+                multiplier = 1
+            if time_modifier_match.group(7) == " ago":
+                multiplier = -1
+            
+            for iter_match in re.finditer(MODIFIER_REGX_SINGLE, time_modifier_match.group(2)):
+                amount = 0
+
+                try:
+                    group = iter_match.group(1)
+                    if group == "a" or group == "an":
+                        amount = 1
+                    else:
+                        amount = u_converters.parse_int(group)
+                except ValueError:
+                    pass
+
+                amount *= multiplier
+
+                offset_delta += datetime.timedelta(**{iter_match.group(2) + "s": amount})
+        
+        ########################################################################################
+
+        month_date_match = re.search(MONTH_DATE_REGEX, information)
+        if month_date_match:
+            month_date_month = month_date_match.group(1)
+            month_date_day = u_converters.parse_int(month_date_match.group(2))
+            try:
+                month_date_year = u_converters.parse_int(month_date_match.group(5))
+            except ValueError:
+                month_date_year = None
+            
+            month = MONTH_LIST.index(month_date_month) + 1
+            day = month_date_day
+
+            if month_date_year is not None:
+                year = month_date_year
+        else:
+            iso_date_match = re.search(ISO_DATE_REGEX, information)
+            if iso_date_match:
+                iso_year = iso_date_match.group(1)
+                iso_month = iso_date_match.group(2)
+                iso_day = iso_date_match.group(3)
+
+                if None not in [iso_year, iso_month, iso_day]:
+                    year = int(iso_year)
+                    month = int(iso_month)
+                    day = int(iso_day)
+                    date_found = True
+            
+            if not date_found:
+                # If the ISO date didn't work, check for a regular date.
+                date_match = re.search(REGULAR_DATE_REGEX, information)
+                if date_match:
+                    part_1 = int(date_match.group(1) or -1)
+                    part_2 = int(date_match.group(2) or -1)
+                    part_3 = int(date_match.group(4) or -1)
+
+                    if part_2 > 12: # If it's m/d/y instead of d/m/y, which is expected.
+                        day = part_2
+                        month = part_1
+                    else:
+                        day = part_1
+                        month = part_2
+                    
+                    if part_3 != -1:
+                        if 0 <= part_3 <= 99:
+                            year = part_3 + 2000
+                        else:
+                            year = part_3
+        
+        ########################################################################################
+        
+        time_match = re.search(TIME_REGEX, information)
+        if time_match:
+            part_1 = int(time_match.group(1) or -1)
+            part_2 = int(time_match.group(2) or -1)
+            part_3 = int(time_match.group(4) or -1)
+
+            location = args.index(time_match.group(0))
+            try:
+                next_arg = args[location + 1].lower()
+            except IndexError:
+                next_arg = None
+            
+            if next_arg != "am" and next_arg != "pm":
+                hour = part_1
+            else:
+                # Need to determine if AM or PM.
+                # When in doubt, assume AM.
+                if part_1 == 12:
+                    part_1 = 0
+                
+                if next_arg == "pm":
+                    hour = part_1 + 12
+                else:
+                    hour = part_1
+            
+            minute = part_2
+
+            if part_3 != -1:
+                second = part_3
+            
+            default_time = False
+        
+        ########################################################################################
+        
+        # Timestamp methods.
+        conversion = {
+            "short time": "t",
+            "long time": "T",
+            "short date": "d",
+            "long date": "D",
+            "both": "f",
+            "full": "F",
+            "relative": "R"
+        }
+
+        # Default to "full"
+        timestamp_method = "F"
+
+        if any(k in information_lower for k in conversion.keys()):
+            found = next(k for k in conversion.keys() if k in information_lower)
+            timestamp_method = conversion[found]
+
+        ########################################################################################
+        
+        if not (1 <= month <= 12):
+            await ctx.reply(f"I am unaware of month number {u_text.smart_number(month)[:300]}, could you please enlighten me?")
+            return
+
+        day_counts = [31, 28 + (1 if year % 4 == 0 and not (year % 100 == 0 and not year % 400 == 0) else 0), 31, 30, 31, 30, 31, 31, 30, 31, 30, 31] # Leap year is a nightmare.
+        day_limit = day_counts[month - 1]
+        
+        if not (1 <= day <= day_limit):
+            await ctx.reply(f"As far as I'm aware there are only {day_limit} days in that month in that year.")
+            return
+        
+        if not (0 <= hour <= 23):
+            await ctx.reply(f"There are only 24 hours in a day.")
+            return
+        
+        if not (0 <= minute <= 59):
+            await ctx.reply(f"There are only 60 minute in an hour.")
+            return
+        
+        if not (0 <= minute <= 59):
+            await ctx.reply(f"There are only 60 seconds in a minute.")
+            return
+        
+        ########################################################################################
+            
+        try:
+            ending_datetime = datetime.datetime(
+                year = year,
+                month = month,
+                day = day,
+                hour = hour,
+                minute = minute,
+                second = second,
+                tzinfo = datetime.UTC
+            )
+        except ValueError:
+            await ctx.reply("Apologies, but that is an invalid date.")
+            return
+        except OverflowError:
+            await ctx.reply("That date is unfortunately out of the range I can handle.")
+            return
+
+        # old_datetime = ending_datetime
+        
+        if not default_time:
+            try:
+                ending_datetime -= datetime.timedelta(hours=hour_offset)
+            except OverflowError:
+                await ctx.reply("That date is unfortunately out of the range I can handle.")
+                return
+            
+        try:
+            ending_datetime += offset_delta
+        except OverflowError:
+            await ctx.reply("That date is unfortunately out of the range I can handle.")
+            return
+        
+        # NOTE: When running on Windows certain dates (like 2 CE) will break the ending_datetime.timestamp() and cause an OSError.
+        # Unix doesn't have this issue.
+        timestamp = int(ending_datetime.timestamp())
+
+        strftime = '%A, %B %d, %Y at %H:%M:%S'
+        converted = f"<t:{timestamp}:{timestamp_method}>"
+
+        # Debug messages:
+        # await ctx.reply(f"{day}/{month}/{year} at {hour}:{minute}:{second} with a modifier of {offset_delta} | {ending_datetime.strftime(strftime)} ({old_datetime.strftime(strftime)}) | <t:{timestamp}:F> {timestamp} | {time_zone} {abbreviation} : offset {hour_offset}")
+
+        #######
+        
+        embed = u_interface.gen_embed(
+            title = "Timestamp",
+            description = f"Timestamp date in UTC: {ending_datetime.strftime(strftime)}\nUse `%help timestamp` for more configuration information.\n\nTimestamp code: `{converted}`",
+            fields = [("Timestamp preview:", converted, False)],
+            footer_text = "On mobile you can tap and hold on the timestamp preview to copy it."
+        )
+        
+        await ctx.reply(embed=embed)
+            
+                
+
+
+
+                
 
 
 

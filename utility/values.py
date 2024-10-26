@@ -860,7 +860,7 @@ all_items = [
     # Gambling items.
     bricks, brick_fide, fide_brick, brick_gold, cherries, grapes, lemon, bcapy,
 ]
-bling_items = [gem_red, gem_blue, gem_purple, gem_green, gem_gold, anarchy_chess]
+bling_items = [gem_red, gem_blue, gem_purple, gem_green, gem_gold, chessatron, anarchy_chess, omega_chessatron, anarchy_chessatron, anarchy_omega_chessatron]
 
 #############################
 ##### UTILITY FUNCTIONS #####

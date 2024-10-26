@@ -57,9 +57,13 @@ class Chess_cog(
             for white, black in game_data
         ]
 
-        ping_list_channel = await self.bot.fetch_channel(PING_LISTS_CHANNEL)
+        ping_list_channel = await self.bot.fetch_channel(PING_LISTS_CHANNEL) # type: discord.TextChannel
 
         ping_list = database.get_ping_list("daily_chess_match")
+        try:
+            ping_list = filter(u_interface.Filter_Member_In_Guild(ping_list_channel.guild), ping_list)
+        except:
+            pass
 
         # For funzies, shuffle the pinglist order.
         random.shuffle(ping_list)
