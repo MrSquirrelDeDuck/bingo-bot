@@ -423,7 +423,7 @@ class Triggers_cog(
 
                 ping_list_members = ping_list_data.get("xkcd_strips", [])
                 try:
-                    ping_list_members = filter(u_interface.Filter_Member_In_Guild(ping_list_channel.guild), ping_list_members)
+                    ping_list_members = list(filter(u_interface.Filter_Member_In_Guild(ping_list_channel.guild), ping_list_members))
                 except:
                     pass
 
@@ -689,7 +689,7 @@ class Triggers_cog(
 
         stonk_pinglist = database.get_ping_list("stonk_tick_pings")
         try:
-            stonk_pinglist = filter(u_interface.Filter_Member_In_Guild(message.guild), stonk_pinglist)
+            stonk_pinglist = list(filter(u_interface.Filter_Member_In_Guild(message.guild), stonk_pinglist))
         except:
             pass
 
@@ -1145,7 +1145,7 @@ class Triggers_cog(
         # Now, fetch the users in the "727_pinglist" from the pinglist data and send a message pinging all of them.
         ping_data = database.get_ping_list("727_pinglist")
         try:
-            ping_list = filter(u_interface.Filter_Member_In_Guild(message.guild), ping_list)
+            ping_list = list(filter(u_interface.Filter_Member_In_Guild(message.guild), ping_list))
         except:
             pass
 
