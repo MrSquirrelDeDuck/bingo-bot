@@ -188,6 +188,25 @@ class Triggers_cog(
     ######################################################################################################################################################
         
     @commands.command(
+        name = "add_stonk_tick",
+        description = "Adds a missing stonk tick.",
+        brief = "Adds a missing stonk tick.",
+        hidden = True
+    )
+    @commands.is_owner()
+    async def add_stonk_tick_command(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext
+        ):
+        if not u_interface.is_reply(ctx.message):
+            await ctx.reply("Please reply to the stonk tick.")
+            return
+        
+        msg = ctx.message.reference.resolved
+
+        await self.on_stonk_tick(msg)
+        
+    @commands.command(
         name = "daily_loop",
         description = "Runs the daily loop.",
         brief = "Runs the daily loop.",
