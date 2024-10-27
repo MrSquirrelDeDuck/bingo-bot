@@ -61,7 +61,7 @@ class Chess_cog(
 
         ping_list = database.get_ping_list("daily_chess_match")
         try:
-            ping_list = filter(u_interface.Filter_Member_In_Guild(ping_list_channel.guild), ping_list)
+            ping_list = list(filter(u_interface.Filter_Member_In_Guild(ping_list_channel.guild), ping_list))
         except:
             pass
 

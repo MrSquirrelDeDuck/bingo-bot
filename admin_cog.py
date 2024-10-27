@@ -1810,7 +1810,7 @@ class Admin_cog(
             960869046323134514 # Machine-Mind.
         ]
 
-        ping_list = filter(u_interface.Filter_Member_In_Guild(ctx.guild), ping_list)
+        ping_list = list(filter(u_interface.Filter_Member_In_Guild(ctx.guild), ping_list))
         pings = "".join(["<@{}>".format(user_id) for user_id in ping_list])
 
         await ctx.send(pings)
