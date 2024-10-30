@@ -2200,6 +2200,50 @@ class Bread_cog(
 
 
     ######################################################################################################################################################
+    ##### BREAD PROJECT ##################################################################################################################################
+    ######################################################################################################################################################
+    
+    @bread.command(
+        name = "project",
+        aliases = ["credits", "project_credits", "projects", "credit", "project_credit"],
+        brief = "Calculates how much to contribute to use an amount of credits.",
+        description = "Calculates how many items to contribute to a project in order to use a specific amount of credits."
+    )
+    async def bread_project(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext,
+            credit_amount: typing.Optional[u_converters.parse_int] = commands.parameter(description = "The amount of credits to use."),
+            maximum_items: typing.Optional[u_converters.parse_int] = commands.parameter(description = "The total amount of items in the project.")
+        ):
+        if credit_amount is None:
+            await ctx.reply("Please provide the amount of credits to use.")
+            return
+
+        if not(0 <= credit_amount <= 1000):
+            await ctx.reply("The credit amount must be between 0 and 1,000.")
+            return
+        
+        credit_percent = credit_amount / 2000
+
+        project_percentage = (credit_percent + math.sqrt(credit_percent ** 2 + 4 * credit_percent)) / 2
+
+        suffix = ""
+        if maximum_items is not None:
+            suffix = f"\nFor a project that has {u_text.smart_text(maximum_items, 'total item')} that would end up being {u_text.smart_text(math.ceil(maximum_items * project_percentage), 'item')}."
+            
+        embed = u_interface.gen_embed(
+            title = "Project credits",
+            description = f"In order to use {u_text.smart_text(credit_amount, 'credit')} you would need to contribute **{round(project_percentage * 100, 2)}%** of a project's total items.{suffix}"
+        )
+        
+        await ctx.reply(embed=embed)
+
+    
+
+        
+
+
+    ######################################################################################################################################################
     ##### BREAD ROLL OLD #################################################################################################################################
     ######################################################################################################################################################
     
