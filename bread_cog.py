@@ -2203,13 +2203,38 @@ class Bread_cog(
     ##### BREAD PROJECT ##################################################################################################################################
     ######################################################################################################################################################
     
-    @bread.command(
+    @bread.group(
         name = "project",
         aliases = ["credits", "project_credits", "projects", "credit", "project_credit"],
+        brief = "Project credit related calculations.",
+        description = "Project credit related calculations.",
+        invoke_without_command = True,
+        pass_context = True
+    )
+    async def bread_project(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext
+        ):
+        if ctx.invoked_subcommand is not None:
+            return
+        
+        await ctx.send_help(self.bread_project)
+
+    
+
+        
+
+
+    ######################################################################################################################################################
+    ##### BREAD PROJECT USE ##############################################################################################################################
+    ######################################################################################################################################################
+    
+    @bread_project.command(
+        name = "use",
         brief = "Calculates how much to contribute to use an amount of credits.",
         description = "Calculates how many items to contribute to a project in order to use a specific amount of credits."
     )
-    async def bread_project(
+    async def bread_project_use(
             self: typing.Self,
             ctx: commands.Context | u_custom.CustomContext,
             credit_amount: typing.Optional[u_converters.parse_int] = commands.parameter(description = "The amount of credits to use."),
@@ -2229,7 +2254,7 @@ class Bread_cog(
 
         suffix = ""
         if maximum_items is not None:
-            suffix = f"\nFor a project that has {u_text.smart_text(maximum_items, 'total item')} that would end up being {u_text.smart_text(math.ceil(maximum_items * project_percentage), 'item')}."
+            suffix = f"\nFor a project that has {u_text.smart_text(maximum_items, 'total item')} that would end up being **{u_text.smart_text(math.ceil(maximum_items * project_percentage), 'item')}**."
             
         embed = u_interface.gen_embed(
             title = "Project credits",
