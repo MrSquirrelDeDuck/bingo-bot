@@ -996,7 +996,7 @@ class Bread_cog(
         
         gem_sum = sum([red_gems, blue_gems, purple_gems, green_gems, gold_gems * 4])
 
-        possible_trons = gem_sum // 64
+        possible_trons = gem_sum // 32
 
         # Generate the commands list.
         command_list = []
