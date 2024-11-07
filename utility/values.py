@@ -1219,7 +1219,13 @@ alchemy_recipes = {
         {
 			"cost": [(gem_gold, 1)],
             "result": 4
-		}
+		},
+        {
+            "cost": [(gem_red, 8)]
+        },
+        {
+            "cost": [(gem_blue, 4)]
+        }
     ],
 
     "gem_purple": [
@@ -1228,7 +1234,14 @@ alchemy_recipes = {
 		},
         {
 			"cost": [(gem_green, 1)]
-		}
+		},
+        {
+            "cost": [(gem_red, 4)]
+        },
+        {
+            "cost": [(gem_gold, 1)],
+            "result": 4
+        }
     ],
 
     "gem_blue": [
@@ -1237,13 +1250,30 @@ alchemy_recipes = {
 		},
         {
 			"cost": [(gem_purple, 1)]
-		}
+		},
+        {
+            "cost": [(gem_green, 1)]
+        },
+        {
+            "cost": [(gem_gold, 1)],
+            "result": 4
+        }
     ],
 
     "gem_red": [
         {
 			"cost": [(gem_blue, 1)]
-		}
+		},
+        {
+            "cost": [(gem_purple, 1)]
+        },
+        {
+            "cost": [(gem_green, 1)]
+        },
+        {
+            "cost": [(gem_gold, 1)],
+            "result": 4
+        }
     ],
 
     ######################################################################################
