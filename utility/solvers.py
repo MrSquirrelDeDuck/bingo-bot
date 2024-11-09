@@ -10,6 +10,7 @@ import decimal
 import time
 import operator
 import multiprocessing
+import traceback
 
 # pip install z3-solver
 import z3
@@ -56,6 +57,7 @@ def universal_solver(
         item_modifiers = {}
         item_totals = {}
         item_recipes = {}
+        item_recipe_booleans = {}
 
         modifier_data = {item: [] for item in items}
 
@@ -95,8 +97,10 @@ def universal_solver(
                     modifier_data[cost_item].append((recipe_name, cost_amount * -1))
                 else:
                     item_recipes[recipe_name] = z3.Int(recipe_name)
+                    item_recipe_booleans["bool_" + recipe_name] = z3.Int("bool_" + recipe_name)
 
                     s.add(item_recipes[recipe_name] >= 0)
+                    s.add(item_recipe_booleans["bool_" + recipe_name] == z3.If(item_recipes[recipe_name] > 0, 1, 0))
 
                     modifier_data[item].append((recipe_name, recipe.get("result", 1)))
 
@@ -112,10 +116,10 @@ def universal_solver(
 
         s.maximize(item_totals[maximize])
 
+        s.minimize(z3.Sum(list(item_recipe_booleans.values())))
+
         for minimize in item_recipes.values():
             s.minimize(minimize)
-        
-        # s.minimize(z3.Sum(list(item_recipes.values())))
 
         if s.check() != z3.sat:
             output.put({"state": "unsat"})
@@ -131,10 +135,14 @@ def universal_solver(
             items_send.append(item)
 
         for item in items_send:
-            result_json[str(item)] = model[item].as_long()
+            try:
+                result_json[str(item)] = model[item].as_long()
+            except AttributeError: # If something doesn't have .as_long() we probably don't need it.
+                pass
 
         output.put(result_json)
     except Exception as error:
+        print(traceback.format_exc())
         output.put({"state": "error", "exception": error})
 
 def solver_wrapper(
@@ -186,13 +194,6 @@ def solver_wrapper(
     )
     process.start()
 
-    # solver_result = universal_solver(
-    #     items = items.copy(),
-    #     maximize = maximize,
-    #     disabled_recipes = disabled_recipes,
-    #     disabled_items = disabled_items
-    # )
-
     process.join(timeout_time)
 
     if process.is_alive():
@@ -214,7 +215,7 @@ def solver_wrapper(
     recipe_list = u_values.alchemy_recipes.copy()
     recipe_list.update(u_values.misc_conversions)
 
-    recipes = [name for name, value in solver_result.items() if "recipe" in name and value >= 1]
+    recipes = [name for name, value in solver_result.items() if "recipe" in name and value >= 1 and not name.startswith("bool")]
 
     for i in range(len(recipes)):
         for recipe_name in recipes.copy():
