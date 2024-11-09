@@ -10,6 +10,7 @@ import decimal
 import time
 import operator
 import multiprocessing
+import traceback
 
 # pip install z3-solver
 import z3
@@ -28,6 +29,7 @@ def universal_solver(
         maximize: u_values.Item,
         disabled_recipes: list[str] = None,
         disabled_items: list[u_values.Item] = None,
+        minimum_items: dict[u_values.Item, int] = None,
         output: multiprocessing.Queue = None
     ) -> dict[str, int]:
     """Universal solver.
@@ -39,98 +41,116 @@ def universal_solver(
     Returns:
         dict[str, int]: A dict version of the z3 model.
     """
-    if disabled_recipes is None:
-        disabled_recipes = []
-    if disabled_items is None:
-        disabled_items = []
+    try:
+        if disabled_recipes is None:
+            disabled_recipes = []
+        if disabled_items is None:
+            disabled_items = []
+        if minimum_items is None:
+            minimum_items = {}
 
-    items[maximize] = 0
+        items[maximize] = 0
 
-    s = z3.Optimize()
+        s = z3.Optimize()
 
-    item_amounts = {}
-    item_modifiers = {}
-    item_totals = {}
-    item_recipes = {}
+        item_amounts = {}
+        item_modifiers = {}
+        item_totals = {}
+        item_recipes = {}
+        item_recipe_booleans = {}
 
-    modifier_data = {item: [] for item in items}
+        modifier_data = {item: [] for item in items}
 
-    recipes = u_values.alchemy_recipes.copy()
+        recipes = u_values.alchemy_recipes.copy()
 
-    recipes.update(u_values.misc_conversions)
+        recipes.update(u_values.misc_conversions)
 
-    for item, amount in items.items():
-        item_amounts[item] = z3.Int(f"{item.internal_name}_amounts")
-        item_modifiers[item] = z3.Int(f"{item.internal_name}_modifier")
-        item_totals[item] = z3.Int(f"{item.internal_name}_total")
+        for item, amount in items.items():
+            item_amounts[item] = z3.Int(f"{item.internal_name}_amounts")
+            item_modifiers[item] = z3.Int(f"{item.internal_name}_modifier")
+            item_totals[item] = z3.Int(f"{item.internal_name}_total")
 
-        s.add(item_totals[item] == (amount + item_modifiers[item]))
-        s.add(item_totals[item] >= 0, item_amounts[item] >= 0)
+            s.add(item_totals[item] == (amount + item_modifiers[item]))
+            s.add(item_totals[item] >= 0, item_amounts[item] >= 0)
 
-        if item.internal_name not in recipes:
-            continue
-
-        if item in disabled_items:
-            s.add(item_modifiers[item] == 0)
-
-        for recipe_id, recipe in enumerate(recipes[item.internal_name]):
-            recipe_name = f"{item.internal_name}_recipe_{recipe_id + 1}"
-            if recipe_name in disabled_recipes:
+            if item.internal_name not in recipes:
                 continue
 
-            if any(filter(lambda i: i[0] in disabled_items, recipe["cost"])):
-                continue
+            if item in disabled_items:
+                s.add(item_modifiers[item] == 0)
 
-            for cost_item, cost_amount in recipe["cost"]:
-                if cost_item not in modifier_data:
-                    break
+            for recipe_id, recipe in enumerate(recipes[item.internal_name]):
+                recipe_name = f"{item.internal_name}_recipe_{recipe_id + 1}"
+                if recipe_name in disabled_recipes:
+                    continue
 
-                if cost_item in disabled_items:
-                    break
-                
-                modifier_data[cost_item].append((recipe_name, cost_amount * -1))
-            else:
-                item_recipes[recipe_name] = z3.Int(recipe_name)
+                if any(filter(lambda i: i[0] in disabled_items, recipe["cost"])):
+                    continue
 
-                s.add(item_recipes[recipe_name] >= 0)
+                for cost_item, cost_amount in recipe["cost"]:
+                    if cost_item not in modifier_data:
+                        break
 
-                modifier_data[item].append((recipe_name, recipe.get("result", 1)))
+                    if cost_item in disabled_items:
+                        break
+                    
+                    modifier_data[cost_item].append((recipe_name, cost_amount * -1))
+                else:
+                    item_recipes[recipe_name] = z3.Int(recipe_name)
+                    item_recipe_booleans["bool_" + recipe_name] = z3.Int("bool_" + recipe_name)
 
-    for item, data in modifier_data.items():
-        constraints = []
-        for recipe, multiplier in data:
-            constraints.append((item_recipes[recipe] * multiplier))
+                    s.add(item_recipes[recipe_name] >= 0)
+                    s.add(item_recipe_booleans["bool_" + recipe_name] == z3.If(item_recipes[recipe_name] > 0, 1, 0))
 
-        s.add(item_modifiers[item] == z3.Sum(constraints))
+                    modifier_data[item].append((recipe_name, recipe.get("result", 1)))
 
-    s.maximize(item_totals[maximize])
+        for item, data in modifier_data.items():
+            constraints = []
+            for recipe, multiplier in data:
+                constraints.append((item_recipes[recipe] * multiplier))
 
-    for minimize in item_recipes.values():
-        s.minimize(minimize)
+            s.add(item_modifiers[item] == z3.Sum(constraints))
+        
+        for item, minimum in minimum_items.items():
+            s.add(item_totals[item] >= minimum)
 
-    if s.check() != z3.sat:
-        raise z3.Z3Exception("No solution found")
-    
-    model = s.model()
+        s.maximize(item_totals[maximize])
 
-    result_json = {"state":"valid"}
+        s.minimize(z3.Sum(list(item_recipe_booleans.values())))
 
-    items_send = []
+        for minimize in item_recipes.values():
+            s.minimize(minimize)
 
-    for item in model:
-        items_send.append(item)
+        if s.check() != z3.sat:
+            output.put({"state": "unsat"})
+            return
+        
+        model = s.model()
 
-    for item in items_send:
-        result_json[str(item)] = model[item].as_long()
+        result_json = {"state":"valid"}
 
-    output.put(result_json)
-    # return result_json
+        items_send = []
+
+        for item in model:
+            items_send.append(item)
+
+        for item in items_send:
+            try:
+                result_json[str(item)] = model[item].as_long()
+            except AttributeError: # If something doesn't have .as_long() we probably don't need it.
+                pass
+
+        output.put(result_json)
+    except Exception as error:
+        print(traceback.format_exc())
+        output.put({"state": "error", "exception": error})
 
 def solver_wrapper(
         items: dict[u_values.Item, int],
         maximize: u_values.Item,
         disabled_recipes: list[str] = None,
         disabled_items: list[u_values.Item] = None,
+        minimum_items: dict[u_values.Item, int] = None,
         timeout_time: int | float = 30.0
     ) -> tuple[list[str], dict[u_values.Item, int], dict[str, int]] | None:
     """Wrapper for the universal_solver that automatically generates the command list.
@@ -149,6 +169,13 @@ def solver_wrapper(
         disabled_recipes = []
     if disabled_items is None:
         disabled_items = []
+    if minimum_items is None:
+        minimum_items = {}
+
+    # Go through `minimum_items` to make sure every item in it is also in `items`.
+    for key in minimum_items.copy():
+        if key not in items:
+            minimum_items.pop(key)
 
     # Run the solver in a new thread.
     queue = multiprocessing.Queue()
@@ -161,17 +188,11 @@ def solver_wrapper(
             maximize,
             disabled_recipes,
             disabled_items,
+            minimum_items,
             queue
         )
     )
     process.start()
-
-    # solver_result = universal_solver(
-    #     items = items.copy(),
-    #     maximize = maximize,
-    #     disabled_recipes = disabled_recipes,
-    #     disabled_items = disabled_items
-    # )
 
     process.join(timeout_time)
 
@@ -181,6 +202,12 @@ def solver_wrapper(
     
     solver_result = queue.get()
 
+    if solver_result.get("state") == "unsat":
+        return False
+
+    if solver_result.get("state") == "error":
+        raise solver_result.get("exception")
+
     # Quick alchemy simulation to determine the command order.
     command_list = []
     item_copy = items.copy()
@@ -188,7 +215,7 @@ def solver_wrapper(
     recipe_list = u_values.alchemy_recipes.copy()
     recipe_list.update(u_values.misc_conversions)
 
-    recipes = [name for name, value in solver_result.items() if "recipe" in name and value >= 1]
+    recipes = [name for name, value in solver_result.items() if "recipe" in name and value >= 1 and not name.startswith("bool")]
 
     for i in range(len(recipes)):
         for recipe_name in recipes.copy():
@@ -230,8 +257,9 @@ async def solver_embed(
         ctx: commands.Context | u_custom.CustomContext,
         inventory: dict[u_values.Item, int],
         goal_item: u_values.Item,
-        disabled_recipes: list[str],
-        disabled_items: list[u_values.Item],
+        disabled_recipes: list[str] = None,
+        disabled_items: list[u_values.Item] = None,
+        minimum_items: dict[u_values.Item, int] = None,
     ) -> discord.Embed:
     """Given an inventory item dictionary, goal item, disabled recipes, and disabled items it will run the solver and generate the output embed."""
     # Run the solver.
@@ -244,14 +272,21 @@ async def solver_embed(
         items = inventory,
         maximize = goal_item,
         disabled_recipes = disabled_recipes,
-        disabled_items = disabled_items
+        disabled_items = disabled_items,
+        minimum_items = minimum_items
     )
 
-    if full_result is None:
-        return u_interface.gen_embed(
-            title = f"{goal_item.name} solver",
-            description = "Timeout reached.\nThe solver took too long to run and was stopped before it found a solution. Please do not try again, as the same thing will likely occur."
-        )
+    if not full_result:
+        if full_result is None:
+            return u_interface.gen_embed(
+                title = f"{goal_item.name} solver",
+                description = "Timeout reached.\nThe solver took too long to run and was stopped before it found a solution. Please do not try again, as the same thing will likely occur."
+            )
+        else:
+            return u_interface.gen_embed(
+                title = f"{goal_item.name} solver",
+                description = "Impossible restraints.\nThe solver does not think a solution is possible given the restraints.\nIf you're setting the amount of an item to end up with (like `chessatron=25`), that is likely the problem."
+            )
 
     command_list, post_alchemy, solver_result = full_result
 

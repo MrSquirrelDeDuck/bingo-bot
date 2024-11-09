@@ -1732,7 +1732,7 @@ misc_conversions = {
             "cost": [(bpawn, 8), (bbishop, 2), (brook, 2), (bknight, 2), (bqueen, 1), (bking, 1), (wpawn, 8), (wbishop, 2), (wknight, 2), (wrook, 2), (wqueen, 1), (wking, 1)]
         },
         {
-            "cost": [(gem_red, 64)]
+            "cost": [(gem_red, 32)]
         }
     ],
     "anarchy_chessatron": [
