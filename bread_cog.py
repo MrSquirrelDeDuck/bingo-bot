@@ -1522,7 +1522,7 @@ class Bread_cog(
         name = "solve",
         aliases = ["solver"],
         brief = "The chessatron solver.",
-        description = "The chessatron solver.\nThis does require storing data with the `%bread data` feature.\n\nModifier list:\n- '-gems' will include gems in the solving."
+        description = "The chessatron solver.\nThis does require storing data with the `%bread data` feature.\n\nModifier list:\n- '-gems' will include gems in the solving.\n- `<item name>=<amount>` will tell the solver to leave you with the amount or more of that item."
     )
     async def bread_chessatron_solve(
             self: typing.Self,
@@ -1548,6 +1548,7 @@ class Bread_cog(
         ################
 
         disabled_items = []
+        minimum_items = {}
         
         items = {}
 
@@ -1569,6 +1570,21 @@ class Bread_cog(
                 if get_item:
                     disabled_items.append(get_item)
 
+            if modifier.count("=") == 1:
+                potential_item, potential_amount = modifier.split("=")
+
+                potential_item = u_values.get_item(potential_item)
+
+                if potential_item is None:
+                    continue
+
+                try:
+                    potential_amount = u_converters.parse_int(potential_amount)
+                except ValueError:
+                    continue
+
+                minimum_items[potential_item] = potential_amount
+
         
         items[u_values.chessatron] = stored_data.get(u_values.chessatron, 0)
 
@@ -1582,7 +1598,8 @@ class Bread_cog(
             items = items,
             maximize = u_values.chessatron,
             disabled_recipes = stored_data.disallowed_recipes,
-            disabled_items = disabled_items
+            disabled_items = disabled_items,
+            minimum_items = minimum_items
         )
 
         if full_result is None:
@@ -1752,7 +1769,7 @@ class Bread_cog(
         name = "omega",
         aliases = ["omega_chessatron"],
         brief = "Solver for the creation of Omegas.",
-        description = "Solver for the creation of Omegas.\nThis does require storing data with the `%bread data` feature.\n\nModifier list:\n- `-tron`: Allows the solver to make chessatrons out of gems to increase the number of Omegas created.\n- `-chess`: The same as `-tron`, but it will allow for the use of gems and chess pieces to increase the number of Omegas made."
+        description = "Solver for the creation of Omegas.\nThis does require storing data with the `%bread data` feature.\n\nModifier list:\n- `-tron`: Allows the solver to make chessatrons out of gems to increase the number of Omegas created.\n- `-chess`: The same as `-tron`, but it will allow for the use of gems and chess pieces to increase the number of Omegas made.\n- `<item name>=<amount>` will tell the solver to leave you with the amount or more of that item."
     )
     async def bread_omega(
             self: typing.Self,
@@ -1781,6 +1798,7 @@ class Bread_cog(
         
         items = {}
         disabled_items = []
+        minimum_items = {}
 
         attributes = [u_values.all_shiny]
 
@@ -1799,6 +1817,21 @@ class Bread_cog(
                 get_item = u_values.get_item(item_name)
                 if get_item:
                     disabled_items.append(get_item)
+            if modifier.count("=") == 1:
+                potential_item, potential_amount = modifier.split("=")
+
+                potential_item = u_values.get_item(potential_item)
+
+                if potential_item is None:
+                    continue
+
+                try:
+                    potential_amount = u_converters.parse_int(potential_amount)
+                except ValueError:
+                    continue
+
+                minimum_items[potential_item] = potential_amount
+
 
         for attribute in attributes:
             for item in attribute:
@@ -1827,7 +1860,8 @@ class Bread_cog(
             inventory = items,
             goal_item = u_values.omega_chessatron,
             disabled_recipes = disabled_recipes,
-            disabled_items = disabled_items
+            disabled_items = disabled_items,
+            minimum_items = minimum_items
         )
 
         await ctx.reply(embed=embed)
@@ -1843,7 +1877,7 @@ class Bread_cog(
         name = "solver",
         aliases = ["solve", "universal_solver"],
         brief = "Universal solver to maximize an item.",
-        description = "Universal solver to maximize an item.\nThis does require storing data with the `%bread data` feature.\n\nModifiers:\n- `!<item>_recipe_<recipe number>` can be used to disallow the solver from using that particular recipe. Internally chessatrons are stored as alchemy recipes, so recipe 1 is from chess pieces and recipe 2 is from 64 red gems."
+        description = "Universal solver to maximize an item.\nThis does require storing data with the `%bread data` feature.\n\nModifiers:\n- `!<item>_recipe_<recipe number>` can be used to disallow the solver from using that particular recipe. Internally chessatrons are stored as alchemy recipes, so recipe 1 is from chess pieces and recipe 2 is from 64 red gems.\n- `<item name>=<amount>` will tell the solver to leave you with the amount or more of that item."
     )
     async def bread_solver(
             self: typing.Self,
@@ -1880,6 +1914,7 @@ class Bread_cog(
         
         items = {}
         disabled_items = []
+        minimum_items = {}
 
         for item in u_values.all_items:
             items[item] = stored_data.get(item, 0)
@@ -1898,6 +1933,21 @@ class Bread_cog(
         pattern = re.compile("^!(.+)_recipe_(\d+)$")
 
         for modifier in modifier_list:
+            if modifier.count("=") == 1:
+                potential_item, potential_amount = modifier.split("=")
+
+                potential_item = u_values.get_item(potential_item)
+
+                if potential_item is None:
+                    continue
+
+                try:
+                    potential_amount = u_converters.parse_int(potential_amount)
+                except ValueError:
+                    continue
+
+                minimum_items[potential_item] = potential_amount
+
             if not modifier.startswith("!"):
                 continue
             
@@ -1918,7 +1968,8 @@ class Bread_cog(
             inventory = items,
             goal_item = goal_item,
             disabled_recipes = disabled_recipes,
-            disabled_items = disabled_items
+            disabled_items = disabled_items,
+            minimum_items = minimum_items
         )
 
         await ctx.reply(embed=embed)
