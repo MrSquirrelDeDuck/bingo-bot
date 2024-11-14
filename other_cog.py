@@ -2714,6 +2714,151 @@ Full timestamp examples:
         )
         
         await ctx.reply(embed=embed)
+
+        
+            
+
+        
+    ######################################################################################################################################################
+    ##### RULES ##########################################################################################################################################
+    ######################################################################################################################################################
+    
+    @commands.group(
+        name = "rules",
+        aliases = ["rule"],
+        brief = "Get channel-specific rules.",
+        description = "Get channel-specific rules.",
+        invoke_without_command = True,
+        pass_context = True
+    )
+    async def rules_command(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext,
+            channel: typing.Optional[typing.Union[discord.TextChannel, discord.VoiceChannel, discord.StageChannel, discord.ForumChannel]] = commands.parameter(description = "Another channel to get the rules for.")
+        ):
+        default = False
+        if channel is None:
+            default = True
+            channel = ctx.channel
+        
+        all_rules = database.load("rules", default={})
+        rules = all_rules.get(str(channel.id), [])
+
+        if len(rules) == 0:
+            if default:
+                await ctx.reply("This channel does not have any channel-specific rules.")
+            else:
+                await ctx.reply(f"{channel.mention} does not have any channel-specific rules.")
+            
+            return
+
+        if default:
+            await ctx.reply("Channel-specific rules for this channel:\n- {}".format("\n -".join(rules)))
+        else:
+            await ctx.reply("Channel-specific rules for {}:\n- {}".format(channel.mention, "\n -".join(rules)))
+
+        
+            
+
+        
+    ######################################################################################################################################################
+    ##### RULES ADD ######################################################################################################################################
+    ######################################################################################################################################################
+    
+    @rules_command.command(
+        name = "add",
+        brief = "Add a rule to a channel.",
+        description = "Add a rule to a channel."
+    )
+    @commands.check(u_checks.in_authority)
+    async def rules_add(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext,
+            channel: typing.Optional[typing.Union[discord.TextChannel, discord.VoiceChannel, discord.StageChannel, discord.ForumChannel]] = commands.parameter(description = "The channel to add a rule to."),
+            *, rule: typing.Optional[str] = commands.parameter(description = "The rule text.")
+        ):
+        if channel is None:
+            await ctx.reply("Please provide the channel to add a rule to.")
+            return
+        
+        if rule is None:
+            await ctx.rpely("Please provide the rule text.")
+            return
+
+        if u_text.has_ping(rule):
+            await ctx.reply("Rules cannot contain pings.")
+            return
+        
+        all_rules = database.load("rules", default={})
+        rules = all_rules.get(str(channel.id), [])
+
+        if rule in rules:
+            await ctx.reply("That channel already has a rule with that text.")
+            return
+        
+        rules.append(rule)
+
+        all_rules[str(channel.id)] = rules
+
+        database.save("rules", data=all_rules)
+
+        await ctx.reply(f"Added rule in {channel.mention} with the text ``{u_text.backtick_filter(rule)}``.")
+
+        
+            
+
+        
+    ######################################################################################################################################################
+    ##### RULES REMOVE ###################################################################################################################################
+    ######################################################################################################################################################
+    
+    @rules_command.command(
+        name = "remove",
+        brief = "Remove a rule from a channel.",
+        description = "Remove a rule from a channel."
+    )
+    @commands.check(u_checks.in_authority)
+    async def rules_remove(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext,
+            channel: typing.Optional[typing.Union[discord.TextChannel, discord.VoiceChannel, discord.StageChannel, discord.ForumChannel]] = commands.parameter(description = "The channel to remove a rule from."),
+            rule_id: typing.Optional[u_converters.parse_int] = commands.parameter(description = "The rule id to remove.")
+        ):
+        if channel is None:
+            await ctx.reply("Please provide the channel to remove a rule from.")
+            return
+        
+        all_rules = database.load("rules", default={})
+        rules = all_rules.get(str(channel.id), [])
+
+        if rule_id is None:
+            await ctx.reply("To remove a rule from {}, run the same command but with the rule id at the end.\nRule id guide:\n{}".format(
+                channel.mention,
+                "\n".join(
+                    [f"{r_id}: {r}" for r_id, r in enumerate(rules, start=1)]
+                )
+            ))
+            return
+        
+        if not(0 < rule_id <= len(rules)):
+            await ctx.reply(f"There are only {u_text.smart_text(len(rules), 'rule')} in that channel.\nRun the same command without the rule id to get a rule id guide.")
+            return
+        
+        removed_text = rules.pop(rule_id - 1)
+
+        all_rules[str(channel.id)] = rules
+
+        database.save("rules", data=all_rules)
+
+        await ctx.reply(f"Removed rule {rule_id} in {channel.mention} that had the text ``{u_text.backtick_filter(removed_text)}``.")
+        
+
+        
+
+    
+
+
+
             
                 
 
