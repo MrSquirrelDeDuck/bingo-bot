@@ -1144,6 +1144,10 @@ class Other_cog(
         if u_text.has_ping(question):
             await ctx.reply("Question cannot contain any pings.")
             return
+
+        if len(question) > 1900:
+            await ctx.reply("The spirits do not like really long questions.")
+            return
         
         database.set_ouija_data(
             channel_id = ctx.channel.id,
