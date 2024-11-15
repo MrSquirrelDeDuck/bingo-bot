@@ -2755,11 +2755,13 @@ Full timestamp examples:
                 await ctx.reply(f"{channel.mention} does not have any channel-specific rules.")
             
             return
+        
+        rules = ["- {}".format(rule.replace("\n", "\n  ")) for rule in rules]
 
         if default:
-            await ctx.reply("Channel-specific rules for this channel:\n- {}".format("\n -".join(rules)))
+            await ctx.reply("Channel-specific rules for this channel:\n{}".format("\n".join(rules)))
         else:
-            await ctx.reply("Channel-specific rules for {}:\n- {}".format(channel.mention, "\n -".join(rules)))
+            await ctx.reply("Channel-specific rules for {}:\n{}".format(channel.mention, "\n".join(rules)))
 
         
             
@@ -2839,7 +2841,7 @@ Full timestamp examples:
             await ctx.reply("To remove a rule from {}, run the same command but with the rule id at the end.\nRule id guide:\n{}".format(
                 channel.mention,
                 "\n".join(
-                    [f"{r_id}: {r}" for r_id, r in enumerate(rules, start=1)]
+                    [f"{r_id}. {r}" for r_id, r in enumerate(rules, start=1)]
                 )
             ))
             return
