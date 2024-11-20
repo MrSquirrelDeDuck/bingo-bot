@@ -6,6 +6,7 @@ import typing
 import math
 import datetime
 import json
+import random
 
 # pip install pytz
 import pytz
@@ -1221,7 +1222,7 @@ async def parse_stats(message: discord.Message) -> dict[str | typing.Type[u_valu
         }
     
     # If nothing is found, say the parsing was unsuccessful.
-    return {"parse_successful": False}
+    return {"parse_successful": False, "stats_type": None}
 
 ############################################################################################################################################
 
@@ -1309,3 +1310,71 @@ def parse_roll(message: discord.Message) -> list[dict[str, str | int | list[typi
     return output
 
     
+def calculate_rolling_odds(
+        priority: str,
+        tile_seed: str,
+        day_seed: str,
+        planet_deviation: float = None,
+        in_nebula: bool = False,
+        black_hole: bool = False,
+        effective_deviation: float = None
+    ) -> dict[str, dict[str, float] | float]:
+    odds = {
+        "special_bread": 1,
+        "rare_bread": 1,
+        "chess_piece": 1,
+        "gem_red": 1,
+        "gem_blue": 1,
+        "gem_purple": 1,
+        "gem_green": 1,
+        "gem_gold": 1,
+        "anarchy_chess": 1,
+        "anarchy_piece": 1
+    }
+
+    if effective_deviation is None:
+        if in_nebula:
+            denominator = 1
+        else:
+            denominator = math.tau
+
+        if black_hole:
+            # If it's a black hole, make it a little crazier by dividing the denominator by 5.
+            denominator /= 5
+
+        deviation = (1 - planet_deviation) / denominator
+    else:
+        deviation = effective_deviation
+
+    raw_seed = tile_seed
+    tile_seed = tile_seed + day_seed
+
+    sqrt_phi = math.sqrt((1 + math.sqrt(5)) / 2)
+
+    # Get the planet seed for each category.
+    # These do not change per day.
+    for key in odds.copy():
+        odds[key] = random.Random(f"{raw_seed}{key}").gauss(mu=1, sigma=deviation)
+
+        if key == priority:
+            odds[key] = (abs(odds[key] - 1) + 1) * sqrt_phi
+
+    # Now to get the actual modifiers.
+    # These do change per day, but tend to be around the default seeds calculated above.
+    for key, value in odds.copy().items():
+        sigma = deviation / 2.5
+
+        if key == priority:
+            sigma = deviation / 1.5
+
+        odds[key] = random.Random(f"{tile_seed}{key}").gauss(mu=value, sigma=sigma)
+
+        # Incredibly unlikely to be an issue, but this forces the priority item to be greater than 1.
+        # This prevents the priority item from being less common than normal.
+        if key == priority and odds[key] < 1:
+            odds[key] = abs(odds[key] - 1) + 1
+    
+    return {
+        "odds": odds,
+        "deviation": deviation
+    }
