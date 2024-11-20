@@ -8,6 +8,7 @@ import copy
 import math
 import re
 import random
+import time
 
 # pip install pytz
 import pytz
@@ -1293,6 +1294,7 @@ class Bread_cog(
     bread_data_usage = [
         "%bread tron solve",
         "%bread tron quick",
+        "%bread tron max",
         "%bread tron_value",
         "%bread gem_value",
         "%bread gold_gem",
@@ -1760,6 +1762,105 @@ class Bread_cog(
 
     
 
+        
+    ######################################################################################################################################################
+    ##### BREAD CHESSATRON MAX ###########################################################################################################################
+    ######################################################################################################################################################
+    
+    @bread_chessatron.command(
+        name = "max",
+        brief = "Calculates the maximum possible amount of trons.",
+        description = "Calculates the maximum possible amount of trons using only recipe 1 (and 2 for pawns). This does also work for anarchy trons as well as regular trons.\n\nThis is using the data stored with the `%bread data` feature."
+    )
+    async def bread_chessatron_max(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext
+        ):
+        replied = u_interface.replying_mm_checks(
+            message = ctx.message,
+            require_reply = False,
+            return_replied_to = True
+        )
+
+        GENERIC_ERROR = "Please reply to a message that contains your chess stats."
+
+        async def parse_attempt() -> bool:
+            if not replied:
+                return False
+            
+            parse = await u_bread.parse_stats(replied)
+
+            if not parse.get("parse_successful"):
+                return False
+            
+            if not (parse.get("stats_type") == "chess" or parse.get("stats_type") == "dump"):
+                return False
+
+            return parse
+        
+        parsed = await parse_attempt()
+
+        if not parsed:
+            using_stored = True
+            stats = u_bread.get_stored_data(
+                database = database,
+                user_id = ctx.author.id
+            )
+        else:
+            using_stored = False
+            stats = parsed.get("stats", {})
+        
+        regular_pieces = {
+            piece: stats.get(piece, 0)
+            for piece in u_values.all_chess_pieces
+        }
+        anarchy_pieces = {
+            piece: stats.get(piece, 0)
+            for piece in u_values.all_anarchy_pieces
+        }
+
+        print(stats)
+
+        regular_kings = (regular_pieces[u_values.bking] + regular_pieces[u_values.wking]) / 2
+        regular_queens = (regular_pieces[u_values.bqueen] + regular_pieces[u_values.wqueen]) / 2
+        regular_rooks = (regular_pieces[u_values.brook] + regular_pieces[u_values.wrook]) / 4
+        regular_bishops = (regular_pieces[u_values.bbishop] + regular_pieces[u_values.wbishop]) / 4
+        regular_knights = (regular_pieces[u_values.bknight] + regular_pieces[u_values.wknight]) / 4
+        regular_pawns = ((regular_pieces[u_values.bpawn] - regular_pieces[u_values.wpawn]) / 3 + regular_pieces[u_values.wpawn]) / 8
+
+        anarchy_kings = (anarchy_pieces[u_values.bking_anarchy] + anarchy_pieces[u_values.wking_anarchy]) / 2
+        anarchy_queens = (anarchy_pieces[u_values.bqueen_anarchy] + anarchy_pieces[u_values.wqueen_anarchy]) / 2
+        anarchy_rooks = (anarchy_pieces[u_values.brook_anarchy] + anarchy_pieces[u_values.wrook_anarchy]) / 4
+        anarchy_bishops = (anarchy_pieces[u_values.bbishop_anarchy] + anarchy_pieces[u_values.wbishop_anarchy]) / 4
+        anarchy_knights = (anarchy_pieces[u_values.bknight_anarchy] + anarchy_pieces[u_values.wknight_anarchy]) / 4
+        anarchy_pawns = ((anarchy_pieces[u_values.bpawn_anarchy] - anarchy_pieces[u_values.wpawn_anarchy]) / 3 + anarchy_pieces[u_values.wpawn_anarchy]) / 8
+
+        maximum_regular = int(min(regular_kings, regular_queens, regular_rooks, regular_bishops, regular_knights, regular_pawns))
+        maximum_anarchy = int(min(anarchy_kings, anarchy_queens, anarchy_rooks, anarchy_bishops, anarchy_knights, anarchy_pawns))
+
+        embed = u_interface.gen_embed(
+            title = "Maximum Chessatrons",
+            description = ("(Using stored data, use `%bread data` for more info.)\n\n" if using_stored else "") + "Maximum amount of Chessatrons and Anarchy Chessatrons possible using only recipe 1 (and 2 for pawns):",
+            fields = [
+                (
+                    "Regular Chessatrons:",
+                    f"- Kings: {u_text.smart_number(round(regular_kings, 2))}\n- Queens: {u_text.smart_number(round(regular_queens, 2))}\n- Rooks: {u_text.smart_number(round(regular_rooks, 2))}\n- Bishops: {u_text.smart_number(round(regular_bishops, 2))}\n- Knights: {u_text.smart_number(round(regular_knights, 2))}\n- Pawns: {u_text.smart_number(round(regular_pawns, 2))}\nMaximum amount of regular chessatrons: **{u_text.smart_number(maximum_regular)}**",
+                    True
+                ),
+                (
+                    "Anarchy Chessatrons:",
+                    f"- Kings: {u_text.smart_number(round(anarchy_kings, 2))}\n- Queens: {u_text.smart_number(round(anarchy_queens, 2))}\n- Rooks: {u_text.smart_number(round(anarchy_rooks, 2))}\n- Bishops: {u_text.smart_number(round(anarchy_bishops, 2))}\n- Knights: {u_text.smart_number(round(anarchy_knights, 2))}\n- Pawns: {u_text.smart_number(round(anarchy_pawns, 2))}\nMaximum amount of anarchy chessatrons: **{u_text.smart_number(maximum_anarchy)}**",
+                    True
+                )
+            ]
+        )
+
+        await ctx.reply(embed=embed)
+
+
+
+    
+ 
         
     ######################################################################################################################################################
     ##### BREAD OMEGA ####################################################################################################################################
@@ -2430,6 +2531,234 @@ class Bread_cog(
         
         # now we remove them from the list of rollers, this allows them to roll again without spamming
         self.currently_interacting.remove(ctx.author.id)
+
+    
+
+        
+
+
+    ######################################################################################################################################################
+    ##### BREAD LAB ######################################################################################################################################
+    ######################################################################################################################################################
+    
+    @bread.group(
+        name = "lab",
+        brief = "Universal experimental projects for the entire Bingo-Bot.",
+        description = """# The lab.                  
+
+Universal experimental projects for the entire Bingo-Bot.
+If you have any questions or ideas ping Duck.""",
+        invoke_without_command = True,
+        pass_context = True
+    )
+    async def bread_lab(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext
+        ):
+        if ctx.invoked_subcommand is not None:
+            return
+        
+        await ctx.send_help(self.bread_lab)
+
+    
+
+        
+
+
+    ######################################################################################################################################################
+    ##### BREAD LAB ODDS #################################################################################################################################
+    ######################################################################################################################################################
+    
+    @bread_lab.command(
+        name = "odds",
+        brief = "Calculates rolling odds for a space planet.",
+        description = """Calculates rolling odds for a space planet.
+
+Arguments:
+- `priority:<item>`: The priority item.
+- `raw_deviation:<float>`: The raw planet deviation.
+- `deviation:<float>`: The calculated effective planet deviation. `raw_deviation`, `nebula`, and `black_hole` are not needed if this is provided.
+- `nebula:<boolean>`: Whether the planet is in a nebula.
+- `black_hole:<boolean>`: Whether the planet is in a black hole system.
+- `tile_seed:<string>`: The tile seed.
+- `day_seed:<string>`: The day seed. If this is provided it will calculate just that day's odds, but if it isn't then a trial of 10,000 days will be calculated.
+
+If any of these are missing it'll generate them randomly, except for the priority item, that one is required."""
+    )
+    @commands.check(u_checks.sub_admin_check)
+    async def bread_lab_odds(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext,
+            *, arguments: typing.Optional[str] = commands.parameter(description = "Arguments to use. See above for info.")
+        ):
+        if arguments is None:
+            arguments = ""
+
+        priority = None
+        raw_deviation = None
+        deviation = None
+        nebula = None
+        black_hole = None
+        tile_seed = None
+        day_seed = None
+
+        for arg in arguments.split(" "):
+            if arg.count(":") != 1:
+                continue
+
+            key, value = arg.split(":")
+
+            try:
+                if key == "priority":
+                    priority = u_values.get_item(value)
+                elif key == "raw_deviation":
+                    raw_deviation = u_converters.parse_float(value)
+                elif key == "deviation":
+                    deviation = u_converters.parse_float(value)
+                elif key == "nebula":
+                    nebula = u_converters.extended_bool(value)
+                elif key == "black_hole":
+                    black_hole = u_converters.extended_bool(value)
+                elif key == "tile_seed":
+                    tile_seed = value
+                elif key == "day_seed":
+                    day_seed = value
+            except (commands.BadArgument, ValueError):
+                continue
+        
+        priority_types = {
+            "bread": [u_values.bread],
+            "special_bread": u_values.all_specials,
+            "rare_bread": u_values.all_rares,
+            "chess_piece": u_values.all_chess_pieces,
+            "gem_red": [u_values.gem_red],
+            "gem_blue": [u_values.gem_blue],
+            "gem_purple": [u_values.gem_purple],
+            "gem_green": [u_values.gem_green],
+            "gem_gold": [u_values.gem_gold],
+            "anarchy_chess": [u_values.anarchy_chess],
+            "anarchy_piece": u_values.all_anarchy_pieces
+        }
+
+        for key, values in priority_types.items():
+            if priority in values:
+                priority = key
+                break
+        else:
+            await ctx.reply("Unrecognized priority item, please include an item that can be found as a planet type.")
+            return
+        
+        ##############################
+
+        if raw_deviation is None:
+            raw_deviation = random.normalvariate(
+                mu = 1,
+                sigma = 0.1
+            )
+        
+        if nebula is None:
+            nebula = random.randint(1, 2) == 1
+
+        if black_hole is None:
+            black_hole = random.randint(1, 2) == 1
+
+        if tile_seed is None:
+            tile_seed = "{:064x}".format(random.randrange(16 ** 64))
+
+        ##############################
+        
+        # await ctx.reply(f"{priority} {raw_deviation} {deviation} {nebula} {black_hole} {tile_seed} {day_seed}")
+
+        if day_seed is not None:
+            result = u_bread.calculate_rolling_odds(
+                priority = priority,
+                tile_seed = tile_seed,
+                day_seed = day_seed,
+                planet_deviation = raw_deviation,
+                in_nebula = nebula,
+                black_hole = black_hole,
+                effective_deviation = deviation
+            ).get("odds")
+
+            embed = u_interface.gen_embed(
+                title = "Planet rolling odds",
+                description = f"Parameters:\n- Priority: {priority}\n- Tile seed: {tile_seed}\n- Day seed: {day_seed}\n- Raw deviation: {raw_deviation}\n- Nebula: {nebula}\n- Black hole: {black_hole}\n- Effective deviation: {deviation}",
+                fields = [
+                    (
+                        "Odds:",
+                        "\n".join([f"- {priority_types[item][0]}: {value}" for item, value in result.items()]),
+                        False
+                    )
+                ]
+            )
+
+            await ctx.reply(embed=embed)
+            return
+        
+        data = []
+
+        message = await ctx.reply("Generating data...\n0/100,000")
+
+        amount = 100_000
+
+        tenth = amount // 10
+
+        start = time.time()
+        for i in range(1, amount + 1):
+            if i % tenth == 0:
+                current = time.time()
+
+                await message.edit(content=f"Generating data...\n{u_text.smart_number(i)}/100,000\nElapsed time: {u_text.smart_text(round(current - start, 3), 'second')}. Estimated time remaining: {u_text.smart_text(round(((current - start) / i) * (amount - i), 3), 'second')}.")
+
+            day_seed = "{:064x}".format(random.randrange(16 ** 64))
+
+            output = u_bread.calculate_rolling_odds(
+                priority = priority,
+                tile_seed = tile_seed,
+                day_seed = day_seed,
+                planet_deviation = raw_deviation,
+                in_nebula = nebula,
+                black_hole = black_hole,
+                effective_deviation = deviation
+            )
+
+            if deviation is None:
+                deviation = output.get("deviation")
+
+            data.append(output.get("odds"))
+        
+        item_types = ["special_bread", "rare_bread", "chess_piece", "gem_red", "gem_blue", "gem_purple", "gem_green", "gem_gold", "anarchy_chess", "anarchy_piece"]
+
+        first = {item: {} for item in item_types}
+
+        for tick in data:
+            for key, value in tick.items():
+                mod = round(value, 4)
+                if mod in first[key]:
+                    first[key][mod] += 1
+                else:
+                    first[key][mod] = 1
+
+        graph = u_images.generate_graph(
+            lines = [{
+                "label": key.replace("_", " ").title(),
+                "values": list(dict(sorted(key_data.items())).items())
+            } for key, key_data in first.items()],
+            x_label = "Item odds",
+            y_label = "Occurrence count"
+        )
+
+        embed = u_interface.gen_embed(
+            title = "Planet rolling odds",
+            description = f"Over a set of 100,000 days with the following parameters:\n- Priority: {priority}\n- Tile seed: {tile_seed}\n- Raw deviation: {raw_deviation}\n- Nebula: {nebula}\n- Black hole: {black_hole}\n- Effective deviation: {deviation}",
+            image_link = "attachment://generated_graph.png",
+            footer_text = f"Time to generate: {u_text.smart_text(round(current - start, 3), 'second')}"
+        )
+
+        await ctx.reply(embed=embed, file=discord.File(graph))
+        await message.delete()
+
+
 
 
 
