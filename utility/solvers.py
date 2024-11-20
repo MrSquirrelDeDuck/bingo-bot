@@ -30,6 +30,7 @@ def universal_solver(
         disabled_recipes: list[str] = None,
         disabled_items: list[u_values.Item] = None,
         minimum_items: dict[u_values.Item, int] = None,
+        equal_items: dict[u_values.Item, int] = None,
         output: multiprocessing.Queue = None
     ) -> dict[str, int]:
     """Universal solver.
@@ -48,6 +49,8 @@ def universal_solver(
             disabled_items = []
         if minimum_items is None:
             minimum_items = {}
+        if equal_items is None:
+            equal_items = {}
 
         items[maximize] = 0
 
@@ -114,6 +117,9 @@ def universal_solver(
         for item, minimum in minimum_items.items():
             s.add(item_totals[item] >= minimum)
 
+        for item, goal in equal_items.items():
+            s.add(item_totals[item] == goal)
+
         s.maximize(item_totals[maximize])
 
         s.minimize(z3.Sum(list(item_recipe_booleans.values())))
@@ -151,6 +157,7 @@ def solver_wrapper(
         disabled_recipes: list[str] = None,
         disabled_items: list[u_values.Item] = None,
         minimum_items: dict[u_values.Item, int] = None,
+        equal_items: dict[u_values.Item, int] = None,
         timeout_time: int | float = 30.0
     ) -> tuple[list[str], dict[u_values.Item, int], dict[str, int]] | None:
     """Wrapper for the universal_solver that automatically generates the command list.
@@ -171,11 +178,18 @@ def solver_wrapper(
         disabled_items = []
     if minimum_items is None:
         minimum_items = {}
+    if equal_items is None:
+        equal_items = {}
 
     # Go through `minimum_items` to make sure every item in it is also in `items`.
     for key in minimum_items.copy():
         if key not in items:
             minimum_items.pop(key)
+
+    # Go through `equal_items` to make sure every item in it is also in `items`.
+    for key in equal_items.copy():
+        if key not in items:
+            equal_items.pop(key)
 
     # Run the solver in a new thread.
     queue = multiprocessing.Queue()
@@ -189,6 +203,7 @@ def solver_wrapper(
             disabled_recipes,
             disabled_items,
             minimum_items,
+            equal_items,
             queue
         )
     )
@@ -260,6 +275,7 @@ async def solver_embed(
         disabled_recipes: list[str] = None,
         disabled_items: list[u_values.Item] = None,
         minimum_items: dict[u_values.Item, int] = None,
+        equal_items: dict[u_values.Item, int] = None,
     ) -> discord.Embed:
     """Given an inventory item dictionary, goal item, disabled recipes, and disabled items it will run the solver and generate the output embed."""
     # Run the solver.
@@ -273,7 +289,8 @@ async def solver_embed(
         maximize = goal_item,
         disabled_recipes = disabled_recipes,
         disabled_items = disabled_items,
-        minimum_items = minimum_items
+        minimum_items = minimum_items,
+        equal_items = equal_items
     )
 
     if not full_result:

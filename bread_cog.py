@@ -1186,49 +1186,102 @@ class Bread_cog(
         name = "gold_gem",
         aliases = ["gem_gold"],
         brief = "Figures out how many gold gems you can make from other gems.",
-        description = "Figures out how many gold gems you can make from other gems.\nYou can reply to a stats message to get information from it. You can also provide the amount of each gem you have to override the stats parser.\nIf you do not reply to a stats message you msut provide the amount of each gem you have."
+        description = "Figures out how many gold gems you can make from other gems.\nNote that this uses the data stored with the `%bread data` feature.\n\nModifier list:\n- `[item name]>[amount]` will tell the solver to leave you with the amount or more of that item.\n- `[item name]=[amount]` will tell the solver to leave you with exactly that of that item."
     )
     async def bread_gold_gem(
             self: typing.Self,
             ctx: commands.Context | u_custom.CustomContext,
-            red_gems: typing.Optional[u_converters.parse_int] = commands.parameter(description = "The amount of red gems you have."),
-            blue_gems: typing.Optional[u_converters.parse_int] = commands.parameter(description = "The amount of blue gems you have."),
-            purple_gems: typing.Optional[u_converters.parse_int] = commands.parameter(description = "The amount of purple gems you have."),
-            green_gems: typing.Optional[u_converters.parse_int] = commands.parameter(description = "The amount of green gems you have."),
-            gold_gems: typing.Optional[u_converters.parse_int] = commands.parameter(description = "Optional amount of gold gems you have."),
-            ascension: typing.Optional[u_converters.parse_int] = commands.parameter(description = "The ascension number you're on.")
+            *, modifiers: typing.Optional[str] = commands.parameter(description = "Modifiers to give the solver. See above for modifier info.")
         ):
-        # This needs to be in the same order as the command parameters.
-        resolve_values = {
-            u_values.gem_red: red_gems,
-            u_values.gem_blue: blue_gems,
-            u_values.gem_purple: purple_gems,
-            u_values.gem_green: green_gems,
-            u_values.gem_gold: gold_gems,
-            "prestige_level": ascension
-        }
-
-        resolved = await u_interface.resolve_conflict(
-            database = database,
-            ctx = ctx,
-            resolve_keys = list(resolve_values.keys()),
-            command_provided = list(resolve_values.values())
+        replied = u_interface.replying_mm_checks(
+            message = ctx.message,
+            require_reply = False,
+            return_replied_to = True
         )
-        
-        using_stored_data, stored_data, red_gems, blue_gems, purple_gems, green_gems, gold_gems, ascension = resolved
-        
-        if ascension is None:
-            ascension = 0
 
-        if gold_gems is None:
-            gold_gems = 0
+        async def parse_attempt() -> bool:
+            if not replied:
+                return False
+            
+            parse = await u_bread.parse_stats(replied)
+
+            if not parse.get("parse_successful"):
+                return False
+            
+            if not (parse.get("stats_type") == "main" or parse.get("stats_type") == "dump"):
+                return False
+
+            return parse
+        
+        parsed = await parse_attempt()
+
+        if not parsed:
+            using_stored = True
+            stats = u_bread.get_stored_data(
+                database = database,
+                user_id = ctx.author.id
+            )
+            if not stats.loaded:
+                await ctx.reply("Please reply to a message that contains your gem stats or use stored data.\nUse `%bread data` to get more information on how to store data.")
+                return
+        else:
+            using_stored = False
+            stats = parsed.get("stats", {})
+
+        ###################################################
+
+        if modifiers is None:
+            modifiers = ""
+
+        modifier_list = modifiers.split(" ")
+
+        disabled_items = []
+        minimum_items = {}
+        equal_items = {}
+
+        for modifier in modifier_list:
+            if modifier.startswith("!"):
+                item_name = modifier.replace("!", "", 1)
+                get_item = u_values.get_item(item_name)
+                if get_item:
+                    disabled_items.append(get_item)
+            if modifier.count(">") == 1:
+                potential_item, potential_amount = modifier.split(">")
+
+                potential_item = u_values.get_item(potential_item)
+
+                if potential_item is None:
+                    continue
+
+                try:
+                    potential_amount = u_converters.parse_int(potential_amount)
+                except ValueError:
+                    continue
+
+                minimum_items[potential_item] = potential_amount
+            if modifier.count("=") == 1:
+                potential_item, potential_amount = modifier.split("=")
+
+                potential_item = u_values.get_item(potential_item)
+
+                if potential_item is None:
+                    continue
+
+                try:
+                    potential_amount = u_converters.parse_int(potential_amount)
+                except ValueError:
+                    continue
+
+                equal_items[potential_item] = potential_amount
+
+        ###################################################
 
         gems = {
-            u_values.gem_red: red_gems,
-            u_values.gem_blue: blue_gems,
-            u_values.gem_purple: purple_gems,
-            u_values.gem_green: green_gems,
-            u_values.gem_gold: gold_gems
+            u_values.gem_red: stats.get(u_values.gem_red),
+            u_values.gem_blue: stats.get(u_values.gem_blue),
+            u_values.gem_purple: stats.get(u_values.gem_purple),
+            u_values.gem_green: stats.get(u_values.gem_green),
+            u_values.gem_gold: stats.get(u_values.gem_gold)
         }
         
         if any([value > 1_000_000_000_000 for value in gems.values() if value is not None]):
@@ -1241,32 +1294,46 @@ class Bread_cog(
             pass
 
         try:
-            disabled_recipes = stored_data.disallowed_recipes
+            disabled_recipes = stats.disallowed_recipes
         except AttributeError:
             disabled_recipes = None
 
         full_result = u_solvers.solver_wrapper(
             items = gems,
             maximize = u_values.gem_gold,
-            disabled_recipes = disabled_recipes
+            disabled_recipes = disabled_recipes,
+            disabled_items = disabled_items,
+            minimum_items = minimum_items,
+            equal_items = equal_items
         )
 
-        if full_result is None:
-            embed = u_interface.gen_embed(
-                title = "Gold gem solver",
-                description = "Timeout reached.\nThe solver took too long to run and was stopped before it found a solution. Please do not try again, as the same thing will likely occur."
-            )
-            await ctx.reply(embed=embed)
-            return
+        if not full_result:
+            if full_result is None:
+                embed = u_interface.gen_embed(
+                    title = "Gold gem solver",
+                    description = "Timeout reached.\nThe solver took too long to run and was stopped before it found a solution. Please do not try again, as the same thing will likely occur."
+                )
+                await ctx.reply(embed=embed)
+                return
+            else:
+                embed = u_interface.gen_embed(
+                    title = f"Gold gem solver",
+                    description = "Impossible restraints.\nThe solver does not think a solution is possible given the restraints.\nIf you're setting the amount of an item to end up with (like `gold_gem=25`), that is likely the problem."
+                )
+                await ctx.reply(embed=embed)
+                return
 
         command_list, post_alchemy, solver_result = full_result
 
-        ascension_multiplier = 1 + (0.1 * ascension)
+        try:
+            ascension_multiplier = 1 + (0.1 * stats.get("prestige_level", 0))
+        except AttributeError:
+            ascension_multiplier = 1
         
         embed = u_interface.gen_embed(
             title = "Gold gem solver",
             description = "{}{}\nYou should be able to make **{}**.\nDough gain: {} ({} with [Gold Ring](<https://bread.miraheze.org/wiki/Gold_Ring>).)".format(
-                "(Using stored data, use `%bread data` for more info.)\n" if using_stored_data else "",
+                "(Using stored data, use `%bread data` for more info.)\n" if using_stored else "",
                 "\n".join([
                     f"{gem}: {u_text.smart_number(gems[gem])} -> {u_text.smart_number(post_alchemy[gem])}"
                     for gem in gems
@@ -1524,7 +1591,7 @@ class Bread_cog(
         name = "solve",
         aliases = ["solver"],
         brief = "The chessatron solver.",
-        description = "The chessatron solver.\nThis does require storing data with the `%bread data` feature.\n\nModifier list:\n- '-gems' will include gems in the solving.\n- `<item name>=<amount>` will tell the solver to leave you with the amount or more of that item."
+        description = "The chessatron solver.\nThis does require storing data with the `%bread data` feature.\n\nModifier list:\n- '-gems' will include gems in the solving.\n- `[item name]>[amount]` will tell the solver to leave you with the amount or more of that item.\n- `[item name]=[amount]` will tell the solver to leave you with the exactly that amount of that item."
     )
     async def bread_chessatron_solve(
             self: typing.Self,
@@ -1551,6 +1618,7 @@ class Bread_cog(
 
         disabled_items = []
         minimum_items = {}
+        equal_items = {}
         
         items = {}
 
@@ -1572,6 +1640,21 @@ class Bread_cog(
                 if get_item:
                     disabled_items.append(get_item)
 
+            if modifier.count(">") == 1:
+                potential_item, potential_amount = modifier.split(">")
+
+                potential_item = u_values.get_item(potential_item)
+
+                if potential_item is None:
+                    continue
+
+                try:
+                    potential_amount = u_converters.parse_int(potential_amount)
+                except ValueError:
+                    continue
+
+                minimum_items[potential_item] = potential_amount
+
             if modifier.count("=") == 1:
                 potential_item, potential_amount = modifier.split("=")
 
@@ -1585,7 +1668,7 @@ class Bread_cog(
                 except ValueError:
                     continue
 
-                minimum_items[potential_item] = potential_amount
+                equal_items[potential_item] = potential_amount
 
         
         items[u_values.chessatron] = stored_data.get(u_values.chessatron, 0)
@@ -1601,16 +1684,25 @@ class Bread_cog(
             maximize = u_values.chessatron,
             disabled_recipes = stored_data.disallowed_recipes,
             disabled_items = disabled_items,
-            minimum_items = minimum_items
+            minimum_items = minimum_items,
+            equal_items = equal_items
         )
 
-        if full_result is None:
-            embed = u_interface.gen_embed(
-                title = "Chessatron solver",
-                description = "Timeout reached.\nThe solver took too long to run and was stopped before it found a solution. Please do not try again, as the same thing will likely occur."
-            )
-            await ctx.reply(embed=embed)
-            return
+        if not full_result:
+            if full_result is None:
+                embed = u_interface.gen_embed(
+                    title = "Chessatron solver",
+                    description = "Timeout reached.\nThe solver took too long to run and was stopped before it found a solution. Please do not try again, as the same thing will likely occur."
+                )
+                await ctx.reply(embed=embed)
+                return
+            else:
+                embed = u_interface.gen_embed(
+                    title = f"Chessatron solver",
+                    description = "Impossible restraints.\nThe solver does not think a solution is possible given the restraints.\nIf you're setting the amount of an item to end up with (like `chessatron=25`), that is likely the problem."
+                )
+                await ctx.reply(embed=embed)
+                return
 
         command_list, post_alchemy, solver_result = full_result
 
@@ -1782,8 +1874,6 @@ class Bread_cog(
             return_replied_to = True
         )
 
-        GENERIC_ERROR = "Please reply to a message that contains your chess stats."
-
         async def parse_attempt() -> bool:
             if not replied:
                 return False
@@ -1806,6 +1896,9 @@ class Bread_cog(
                 database = database,
                 user_id = ctx.author.id
             )
+            if not stats.loaded:
+                await ctx.reply("Please reply to a message that contains your chess stats or use stored data.\nUse `%bread data` to get more information on how to store data.")
+                return
         else:
             using_stored = False
             stats = parsed.get("stats", {})
@@ -1818,8 +1911,6 @@ class Bread_cog(
             piece: stats.get(piece, 0)
             for piece in u_values.all_anarchy_pieces
         }
-
-        print(stats)
 
         regular_kings = (regular_pieces[u_values.bking] + regular_pieces[u_values.wking]) / 2
         regular_queens = (regular_pieces[u_values.bqueen] + regular_pieces[u_values.wqueen]) / 2
@@ -1870,7 +1961,7 @@ class Bread_cog(
         name = "omega",
         aliases = ["omega_chessatron"],
         brief = "Solver for the creation of Omegas.",
-        description = "Solver for the creation of Omegas.\nThis does require storing data with the `%bread data` feature.\n\nModifier list:\n- `-tron`: Allows the solver to make chessatrons out of gems to increase the number of Omegas created.\n- `-chess`: The same as `-tron`, but it will allow for the use of gems and chess pieces to increase the number of Omegas made.\n- `<item name>=<amount>` will tell the solver to leave you with the amount or more of that item."
+        description = "Solver for the creation of Omegas.\nThis does require storing data with the `%bread data` feature.\n\nModifier list:\n- `-tron`: Allows the solver to make chessatrons out of gems to increase the number of Omegas created.\n- `-chess`: The same as `-tron`, but it will allow for the use of gems and chess pieces to increase the number of Omegas made.\n- `[item name]>[amount]` will tell the solver to leave you with the amount or more of that item.\n- `[item name]=[amount]` will tell the solver to leave you with that exact amount of that item."
     )
     async def bread_omega(
             self: typing.Self,
@@ -1900,6 +1991,7 @@ class Bread_cog(
         items = {}
         disabled_items = []
         minimum_items = {}
+        equal_items = {}
 
         attributes = [u_values.all_shiny]
 
@@ -1918,6 +2010,20 @@ class Bread_cog(
                 get_item = u_values.get_item(item_name)
                 if get_item:
                     disabled_items.append(get_item)
+            if modifier.count(">") == 1:
+                potential_item, potential_amount = modifier.split(">")
+
+                potential_item = u_values.get_item(potential_item)
+
+                if potential_item is None:
+                    continue
+
+                try:
+                    potential_amount = u_converters.parse_int(potential_amount)
+                except ValueError:
+                    continue
+
+                minimum_items[potential_item] = potential_amount
             if modifier.count("=") == 1:
                 potential_item, potential_amount = modifier.split("=")
 
@@ -1931,7 +2037,7 @@ class Bread_cog(
                 except ValueError:
                     continue
 
-                minimum_items[potential_item] = potential_amount
+                equal_items[potential_item] = potential_amount
 
 
         for attribute in attributes:
@@ -1962,7 +2068,8 @@ class Bread_cog(
             goal_item = u_values.omega_chessatron,
             disabled_recipes = disabled_recipes,
             disabled_items = disabled_items,
-            minimum_items = minimum_items
+            minimum_items = minimum_items,
+            equal_items = equal_items
         )
 
         await ctx.reply(embed=embed)
@@ -1978,7 +2085,7 @@ class Bread_cog(
         name = "solver",
         aliases = ["solve", "universal_solver"],
         brief = "Universal solver to maximize an item.",
-        description = "Universal solver to maximize an item.\nThis does require storing data with the `%bread data` feature.\n\nModifiers:\n- `!<item>_recipe_<recipe number>` can be used to disallow the solver from using that particular recipe. Internally chessatrons are stored as alchemy recipes, so recipe 1 is from chess pieces and recipe 2 is from 64 red gems.\n- `<item name>=<amount>` will tell the solver to leave you with the amount or more of that item."
+        description = "Universal solver to maximize an item.\nThis does require storing data with the `%bread data` feature.\n\nModifiers:\n- `!<item>_recipe_<recipe number>` can be used to disallow the solver from using that particular recipe. Internally chessatrons are stored as alchemy recipes, so recipe 1 is from chess pieces and recipe 2 is from 64 red gems.\n- `[item name]>[amount]` will tell the solver to leave you with the amount or more of that item.\n- `[item name]=[amount]` will tell the solver to leave you with exactly that of that item."
     )
     async def bread_solver(
             self: typing.Self,
@@ -2016,6 +2123,7 @@ class Bread_cog(
         items = {}
         disabled_items = []
         minimum_items = {}
+        equal_items = {}
 
         for item in u_values.all_items:
             items[item] = stored_data.get(item, 0)
@@ -2034,6 +2142,20 @@ class Bread_cog(
         pattern = re.compile("^!(.+)_recipe_(\d+)$")
 
         for modifier in modifier_list:
+            if modifier.count(">") == 1:
+                potential_item, potential_amount = modifier.split(">")
+
+                potential_item = u_values.get_item(potential_item)
+
+                if potential_item is None:
+                    continue
+
+                try:
+                    potential_amount = u_converters.parse_int(potential_amount)
+                except ValueError:
+                    continue
+
+                minimum_items[potential_item] = potential_amount
             if modifier.count("=") == 1:
                 potential_item, potential_amount = modifier.split("=")
 
@@ -2047,7 +2169,7 @@ class Bread_cog(
                 except ValueError:
                     continue
 
-                minimum_items[potential_item] = potential_amount
+                equal_items[potential_item] = potential_amount
 
             if not modifier.startswith("!"):
                 continue
@@ -2070,7 +2192,8 @@ class Bread_cog(
             goal_item = goal_item,
             disabled_recipes = disabled_recipes,
             disabled_items = disabled_items,
-            minimum_items = minimum_items
+            minimum_items = minimum_items,
+            equal_items = equal_items
         )
 
         await ctx.reply(embed=embed)
