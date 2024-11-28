@@ -319,7 +319,7 @@ class Stonk_cog(
         description = "When you're having trouble deciding what to invest in.",
         brief = "When you're having trouble deciding what to invest in."
     )
-    async def stonk_message(
+    async def stonk_random(
             self: typing.Self,
             ctx: commands.Context | u_custom.CustomContext
         ):
