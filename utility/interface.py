@@ -16,6 +16,12 @@ import utility.bread as u_bread
 import utility.custom as u_custom
 import utility.files as u_files
 
+# pip install python-dotenv
+from dotenv import load_dotenv
+from os import getenv
+
+ERROR_WEBHOOK = getenv('ERROR_WEBHOOK')
+
 everyone_prevention = discord.AllowedMentions(everyone=False)
 
 import importlib
@@ -820,3 +826,41 @@ class Filter_Member_In_Guild():
             member_id: int
         ) -> discord.Member | None:
         return member_id_in_guild(self.guild, member_id)
+
+
+async def send_output(
+        content: str,
+        name: str = "Bingo-Bot"
+    ) -> None:
+    """Sends an output to the output webhook."""
+    
+    json_send = {
+        "embeds": [
+            {
+                "title": name,
+                "type": "rich",
+                "description": content,
+                "color": 15277667
+            }
+        ]
+    }
+    
+    async with aiohttp.ClientSession() as session:
+        result = await session.post(ERROR_WEBHOOK, json=json_send)
+        await session.close()
+
+def output_error(
+        ctx: u_custom.CustomContext | commands.Context,
+        error: Exception | None = None
+    ) -> None:
+    description = "\n".join(traceback.format_exception(error))
+
+    if ctx is None:
+        description = f"Internal error:\n```\n{description}```"
+    else:
+        description = f"[Trigger link.](<{ctx.message.jump_url}>)\n```\n{description}```"
+
+    send_output(
+        content = description,
+        name = "Bingo-Bot Error"
+    )

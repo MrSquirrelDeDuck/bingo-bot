@@ -475,18 +475,23 @@ class Triggers_cog(
             
             # Save and backup database.
             database.save_database(make_backup=True)
-        except:
+
+            # Running hourly_task in other cogs.
+            for cog in self.bot.cogs.values():
+                if cog.__cog_name__ == self.__cog_name__:
+                    continue
+
+                try:
+                    await cog.hourly_task()
+                except AttributeError:
+                    pass
+        except Exception as error:
             print(traceback.format_exc())
+            u_interface.output_error(
+                ctx = None,
+                error = error
+            )
 
-        # Running hourly_task in other cogs.
-        for cog in self.bot.cogs.values():
-            if cog.__cog_name__ == self.__cog_name__:
-                continue
-
-            try:
-                await cog.hourly_task()
-            except AttributeError:
-                pass
 
 
     @hourly_loop.before_loop
@@ -1535,24 +1540,10 @@ class Triggers_cog(
 
         if OUTPUT_ERRORS:
             try:
-                description = "\n".join(traceback.format_exception(error))
-
-                description = f"[Trigger link.](<{ctx.message.jump_url}>)\n```\n{description}```"
-                
-                json_send = {
-                    "embeds": [
-                        {
-                            "title": "Bingo-Bot Error",
-                            "type": "rich",
-                            "description": description,
-                            "color": 15277667
-                        }
-                    ]
-                }
-                
-                async with aiohttp.ClientSession() as session:
-                    result = await session.post(ERROR_WEBHOOK, json=json_send)
-                    await session.close()
+                u_interface.output_error(
+                    ctx = ctx,
+                    erorr = error
+                )
             except:
                 pass
 
