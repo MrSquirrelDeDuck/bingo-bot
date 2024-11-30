@@ -195,6 +195,7 @@ class Stonk_cog(
             return
         
         color_mode = False
+        icon_mode = False
 
         stonks_use = []
 
@@ -206,8 +207,12 @@ class Stonk_cog(
                     stonks_use.append(item)
                     continue
 
-                if modifier in ["-color", "-colour"]:
+                if modifier in ["-color", "-colour", '-colors', '-colours']:
                     color_mode = True
+                    continue
+
+                if modifier in ["-icon", '-icons']:
+                    icon_mode = True
                     continue
         
         if len(stonks_use) == 0:
@@ -230,7 +235,18 @@ class Stonk_cog(
                 if stonk.internal_name not in tick_data:
                     continue
                 
-                if color_mode:
+                if icon_mode:
+                    change_amount = tick_data[stonk.internal_name] - previous_tick[stonk.internal_name]
+                    
+                    if change_amount > 0:
+                        found_data[stonk].append("<:best_move:1272616913628827718>")
+                    elif change_amount == 0:
+                        found_data[stonk].append("<:inaccuracy:958751943830937690>")
+                    else:
+                        found_data[stonk].append("<:blunder:958752015188656138>")
+                    
+                    continue
+                elif color_mode:
                     change_amount = tick_data[stonk.internal_name] - previous_tick[stonk.internal_name]
 
                     if change_amount > 0:
@@ -255,7 +271,7 @@ class Stonk_cog(
         
             previous_tick = tick_data.copy()
         
-        if color_mode:
+        if color_mode or icon_mode:
             found_data = {stonk: "".join(value) for stonk, value in found_data.items()}
         else:
             found_data = {stonk: " -> ".join(value) for stonk, value in found_data.items()}
@@ -303,7 +319,7 @@ class Stonk_cog(
         description = "When you're having trouble deciding what to invest in.",
         brief = "When you're having trouble deciding what to invest in."
     )
-    async def stonk_message(
+    async def stonk_random(
             self: typing.Self,
             ctx: commands.Context | u_custom.CustomContext
         ):
