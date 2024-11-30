@@ -1542,7 +1542,7 @@ class Triggers_cog(
             try:
                 u_interface.output_error(
                     ctx = ctx,
-                    erorr = error
+                    error = error
                 )
             except:
                 print(traceback.format_exc())
