@@ -1545,7 +1545,7 @@ class Triggers_cog(
                     erorr = error
                 )
             except:
-                pass
+                print(traceback.format_exc())
 
         
 
