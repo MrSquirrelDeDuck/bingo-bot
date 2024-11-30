@@ -849,7 +849,7 @@ async def send_output(
         result = await session.post(ERROR_WEBHOOK, json=json_send)
         await session.close()
 
-def output_error(
+async def output_error(
         ctx: u_custom.CustomContext | commands.Context,
         error: Exception | None = None
     ) -> None:
@@ -860,7 +860,7 @@ def output_error(
     else:
         description = f"[Trigger link.](<{ctx.message.jump_url}>)\n```\n{description}```"
 
-    send_output(
+    await send_output(
         content = description,
         name = "Bingo-Bot Error"
     )

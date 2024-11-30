@@ -1540,7 +1540,7 @@ class Triggers_cog(
 
         if OUTPUT_ERRORS:
             try:
-                u_interface.output_error(
+                await u_interface.output_error(
                     ctx = ctx,
                     error = error
                 )
