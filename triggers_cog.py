@@ -262,6 +262,135 @@ class Triggers_cog(
         
 
     
+    @pk_explanation_command.command(
+        name = "ping",
+        brief = "Change PluralKit reply ping settings.",
+        description = """Change PluralKit reply ping settings.
+
+Setting list for configuring when *you* are replied to:
+- `off`: Turns ping replies off entirely.
+- `on`: Turns ping replies on.
+- `<number>-[hour/day/minute]`: Disables ping replies for the given number of hours, days, or minutes.
+
+Settings list for configuring when you are the one replying:
+- `off_self`: Disables ping replies.
+- `on_self`: Enables ping replies.""",
+    )
+    async def pk_explanation_counter_ping(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext,
+            *, settings: typing.Optional[str] = commands.parameter(description = "See above for configuration.")
+        ):
+        data = database.load("pk_reply_settings", default=dict())
+        author = data.get(str(ctx.author.id), dict())
+        incoming = author.get("incoming", None)
+        outgoing = author.get("outgoing", None)
+
+        if settings is None:
+            if incoming is None:
+                incoming = "*Not configured.*"
+            elif isinstance(incoming, bool):
+                if incoming:
+                    incoming = "Ping replies enabled."
+                else:
+                    incoming = "Ping replies disabled."
+            else:
+                if int(incoming) < time.time():
+                    incoming = "Ping replies enabled."
+                else:
+                    incoming = f"Ping replies disabled until <t:{int(incoming)}>."
+
+            ######
+
+            if outgoing is None:
+                outgoing = "*Not configured.*"
+            elif outgoing:
+                outgoing = "Ping replies enabled."
+            else:
+                outgoing = "Ping replies disabled."
+
+            embed = u_interface.gen_embed(
+                title = "PluralKit Ping Reply Settings",
+                description = f"Current settings:\n- When you are replied to: {incoming}\n- When you are replying: {outgoing}"
+            )
+
+            await ctx.reply(embed=embed)
+            return
+        
+        current_time = time.time()
+    
+        for setting in settings.split(" "):
+            if setting.endswith("_self"):
+                try:
+                    setting = u_converters.extended_bool(setting.removesuffix("_self"))
+
+                    outgoing = setting
+                    continue
+                except commands.BadArgument:
+                    pass
+
+            try:
+                setting = u_converters.extended_bool(setting)
+
+                incoming = setting
+                continue
+            except commands.BadArgument:
+                pass
+            
+            for text, multiplier in [
+                    ("hour", 60 * 60),
+                    ("day", 60 * 60 * 24),
+                    ("minute", 60)
+                ]:
+                if setting.endswith(f"-{text}") or setting.endswith(f"-{text}s"):
+                    try:
+                        number = u_converters.parse_int(setting.removesuffix(f"-{text}").removesuffix(f"-{text}s"))
+                        incoming = current_time + multiplier * number
+                        break
+                    except ValueError:
+                        pass
+        
+        data[str(ctx.author.id)] = {
+            "incoming": incoming,
+            "outgoing": outgoing
+        }
+
+        database.save("pk_reply_settings", data=data)
+            
+        #######################
+
+        if incoming is None:
+            incoming = "*Not configured.*"
+        elif isinstance(incoming, bool):
+            if incoming:
+                incoming = "Ping replies enabled."
+            else:
+                incoming = "Ping replies disabled."
+        else:
+            incoming = f"Ping replies disabled until <t:{int(incoming)}>."
+
+        ######
+
+        if outgoing is None:
+            outgoing = "*Not configured.*"
+        elif outgoing:
+            outgoing = "Ping replies enabled."
+        else:
+            outgoing = "Ping replies disabled."
+
+        embed = u_interface.gen_embed(
+            title = "PluralKit Ping Reply Settings",
+            description = f"New settings:\n- When you are replied to: {incoming}\n- When you are replying: {outgoing}"
+        )
+
+        await ctx.reply(embed=embed)
+
+
+
+        
+        
+
+    
     @pk_explanation_command.group(
         name = "counter",
         description = "Days since the last PluralKit confusion.",
@@ -1118,6 +1247,29 @@ class Triggers_cog(
         if f"<@{return_json['sender']}>" in message.content:
             # Make sure that the person being replied-to wasn't pinged in the message.
             return
+        
+        ### Check the PluralKit reply ping settings. ###
+        pk_reply_data = database.load("pk_reply_settings", default={})
+
+        # Check the author's ping reply data.
+        author_data = pk_reply_data.get(str(message.author.id))
+
+        if author_data.get("outgoing") is not None:
+            if isinstance(author_data.get("outgoing"), bool):
+                if not author_data.get("outgoing"):
+                    return
+
+        # Check the replied-to person's ping reply data.
+        replied_to_data = pk_reply_data.get(str(return_json['sender']))
+
+        print(f"{replied_to_data=}")
+        if replied_to_data.get("incoming") is not None:
+            if isinstance(replied_to_data.get("incoming"), bool):
+                if not replied_to_data.get("incoming"):
+                    return
+            else:
+                if time.time() < replied_to_data.get("incoming"):
+                    return
 
         # Attempt to send a message.
         try: 
