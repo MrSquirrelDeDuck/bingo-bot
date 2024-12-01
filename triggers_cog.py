@@ -604,57 +604,74 @@ class Triggers_cog(
 
             ##### Send board announcement messages. #####
             # Send the daily board.
-            daily_channel = await self.bot.fetch_channel(DAILY_BOARD_CHANNEL)
-            u_images.render_full_5x5(
-                database = database,
-                tile_string = new_daily,
-                enabled = 0
-            )
-
-            await daily_channel.send(
-                "Bingo Board #{board_id}!\nThe wiki:\n<https://bread.miraheze.org/wiki/The_Bread_Game_Wiki>\n{stats_text}".format(
-                    board_id = live_data["daily_board_id"],
-                    stats_text = f"The previous day's stats have been archived! You can check the stats with `%bread day {live_data['daily_board_id'] - 1}`!" if handled_stats else "*Something went wrong with the daily stats.*"
-                ),
-                file=discord.File(r'images/generated/bingo_board.png')
-            )
-            
-            # If it's the day for it, send the weekly board.
-            if weekly_board:
-                weekly_channel = await self.bot.fetch_channel(WEEKLY_BOARD_CHANNEL)
-                u_images.render_board_9x9(
+            try:
+                daily_channel = await self.bot.fetch_channel(DAILY_BOARD_CHANNEL)
+                u_images.render_full_5x5(
                     database = database,
-                    tile_string = new_weekly,
+                    tile_string = new_daily,
                     enabled = 0
                 )
 
-                await weekly_channel.send("Weekly Bingo Board #{}!".format(live_data["weekly_board_id"]), file=discord.File(r'images/generated/bingo_board.png'))
+                await daily_channel.send(
+                    "Bingo Board #{board_id}!\nThe wiki:\n<https://bread.miraheze.org/wiki/The_Bread_Game_Wiki>\n{stats_text}".format(
+                        board_id = live_data["daily_board_id"],
+                        stats_text = f"The previous day's stats have been archived! You can check the stats with `%bread day {live_data['daily_board_id'] - 1}`!" if handled_stats else "*Something went wrong with the daily stats.*"
+                    ),
+                    file=discord.File(r'images/generated/bingo_board.png')
+                )
+                
+                # If it's the day for it, send the weekly board.
+                if weekly_board:
+                    weekly_channel = await self.bot.fetch_channel(WEEKLY_BOARD_CHANNEL)
+                    u_images.render_board_9x9(
+                        database = database,
+                        tile_string = new_weekly,
+                        enabled = 0
+                    )
+
+                    await weekly_channel.send("Weekly Bingo Board #{}!".format(live_data["weekly_board_id"]), file=discord.File(r'images/generated/bingo_board.png'))
+            except Exception as error:
+                print(traceback.format_exc())
+                await u_interface.output_error(
+                    ctx = None,
+                    error = error
+                )
             
             ##### Increment counters. #####
             
             counter_list = [
-                "pk_counter"
+                "pk_counter",
+                "genarchy_confusion"
             ]
             for counter in counter_list:
                 database.increment_daily_counter(counter, amount=1)
             
             ##### Make role snapshot. #####
-                
-            u_interface.snapshot_roles(
-                guild = self.bot.get_guild(MAIN_GUILD)
-            )
-        except:
+            
+            guild = self.bot.get_guild(MAIN_GUILD)
+
+            # Avoid trying to snapshot the roles if it doesn't have access to the main guild.
+            if guild is not None:
+                u_interface.snapshot_roles(
+                    guild = guild
+                )
+
+            ##### Running _daily_task in other cogs. #####
+            for cog in self.bot.cogs.values():
+                if cog.__cog_name__ == self.__cog_name__:
+                    continue
+
+                try:
+                    await cog.daily_task()
+                except AttributeError:
+                    pass
+        except Exception as error:
             print(traceback.format_exc())
+            await u_interface.output_error(
+                ctx = None,
+                error = error
+            )
 
-        ##### Running _daily_task in other cogs. #####
-        for cog in self.bot.cogs.values():
-            if cog.__cog_name__ == self.__cog_name__:
-                continue
-
-            try:
-                await cog.daily_task()
-            except AttributeError:
-                pass
 
 
 
