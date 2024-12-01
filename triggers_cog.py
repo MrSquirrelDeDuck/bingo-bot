@@ -276,7 +276,7 @@ Settings list for configuring when you are the one replying:
 - `off_self`: Disables ping replies.
 - `on_self`: Enables ping replies.""",
     )
-    async def pk_explanation_counter_ping(
+    async def pk_explanation_ping(
             self: typing.Self,
             ctx: commands.Context | u_custom.CustomContext,
             *, settings: typing.Optional[str] = commands.parameter(description = "See above for configuration.")
