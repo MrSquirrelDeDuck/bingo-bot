@@ -1815,6 +1815,71 @@ class Admin_cog(
 
         await ctx.send(pings)
 
+        
+            
+
+        
+    ######################################################################################################################################################
+    ##### ADMIN TIMING ###################################################################################################################################
+    ######################################################################################################################################################
+    
+    @admin.command(
+        name="timing",
+        brief = "I'm not entirely sure what this does.",
+        description = "I'm not entirely sure what this does."
+    )
+    @commands.is_owner()
+    async def admin_timing(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext
+        ):
+        date = time.time() // (60 * 60 * 24)
+        hour = random.Random(date).randint(0, 23)
+
+        await ctx.reply(f"<t:{int(date * 60 * 60 * 24 + hour * 60 * 60)}>")
+
+        
+            
+
+        
+    ######################################################################################################################################################
+    ##### ADMIN ADD REACTION #############################################################################################################################
+    ######################################################################################################################################################
+    
+    @admin.command(
+        name="add_reaction",
+        brief = "Remotely add a reaction to a message.",
+        description = "Remotely add a reaction to a message."
+    )
+    @commands.check(u_checks.remote_say_check)
+    async def admin_add_reaction(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext,
+            message: typing.Optional[discord.Message] = commands.parameter(description = "The message to react to."),
+            emoji: typing.Optional[str] = commands.parameter(description = "The emoji to react with.")
+        ):
+        if message is None:
+            await ctx.reply("Please provide a message.\nA message link will suffice.")
+            return
+        
+        if emoji is None:
+            await ctx.reply("Please provide an emoji to react with.")
+            return
+        
+        try:
+            await message.add_reaction(emoji)
+        except discord.NotFound:
+            await ctx.reply("That isn't an emoji.")
+            return
+        except discord.Forbidden:
+            await ctx.reply("I don't have the permissions to do that.")
+            return
+        except discord.HTTPException:
+            await ctx.reply("Something went wrong adding the reaction.\nThat may not be an emoji.")
+            return
+        
+        await ctx.reply(f"[Done.](<{message.jump_url}>)")
+
 
 
         
