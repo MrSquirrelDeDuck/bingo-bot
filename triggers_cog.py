@@ -1252,7 +1252,7 @@ Settings list for configuring when you are the one replying:
         pk_reply_data = database.load("pk_reply_settings", default={})
 
         # Check the author's ping reply data.
-        author_data = pk_reply_data.get(str(message.author.id))
+        author_data = pk_reply_data.get(str(message.author.id), {})
 
         if author_data.get("outgoing") is not None:
             if isinstance(author_data.get("outgoing"), bool):
@@ -1260,9 +1260,8 @@ Settings list for configuring when you are the one replying:
                     return
 
         # Check the replied-to person's ping reply data.
-        replied_to_data = pk_reply_data.get(str(return_json['sender']))
+        replied_to_data = pk_reply_data.get(str(return_json['sender']), {})
 
-        print(f"{replied_to_data=}")
         if replied_to_data.get("incoming") is not None:
             if isinstance(replied_to_data.get("incoming"), bool):
                 if not replied_to_data.get("incoming"):
