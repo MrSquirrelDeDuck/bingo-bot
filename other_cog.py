@@ -13,6 +13,7 @@ from os.path import sep as SLASH
 import difflib
 import decimal
 import colorsys
+import itertools
 
 # pip install python-dateutil
 import dateutil
@@ -2345,8 +2346,6 @@ class Other_cog(
                 ):
                     raise ValueError
                 
-                print(h, s, v)
-                
                 r, g, b = colorsys.hsv_to_rgb(h, s, v)
 
                 r *= 255
@@ -2857,8 +2856,168 @@ Full timestamp examples:
         database.save("rules", data=all_rules)
 
         await ctx.reply(f"Removed rule {rule_id} in {channel.mention} that had the text ``{u_text.backtick_filter(removed_text)}``.")
-        
 
+        
+            
+
+        
+    ######################################################################################################################################################
+    ##### COUNTER ########################################################################################################################################
+    ######################################################################################################################################################
+
+    counter_info = {
+        "pk": {
+            "key": "pk_counter", # The key in the database.
+            "name": "PluralKit Counter", # What to title the embed if the counter is gotten.
+            "description": "Days since the last PluralKit confusion:", # What to say before the actual count.
+            "aliases": ["pk_counter"]
+        },
+        "genarchy_confusion": {
+            "key": "genarchy_confusion",
+            "name": "General Anarchy Confusion Counter",
+            "description": "Days since the last time someone got the No General role and then asked where is the general channel:",
+            "aliases": []
+        }
+    }
+    
+    @commands.group(
+        name = "counter",
+        brief = "Counter-related commands.",
+        description = "Counter-related commands.",
+        invoke_without_command = True,
+        pass_context = True
+    )
+    @commands.check(u_checks.hide_from_help)
+    async def counter_command(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext,
+            counter_name: typing.Optional[str] = commands.parameter(description = "The counter to get the count for.")
+        ):
+        if ctx.invoked_subcommand is not None:
+            return
+        
+        if counter_name not in self.counter_info and counter_name not in itertools.chain.from_iterable([self.counter_info[k]["aliases"] for k in self.counter_info]):
+            embed = u_interface.gen_embed(
+                title = "Bingo-Bot Counters",
+                description = "To get a specific counter use `%counter <counter name>`.\nHere's a handy list of the current counters:\n{}".format(
+                    "\n".join([f"- {n}" for n in self.counter_info])
+                )
+            )
+            await ctx.reply(embed=embed)
+            return
+
+        info = self.counter_info.get(counter_name)
+
+        if info is None:
+            for key, data in self.counter_info.items():
+                if counter_name in data["aliases"]:
+                    info = data
+                    counter_name = key
+        
+        current_counter = database.get_daily_counter(info["key"])
+        counter_record = database.get_daily_counter(info["key"] + "_record")
+
+        
+        embed = u_interface.gen_embed(
+            title = info["name"],
+            description = f"{info['description']}\n# {u_text.smart_number(current_counter)}\nThe current record is **{u_text.smart_number(counter_record)} days**."
+        )
+
+        await ctx.reply(embed=embed)
+
+        
+            
+
+        
+    ######################################################################################################################################################
+    ##### COUNTER RESET ##################################################################################################################################
+    ######################################################################################################################################################
+        
+    @counter_command.command(
+        name = "reset",
+        description = "Resets a counter.",
+        brief = "Resets a counter."
+    )
+    @commands.check(u_checks.sub_admin_check)
+    async def counter_reset(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext,
+            counter_name: typing.Optional[str] = commands.parameter(description = "The name of the counter to reset.")
+        ):
+        if counter_name not in self.counter_info and counter_name not in itertools.chain.from_iterable([self.counter_info[k]["aliases"] for k in self.counter_info]):
+            embed = u_interface.gen_embed(
+                title = "Bingo-Bot Counters",
+                description = "Here's a handy list of the current counters:\n{}".format(
+                    "\n".join([f"- {n}" for n in self.counter_info])
+                )
+            )
+            await ctx.reply(embed=embed)
+            return
+
+        info = self.counter_info.get(counter_name)
+
+        if info is None:
+            for key, data in self.counter_info.items():
+                if counter_name in data["aliases"]:
+                    info = data
+                    counter_name = key
+        
+        ##############################################################
+
+        counter_data = database.get_daily_counter(info["key"])
+        record = database.get_daily_counter(info["key"] + "_record")
+
+        is_record = counter_data > record
+
+        database.set_daily_counter(info["key"], 0)
+        if is_record:
+            database.set_daily_counter(info["key"] + "_record", counter_data)
+
+        embed = u_interface.gen_embed(
+            title = info["name"],
+            description = "The counter has been reset to 0.\nIt was at **{}** before it was reset.\n\n{}".format(
+                u_text.smart_number(counter_data),
+                "This beaks the previous record of **{}**.".format(u_text.smart_number(record)) if is_record else ""
+            )
+        )
+        await ctx.reply(embed=embed)
+
+        
+            
+
+        
+    ######################################################################################################################################################
+    ##### COUNTER LEADERBOARD ############################################################################################################################
+    ######################################################################################################################################################
+        
+    @counter_command.command(
+        name = "leaderboard",
+        description = "Gets the current counter leaderboard.",
+        brief = "Gets the current counter leaderboard.",
+        aliases = ["lb"]
+    )
+    @commands.check(u_checks.sub_admin_check)
+    async def counter_reset(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext,
+            mode: typing.Optional[str] = commands.parameter(description = "Use `record` to see the counter record leaderboard.")
+        ):
+        addition = ""
+        if mode == "record":
+            addition = "_record"
+        
+        counter_data = []
+        for data in self.counter_info.values():
+            counter_data.append((data["name"], database.get_daily_counter(data["key"] + addition), 0))
+        
+        counter_data.sort(key=lambda g: g[1], reverse=True)
+
+        embed = u_interface.gen_embed(
+            title = "Counter {}Leaderboard".format("Record " if mode == "record" else ""),
+            description = ("Use `%counter leaderboard record` to see the leaderboard for counter records.\n\n" if mode != "record" else "") + "\n".join(["{}. {}: {}".format(index, d[0], d[1]) for index, d in enumerate(counter_data, start = 1)])
+        )
+
+        await ctx.reply(embed=embed)
         
 
     

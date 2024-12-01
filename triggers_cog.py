@@ -262,6 +262,135 @@ class Triggers_cog(
         
 
     
+    @pk_explanation_command.command(
+        name = "ping",
+        brief = "Change PluralKit reply ping settings.",
+        description = """Change PluralKit reply ping settings.
+
+Setting list for configuring when *you* are replied to:
+- `off`: Turns ping replies off entirely.
+- `on`: Turns ping replies on.
+- `<number>-[hour/day/minute]`: Disables ping replies for the given number of hours, days, or minutes.
+
+Settings list for configuring when you are the one replying:
+- `off_self`: Disables ping replies.
+- `on_self`: Enables ping replies.""",
+    )
+    async def pk_explanation_ping(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext,
+            *, settings: typing.Optional[str] = commands.parameter(description = "See above for configuration.")
+        ):
+        data = database.load("pk_reply_settings", default=dict())
+        author = data.get(str(ctx.author.id), dict())
+        incoming = author.get("incoming", None)
+        outgoing = author.get("outgoing", None)
+
+        if settings is None:
+            if incoming is None:
+                incoming = "*Not configured.*"
+            elif isinstance(incoming, bool):
+                if incoming:
+                    incoming = "Ping replies enabled."
+                else:
+                    incoming = "Ping replies disabled."
+            else:
+                if int(incoming) < time.time():
+                    incoming = "Ping replies enabled."
+                else:
+                    incoming = f"Ping replies disabled until <t:{int(incoming)}>."
+
+            ######
+
+            if outgoing is None:
+                outgoing = "*Not configured.*"
+            elif outgoing:
+                outgoing = "Ping replies enabled."
+            else:
+                outgoing = "Ping replies disabled."
+
+            embed = u_interface.gen_embed(
+                title = "PluralKit Ping Reply Settings",
+                description = f"Current settings:\n- When you are replied to: {incoming}\n- When you are replying: {outgoing}"
+            )
+
+            await ctx.reply(embed=embed)
+            return
+        
+        current_time = time.time()
+    
+        for setting in settings.split(" "):
+            if setting.endswith("_self"):
+                try:
+                    setting = u_converters.extended_bool(setting.removesuffix("_self"))
+
+                    outgoing = setting
+                    continue
+                except commands.BadArgument:
+                    pass
+
+            try:
+                setting = u_converters.extended_bool(setting)
+
+                incoming = setting
+                continue
+            except commands.BadArgument:
+                pass
+            
+            for text, multiplier in [
+                    ("hour", 60 * 60),
+                    ("day", 60 * 60 * 24),
+                    ("minute", 60)
+                ]:
+                if setting.endswith(f"-{text}") or setting.endswith(f"-{text}s"):
+                    try:
+                        number = u_converters.parse_int(setting.removesuffix(f"-{text}").removesuffix(f"-{text}s"))
+                        incoming = current_time + multiplier * number
+                        break
+                    except ValueError:
+                        pass
+        
+        data[str(ctx.author.id)] = {
+            "incoming": incoming,
+            "outgoing": outgoing
+        }
+
+        database.save("pk_reply_settings", data=data)
+            
+        #######################
+
+        if incoming is None:
+            incoming = "*Not configured.*"
+        elif isinstance(incoming, bool):
+            if incoming:
+                incoming = "Ping replies enabled."
+            else:
+                incoming = "Ping replies disabled."
+        else:
+            incoming = f"Ping replies disabled until <t:{int(incoming)}>."
+
+        ######
+
+        if outgoing is None:
+            outgoing = "*Not configured.*"
+        elif outgoing:
+            outgoing = "Ping replies enabled."
+        else:
+            outgoing = "Ping replies disabled."
+
+        embed = u_interface.gen_embed(
+            title = "PluralKit Ping Reply Settings",
+            description = f"New settings:\n- When you are replied to: {incoming}\n- When you are replying: {outgoing}"
+        )
+
+        await ctx.reply(embed=embed)
+
+
+
+        
+        
+
+    
     @pk_explanation_command.group(
         name = "counter",
         description = "Days since the last PluralKit confusion.",
@@ -487,7 +616,7 @@ class Triggers_cog(
                     pass
         except Exception as error:
             print(traceback.format_exc())
-            u_interface.output_error(
+            await u_interface.output_error(
                 ctx = None,
                 error = error
             )
@@ -604,57 +733,74 @@ class Triggers_cog(
 
             ##### Send board announcement messages. #####
             # Send the daily board.
-            daily_channel = await self.bot.fetch_channel(DAILY_BOARD_CHANNEL)
-            u_images.render_full_5x5(
-                database = database,
-                tile_string = new_daily,
-                enabled = 0
-            )
-
-            await daily_channel.send(
-                "Bingo Board #{board_id}!\nThe wiki:\n<https://bread.miraheze.org/wiki/The_Bread_Game_Wiki>\n{stats_text}".format(
-                    board_id = live_data["daily_board_id"],
-                    stats_text = f"The previous day's stats have been archived! You can check the stats with `%bread day {live_data['daily_board_id'] - 1}`!" if handled_stats else "*Something went wrong with the daily stats.*"
-                ),
-                file=discord.File(r'images/generated/bingo_board.png')
-            )
-            
-            # If it's the day for it, send the weekly board.
-            if weekly_board:
-                weekly_channel = await self.bot.fetch_channel(WEEKLY_BOARD_CHANNEL)
-                u_images.render_board_9x9(
+            try:
+                daily_channel = await self.bot.fetch_channel(DAILY_BOARD_CHANNEL)
+                u_images.render_full_5x5(
                     database = database,
-                    tile_string = new_weekly,
+                    tile_string = new_daily,
                     enabled = 0
                 )
 
-                await weekly_channel.send("Weekly Bingo Board #{}!".format(live_data["weekly_board_id"]), file=discord.File(r'images/generated/bingo_board.png'))
+                await daily_channel.send(
+                    "Bingo Board #{board_id}!\nThe wiki:\n<https://bread.miraheze.org/wiki/The_Bread_Game_Wiki>\n{stats_text}".format(
+                        board_id = live_data["daily_board_id"],
+                        stats_text = f"The previous day's stats have been archived! You can check the stats with `%bread day {live_data['daily_board_id'] - 1}`!" if handled_stats else "*Something went wrong with the daily stats.*"
+                    ),
+                    file=discord.File(r'images/generated/bingo_board.png')
+                )
+                
+                # If it's the day for it, send the weekly board.
+                if weekly_board:
+                    weekly_channel = await self.bot.fetch_channel(WEEKLY_BOARD_CHANNEL)
+                    u_images.render_board_9x9(
+                        database = database,
+                        tile_string = new_weekly,
+                        enabled = 0
+                    )
+
+                    await weekly_channel.send("Weekly Bingo Board #{}!".format(live_data["weekly_board_id"]), file=discord.File(r'images/generated/bingo_board.png'))
+            except Exception as error:
+                print(traceback.format_exc())
+                await u_interface.output_error(
+                    ctx = None,
+                    error = error
+                )
             
             ##### Increment counters. #####
             
             counter_list = [
-                "pk_counter"
+                "pk_counter",
+                "genarchy_confusion"
             ]
             for counter in counter_list:
                 database.increment_daily_counter(counter, amount=1)
             
             ##### Make role snapshot. #####
-                
-            u_interface.snapshot_roles(
-                guild = self.bot.get_guild(MAIN_GUILD)
-            )
-        except:
+            
+            guild = self.bot.get_guild(MAIN_GUILD)
+
+            # Avoid trying to snapshot the roles if it doesn't have access to the main guild.
+            if guild is not None:
+                u_interface.snapshot_roles(
+                    guild = guild
+                )
+
+            ##### Running _daily_task in other cogs. #####
+            for cog in self.bot.cogs.values():
+                if cog.__cog_name__ == self.__cog_name__:
+                    continue
+
+                try:
+                    await cog.daily_task()
+                except AttributeError:
+                    pass
+        except Exception as error:
             print(traceback.format_exc())
+            await u_interface.output_error(
+                ctx = None,
+                error = error
+            )
 
-        ##### Running _daily_task in other cogs. #####
-        for cog in self.bot.cogs.values():
-            if cog.__cog_name__ == self.__cog_name__:
-                continue
-
-            try:
-                await cog.daily_task()
-            except AttributeError:
-                pass
 
 
 
@@ -1101,6 +1247,29 @@ class Triggers_cog(
         if f"<@{return_json['sender']}>" in message.content:
             # Make sure that the person being replied-to wasn't pinged in the message.
             return
+        
+        ### Check the PluralKit reply ping settings. ###
+        pk_reply_data = database.load("pk_reply_settings", default={})
+
+        # Check the author's ping reply data.
+        author_data = pk_reply_data.get(str(message.author.id))
+
+        if author_data.get("outgoing") is not None:
+            if isinstance(author_data.get("outgoing"), bool):
+                if not author_data.get("outgoing"):
+                    return
+
+        # Check the replied-to person's ping reply data.
+        replied_to_data = pk_reply_data.get(str(return_json['sender']))
+
+        print(f"{replied_to_data=}")
+        if replied_to_data.get("incoming") is not None:
+            if isinstance(replied_to_data.get("incoming"), bool):
+                if not replied_to_data.get("incoming"):
+                    return
+            else:
+                if time.time() < replied_to_data.get("incoming"):
+                    return
 
         # Attempt to send a message.
         try: 
