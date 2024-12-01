@@ -487,7 +487,7 @@ class Triggers_cog(
                     pass
         except Exception as error:
             print(traceback.format_exc())
-            u_interface.output_error(
+            await u_interface.output_error(
                 ctx = None,
                 error = error
             )

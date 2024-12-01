@@ -418,7 +418,7 @@ class CustomHelpCommand(commands.DefaultHelpCommand):
             old_invoked = ctx.invoked_with
             ctx.invoked_with = "help"
             
-            for subcommand in subcommands:
+            for subcommand in sorted(subcommands, key=lambda c: c.name):
                 try:
                     if not await subcommand.can_run(ctx):
                         continue
