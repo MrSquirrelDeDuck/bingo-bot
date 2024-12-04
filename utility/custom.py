@@ -304,7 +304,7 @@ class CustomHelpCommand(commands.DefaultHelpCommand):
             except commands.CommandError:
                 continue
         
-        command_data = dict(sorted(command_data.items(), key=lambda c: c[0].qualified_name))
+        command_data = dict(sorted(command_data.items(), key=lambda c: "No Category" if c[0] is None else c[0].qualified_name))
 
         lines = []
 
@@ -312,7 +312,10 @@ class CustomHelpCommand(commands.DefaultHelpCommand):
             lines.append(f"{self.context.bot.description}\n")
         
         for cog, command_list in command_data.items():
-            lines.append(f"**{cog.qualified_name}:**")
+            if cog is None:
+                lines.append(f"**No Category:**")
+            else:
+                lines.append(f"**{cog.qualified_name}:**")
             for cmd in command_list:
                 lines.append(cmd)
         
