@@ -3018,9 +3018,88 @@ Full timestamp examples:
         )
 
         await ctx.reply(embed=embed)
-        
+            
 
+        
+    ######################################################################################################################################################
+    ##### COMMANDS SEARCH ################################################################################################################################
+    ######################################################################################################################################################
     
+    @commands.command(
+        name = "commands_search",
+        brief = "Searches for a command based off of a query.",
+        description = "Searches for a command based off of a query.",
+        aliases = ["command_search", "cmds_search", "cmd_search", "search_command", "search_commands"]
+    )
+    async def commands_search(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext,
+            *, search_term: typing.Optional[str] = commands.parameter(description = "What to search for.")
+        ):
+        if search_term is None:
+            await ctx.reply("Please provide a search term.")
+            return
+
+        async def fuzzy_search(search_term: str, command_list: list[commands.Command]) -> list[tuple[commands.Command, int]]:
+            old_invoked = ctx.invoked_with
+            ctx.invoked_with = "help" # Disable the "This command has been disabled" message.
+            result = []
+            term = search_term.lower()
+
+            for command in command_list:
+                try:
+                    if not await command.can_run(ctx):
+                        continue
+                except commands.CheckFailure: # If a check failed.
+                    continue
+
+                raw_name_similarity = fuzz.partial_ratio(term, command.name)
+                qualified_name_similarity = fuzz.partial_ratio(term, command.qualified_name)
+                help_similarity = fuzz.partial_ratio(term, command.description)
+                brief_similarity = fuzz.partial_ratio(term, command.brief)
+
+                result.append((command, sum([raw_name_similarity, qualified_name_similarity, help_similarity, brief_similarity]) / 4))
+
+            ctx.invoked_with = old_invoked
+            return sorted(result, key=lambda x: x[1], reverse=True)
+        
+        returned = await fuzzy_search(search_term, self.bot.walk_commands())
+
+        fields = []
+
+        for cmd, score in returned[:6]:
+            raw_help_text = cmd.description
+
+            if len(raw_help_text) > 100:
+                help_text = raw_help_text[:100]
+                if not help_text.endswith(" "):
+                    help_text += raw_help_text[100:].split(" ")[0]
+                
+                help_text = help_text.strip()
+
+                if help_text.endswith("."):
+                    help_text += ".."
+                else:
+                    help_text += "..."
+
+                help_text += f"\n\n*Use `{self.bot.command_prefix}help {cmd.qualified_name}` to get the full help text.*"
+            else:
+                help_text = raw_help_text
+            
+
+            fields.append((
+                self.bot.command_prefix + cmd.qualified_name,
+                help_text,
+                True
+            ))
+
+        embed = u_interface.gen_embed(
+            title = "Command search",
+            description = f"Searching for \"{search_term}\":",
+            fields = fields
+        )
+
+        await ctx.reply(embed=embed)
 
 
 
