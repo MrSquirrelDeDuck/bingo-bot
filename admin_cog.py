@@ -1833,11 +1833,42 @@ class Admin_cog(
             self: typing.Self,
             ctx: commands.Context | u_custom.CustomContext
         ):
-        date = time.time() // (60 * 60 * 24)
-        hour = random.Random(date).randint(0, 23)
+        times = []
 
-        await ctx.reply(f"<t:{int(date * 60 * 60 * 24 + hour * 60 * 60)}>")
+        for i in range(5):
+            date = (time.time() + (60 * 60 * 24 * i)) // (60 * 60 * 24)
+            hour = random.Random(date).randint(0, 23)
 
+            times.append(f"- <t:{int(date * 60 * 60 * 24 + hour * 60 * 60)}>")
+
+        await ctx.reply("\n".join(times))
+
+        
+            
+
+        
+    ######################################################################################################################################################
+    ##### ADMIN CHANGE ROLE COLOR ########################################################################################################################
+    ######################################################################################################################################################
+    
+    @admin.command(
+        name="change_role_color",
+        brief = "Changes the role color.",
+        description = "Changes the role color."
+    )
+    @commands.is_owner()
+    async def admin_timing(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext
+        ):
+        guild = self.bot.get_guild(MAIN_GUILD)
+        role = guild.get_role(1050182343668813928)
+
+        await role.edit(
+            color = random.randrange(256) * 16 ** 4 | random.randrange(255)
+        )
+
+        await ctx.reply("Done.")
         
             
 
