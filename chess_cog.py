@@ -69,8 +69,20 @@ class Chess_cog(
         random.shuffle(ping_list)
 
         pings = "".join(["<@{}>".format(user_id) for user_id in ping_list])
-        content = "{pings}\n\nA new series of Chess matches are starting!\nMatch lineup:\n{matches}\n{bye_bot}\n\nYou can use `%chess ping` to join or leave the pinglist!".format(
+
+        ###############
+        history = u_chess.get_rating_history(database)
+
+        # Account for the fact that the history doesn't have the current elo values.
+        history.append(u_chess.get_all_elos(database, return_classes=False))
+
+        current_match = len(history)
+        ###############
+
+        # content = "{pings}\n\nA new series of Chess matches are starting!\nMatch lineup:\n{matches}\n{bye_bot}\n\nYou can use `%chess ping` to join or leave the pinglist!".format(
+        content = "{pings}\n\n# Chess match #{number} is starting!\nMatch lineup:\n{matches}\n{bye_bot}\n\nYou can use `%chess ping` to join or leave the pinglist!".format(
             pings = pings,
+            number = current_match + 1,
             matches = "\n".join(
                 ["- {bot1} vs {bot2}".format(
                     bot1 = data["white"].get_name(database),
@@ -98,6 +110,7 @@ class Chess_cog(
 
         ######################################
 
+        elo_delta = {}
 
         for data in games:
             game_white = data["white"]
@@ -131,6 +144,9 @@ class Chess_cog(
             game_data["black_elo"] = round(new_black_elo)
             game_data["delta_white_elo"] = round(white_elo_difference)
             game_data["delta_black_elo"] = round(black_elo_difference)
+
+            elo_delta[game_white.name] = round(white_elo_difference)
+            elo_delta[game_black.name] = round(black_elo_difference)
 
             try:
                 u_images.chess_match(
@@ -177,7 +193,7 @@ class Chess_cog(
         ##### Sending the leaderboard and graph. #####
         
         ### Generating the leaderboard. ###
-        values = tuple(u_chess.get_all_elos(database).items())
+        values = [(bot, elo, elo_delta[bot.name]) for bot, elo in u_chess.get_all_elos(database).items()]
 
         sorted_list = sorted(values, key=lambda g: g[1], reverse=True)
 
@@ -229,10 +245,12 @@ class Chess_cog(
             title = "Post-match leaderboard and graph:",
             description = "\n".join(
                 [
-                    "{place}. {name}: {elo}".format(
+                    "{place}. {name}: {elo} ({plusminus}{delta})".format(
                         place = placement,
                         name = data[0].name.replace("_", " ").title(),
-                        elo = u_text.smart_number(round(data[1]))
+                        elo = u_text.smart_number(round(data[1])),
+                        plusminus = "+" if data[2] >= 0 else "",
+                        delta = u_text.smart_number(round(data[2]))
                     )
                     for placement, data in enumerate(sorted_list, start=1)
                 ]
