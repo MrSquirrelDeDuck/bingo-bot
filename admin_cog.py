@@ -1857,7 +1857,7 @@ class Admin_cog(
         description = "Changes the role color."
     )
     @commands.is_owner()
-    async def admin_timing(
+    async def admin_change_role_color(
             self: typing.Self,
             ctx: commands.Context | u_custom.CustomContext
         ):
