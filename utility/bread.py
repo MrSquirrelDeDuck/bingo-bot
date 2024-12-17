@@ -359,7 +359,7 @@ def calculate_tron_value(
     """
     active_shadowmegas = max(active_shadowmegas, min(shadowmegas, chessatron_contraption * 5))
 
-    return round((2000 + (100 * omega_count) * (1.05 ** active_shadowmegas)) * (1 + (0.1 * ascension)))
+    return round((2000 + (100 * omega_count) * (1 + 0.02 * active_shadowmegas)) * (1 + (0.1 * ascension)))
 
 def get_ascension(
         tokens: int = 0,
