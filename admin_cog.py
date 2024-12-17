@@ -1694,7 +1694,7 @@ class Admin_cog(
         brief = "Delete a member's messages within a timeframe.",
         description = "Delete a member's messages within a timeframe."
     )
-    @commands.check(u_checks.sub_admin_check)
+    @commands.check(u_checks.in_authority)
     async def admin_purge_channel(
             self: typing.Self,
             ctx: commands.Context | u_custom.CustomContext,
@@ -1745,6 +1745,38 @@ class Admin_cog(
         )
 
         await ctx.reply(f"Done, deleted {len(deleted)} messages.")
+
+        
+            
+
+        
+    ######################################################################################################################################################
+    ##### ADMIN COPY TIMEOUT #############################################################################################################################
+    ######################################################################################################################################################
+        
+    @admin.command(
+        name="copy_timeout",
+        brief = "Copy a timeout from one account to another.",
+        description = "Copy a timeout from one account to another."
+    )
+    @commands.check(u_checks.in_authority)
+    async def admin_copy_timeout(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext,
+            source: typing.Optional[discord.Member] = commands.parameter(description = "The member to copy the timeout from."),
+            destination: typing.Optional[discord.Member] = commands.parameter(description = "The member to copy the timeout to.")
+        ):
+        if source is None:
+            await ctx.reply("Please provide the member to copy the timeout from.")
+            return
+        
+        if destination is None:
+            await ctx.reply("Please provide the member to copy the timeout to.")
+            return
+
+        await destination.edit(timed_out_until=source.timed_out_until)
+
+        await ctx.reply("Done.")
 
         
             
