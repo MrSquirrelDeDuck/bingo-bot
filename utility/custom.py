@@ -113,6 +113,11 @@ class CustomContext(commands.Context):
             return None
         
         try:
+            kwargs["mention_author"] = self.bot.database.get_reply_ping_setting(self.author.id)
+        except: # Oh, well.
+            pass
+        
+        try:
             return await self.safe_reply(content, **kwargs)
         except discord.HTTPException:
             # If something went wrong replying.

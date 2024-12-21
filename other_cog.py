@@ -2996,8 +2996,7 @@ Full timestamp examples:
         brief = "Gets the current counter leaderboard.",
         aliases = ["lb"]
     )
-    @commands.check(u_checks.sub_admin_check)
-    async def counter_reset(
+    async def counter_leaderboard(
             self: typing.Self,
             ctx: commands.Context | u_custom.CustomContext,
             mode: typing.Optional[str] = commands.parameter(description = "Use `record` to see the counter record leaderboard.")
@@ -3100,6 +3099,34 @@ Full timestamp examples:
         )
 
         await ctx.reply(embed=embed)
+
+        
+            
+
+        
+    ######################################################################################################################################################
+    ##### PING ###########################################################################################################################################
+    ######################################################################################################################################################
+        
+    @commands.command(
+        name = "ping",
+        description = "Change your ping reply settings.",
+        brief = "Change your ping reply settings."
+    )
+    async def ping_command(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext,
+            setting: typing.Optional[u_converters.extended_bool] = commands.parameter(description = "The new setting for ping reply.")
+        ):
+        if setting is None:
+            current = database.get_reply_ping_setting(ctx.author.id)
+            new = not current
+        else:
+            new = setting
+        
+        database.set_reply_ping_setting(ctx.author.id, new)
+
+        await ctx.reply(f"You will {'now' if new else 'no longer'} be pinged in replies.")
 
 
 

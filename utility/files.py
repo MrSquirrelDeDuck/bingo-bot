@@ -1,5 +1,6 @@
 """Contains functions for loading and saving to files."""
 
+import discord
 import os
 import datetime
 import json
@@ -206,6 +207,41 @@ class DatabaseInterface:
             except TypeError: # Likely an object that can't be saved via the json library.
                 print(traceback.format_exc())
                 json.dump(backup, file_write, indent=4)
+
+    ######################################################################################################################################################
+    ##### Reply ping settings. ###########################################################################################################################
+    ######################################################################################################################################################
+
+    def get_all_reply_ping_data(self: typing.Self) -> bool:
+        return self.load("reply_pings", default={})
+        
+    def get_reply_ping_setting(
+            self: typing.Self,
+            member: discord.user.BaseUser | int | str,
+            default: bool = True
+        ) -> bool:
+        try:
+            member = member.id
+        except AttributeError:
+            pass
+
+        return self.get_all_reply_ping_data().get(str(member), default)
+        
+    def set_reply_ping_setting(
+            self: typing.Self,
+            member: discord.user.BaseUser | int | str,
+            setting: bool
+        ) -> bool:
+        try:
+            member = member.id
+        except AttributeError:
+            pass
+
+        data = self.get_all_reply_ping_data()
+
+        data[str(member)] = setting
+
+        self.save("reply_pings", data=data)
 
     ######################################################################################################################################################
     ##### Daily counters. ################################################################################################################################
