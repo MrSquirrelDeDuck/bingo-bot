@@ -1460,6 +1460,7 @@ class Other_cog(
             962128706816585789, # Event Coordinator.
             1060344654391947345, # Ping List Poster.
             1292963091385942087, # Politics chat.
+            1320455424209715250, # Sender of Media.
 
             # Pride roles:
             1214062437037506590, # Ace
