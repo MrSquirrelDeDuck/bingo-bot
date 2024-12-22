@@ -1313,6 +1313,47 @@ Settings list for configuring when you are the one replying:
         if user is not None:
             await message.reply(f"Do you mean `$brick {user.id} stats`?")
 
+    async def thirty_seven(
+            self: typing.Self,
+            message: discord.Message
+        ):
+        if u_checks.serious_channel_check(message.channel):
+            return
+        
+        content = message.content
+
+        content = re.sub(r"<@&?\d+>", "", content) # Remove pings.
+        content = re.sub(r"<#\d+>", "", content) # Remove channel mentions.
+        content = re.sub(r"<a?:\w+:\d+>", "", content) # Remove custom emojis.
+        content = re.sub(r"(http|ftp|https):\/\/([\w_-]+(?:(?:\.[\w_-]+)+))([\w.,@?^=%&:\/~+#-]*[\w@?^=%&\/~+#-])?", "", content) # Remove urls. Pattern sourced from https://stackoverflow.com/questions/6038061/regular-expression-to-find-urls-within-a-string
+
+        if "37" not in content:
+            # 37 was in a ping, channel mention, emoji, or url.
+            return
+        
+        if re.search("(?<!(\d,)|(.\d))37(?!(\d|(,\d)))", "  " + content) is None: # This is an absolutely terrible solution, but it works.
+            # "37" was in a number, not on its own.
+            return
+        
+        if random.randint(1, 32) != 1:
+            return
+        
+        # Now, fetch the users in the "37_pinglist" from the pinglist data and send a message pinging all of them.
+        ping_list = database.get_ping_list("37_pinglist")
+        try:
+            ping_list = list(filter(u_interface.Filter_Member_In_Guild(message.guild), ping_list))
+        except:
+            pass
+
+        if len(ping_list) == 0:
+            return
+
+        # For funzies, shuffle the pinglist order.
+        random.shuffle(ping_list)
+
+        await message.reply("".join([f"<@{user_id}>" for user_id in ping_list]), mention_author=False)
+        return
+
     async def seven_twenty_seven(
             self: typing.Self,
             message: discord.Message
@@ -1335,16 +1376,19 @@ Settings list for configuring when you are the one replying:
             return
         
         # Now, fetch the users in the "727_pinglist" from the pinglist data and send a message pinging all of them.
-        ping_data = database.get_ping_list("727_pinglist")
+        ping_list = database.get_ping_list("727_pinglist")
         try:
             ping_list = list(filter(u_interface.Filter_Member_In_Guild(message.guild), ping_list))
         except:
             pass
 
-        # For funzies, shuffle the pinglist order.
-        random.shuffle(ping_data)
+        if len(ping_list) == 0:
+            return
 
-        await message.reply("".join([f"<@{user_id}>" for user_id in ping_data]), mention_author=False)
+        # For funzies, shuffle the pinglist order.
+        random.shuffle(ping_list)
+
+        await message.reply("".join([f"<@{user_id}>" for user_id in ping_list]), mention_author=False)
         return
     
     async def auto_detection(
@@ -1616,6 +1660,10 @@ Settings list for configuring when you are the one replying:
         # 727 pings.
         if "727" in message.content:
             await self.seven_twenty_seven(message)
+        
+        # 37 pings.
+        if "37" in message.content:
+            await self.thirty_seven(message)
         
         # If Machine-Mind is offline.
         if not message.author.bot and message.content.startswith("$"):
