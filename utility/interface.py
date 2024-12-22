@@ -657,7 +657,8 @@ async def handle_wiki_search(
                 "srlimit": 3
             }
             async with session.get(wiki_api_url, params=json_args) as resp:
-                if resp.status != 200:
+                if resp.ok:
+                    print(resp.status, resp)
                     await ctx.reply("Something went wrong.")
                     return
                 
@@ -705,7 +706,8 @@ async def handle_wiki_search(
                 "redirects": "true"
             }
             async with session.get(wiki_api_url, params=json_args) as resp:
-                if resp.status != 200:
+                if resp.ok:
+                    print(resp.status, resp)
                     await ctx.reply("Something went wrong.")
                     return
                 
