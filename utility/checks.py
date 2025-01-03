@@ -90,11 +90,12 @@ def serious_channel_check(channel: discord.TextChannel | discord.Thread) -> bool
     - #all-queer.
     - #100.
     - #conways-game-of-life-fan-club.
-    - #wii-play-tanks."""
+    - #wii-play-tanks.
+    - #politics."""
     if isinstance(channel, discord.Thread):
         channel = channel.parent
         
-    return channel.id in [958562231921025054, 969881291740811264, 958487694676205628, 980267115821035550, 994460122875174942]
+    return channel.id in [958562231921025054, 969881291740811264, 958487694676205628, 980267115821035550, 994460122875174942, 1292963004798865511]
 
 ##### COMMAND CHECKS #####
 
