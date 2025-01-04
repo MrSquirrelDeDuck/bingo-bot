@@ -1843,7 +1843,7 @@ class Admin_cog(
         
         for reminder in reminder_data["reminder_list"].copy():
             # Keep the "Do Wordle." GPTM reminder for Kapola to reply "No." to.".
-            if "Wordle" in reminder_data["text"]:
+            if "Wordle" in reminder["text"]:
                 continue
             
             if str(reminder["user"]).startswith("&"): # Role pings.
