@@ -197,7 +197,6 @@ def is_mm(message: discord.Message) -> bool:
         960869046323134514, # Actual Machine-Mind.
         1144833820940578847, # Development clone of Machine-Mind.
         1101193520733241376, # Bread Space bot.
-        658290426435862619
     ]
 
     return message.author.id in mm_ids
