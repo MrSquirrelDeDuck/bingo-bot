@@ -1842,6 +1842,10 @@ class Admin_cog(
         reminder_data = database.load("reminders")
         
         for reminder in reminder_data["reminder_list"].copy():
+            # Keep the "Do Wordle." GPTM reminder for Kapola to reply "No." to.".
+            if "Wordle" in reminder_data["text"]:
+                continue
+            
             if str(reminder["user"]).startswith("&"): # Role pings.
                 reminder_data["reminder_list"].remove(reminder)
         
