@@ -47,8 +47,6 @@ class BreadDataAccount:
         self.loaded = True
 
         return None
-        
-    
 
     ###############################################################
     ## Utility methods.
@@ -63,24 +61,39 @@ class BreadDataAccount:
     
     def get(
             self: typing.Self,
-            item: typing.Type[u_values.Item],
+            item: typing.Type[u_values.Item] | str,
             default: typing.Any = 0
         ) -> int | typing.Any:
         if item in self.data:
             return self.data.get(item, default)
 
         if isinstance(item, u_values.Item):
-            item = item.internal_name
+            item = item.internal_emoji
 
         return self.data.get(item, default)
     
     def set(
             self: typing.Self,
-            item: typing.Type[u_values.Item],
+            item: typing.Type[u_values.Item] | str,
             value: int | typing.Any
         ) -> None:
-
+        if isinstance(item, u_values.Item):
+            item = item.internal_emoji
+            
         self.data[item] = value
+    
+    def increment(
+            self: typing.Self,
+            item: typing.Type[u_values.Item] | str,
+            amount: int | typing.Any
+        ) -> int:
+        """Increments an item by an amount, returns the new value."""
+        if isinstance(item, u_values.Item):
+            item = item.internal_emoji
+        
+        self.data[item] = self.get(item, 0) + amount
+        
+        return self.get(item)
     
     def solver(
             self: typing.Self,
@@ -113,13 +126,13 @@ class BreadDataAccount:
             self: typing.Self,
             data: dict
         ) -> None:
-        for key in data.copy():
-            item = u_values.get_item(key)
+        # for key in data.copy():
+        #     item = u_values.get_item(key)
 
-            if item is None:
-                continue
+        #     if item is None:
+        #         continue
 
-            data[item] = data.pop(key)
+        #     data[item] = data.pop(key)
 
         self.data.update(data)
     
@@ -158,7 +171,7 @@ class BreadDataAccount:
         def sanitize_list(list_data: list) -> list:
             for index, value in enumerate(list_data.copy()):
                 try:
-                    list_data[index] = value.internal_name
+                    list_data[index] = value.internal_emoji
                 except AttributeError:
                     pass # If the value is not an item, do nothing.
             return list_data
@@ -173,7 +186,7 @@ class BreadDataAccount:
                     continue
 
                 try:
-                    modify_key = key.internal_name
+                    modify_key = key.internal_emoji
                     dict_data[modify_key] = dict_data.pop(key)
                 except AttributeError:
                     pass # If the key is not an item, do nothing.
@@ -232,6 +245,20 @@ class BreadDataAccount:
             ascension = ascension,
             omega_count = omegas,
             active_shadowmegas = shadowmegas,
+        )
+    
+    @property
+    def anarchy_tron_value(self: typing.Self) -> int:
+        omegas = self.get(u_values.omega_chessatron)
+        ascension = self.ascension
+        shadowmegas = self.active_shadowmegas
+        anarchy_omegas = self.get(u_values.anarchy_omega_chessatron)
+
+        return calculate_anarchy_tron_value(
+            ascension = ascension,
+            omega_count = omegas,
+            active_shadowmegas = shadowmegas,
+            anarchy_omega_chessatron = anarchy_omegas
         )
 
     @property
@@ -343,7 +370,8 @@ def calculate_tron_value(
         omega_count: int = 0,
         active_shadowmegas: int = 0,
         shadowmegas: int = 0,
-        chessatron_contraption: int = 0
+        chessatron_contraption: int = 0,
+        include_prestige_boost: bool = True
     ) -> int:
     """Calculates the value of a chessatron.
 
@@ -353,13 +381,253 @@ def calculate_tron_value(
         active_shadowmegas (int, optional): The number of active shadowmegas the player has, does not need to be provided if `shadowmegas` and `chessatron_contraption` is provided. Defaults to 0.
         shadowmegas (int, optional): The total number of shadowmegas the player has, not the number of active shadowmegas. This and `chessatron_contraption` can be provided or `active_shadowmegas` can be provided. Defaults to 0.
         chessatron_contraption (int, optional): The level of Chessatron Contraption the player has. This and `shadowmegas` can be provided or `active_shadowmegas` can be provided. Defaults to 0.
+        include_prestige_boost (bool, optional): Whether to include the prestige boost in the calculation. Defaults to True.
 
     Returns:
         int: The amount of dough the player gets for each chessatron they make.
     """
     active_shadowmegas = max(active_shadowmegas, min(shadowmegas, chessatron_contraption * 5))
 
-    return round((2000 + (100 * omega_count) * (1 + 0.02 * active_shadowmegas)) * (1 + (0.1 * ascension)))
+    out = (2000 + (100 * omega_count) * (1 + 0.02 * active_shadowmegas))
+    
+    if include_prestige_boost:
+        out *= (1 + (0.1 * ascension))
+        
+    return round(out)
+
+def calculate_anarchy_tron_value(
+        ascension: int = 0,
+        omega_count: int = 0,
+        anarchy_omega_chessatron: int = 0,
+        active_shadowmegas: int = 0,
+        shadowmegas: int = 0,
+        chessatron_contraption: int = 0,
+        include_prestige_boost: bool = True
+    ) -> int:
+    """Calculates the value of an anarchy chessatron.
+
+    Args:
+        ascension (int, optional): The ascension the player is on. Defaults to 0.
+        omega_count (int, optional): The number of omegas the player has. Defaults to 0.
+        anarchy_omega_chessatron (int, optional): The number of anarchy omega chessatrons the player has. Defaults to 0.
+        active_shadowmegas (int, optional): The number of active shadowmegas the player has, does not need to be provided if `shadowmegas` and `chessatron_contraption` is provided. Defaults to 0.
+        shadowmegas (int, optional): The total number of shadowmegas the player has, not the number of active shadowmegas. This and `chessatron_contraption` can be provided or `active_shadowmegas` can be provided. Defaults to 0.
+        chessatron_contraption (int, optional): The level of Chessatron Contraption the player has. This and `shadowmegas` can be provided or `active_shadowmegas` can be provided. Defaults to 0.
+        include_prestige_boost (bool, optional): Whether to include the prestige boost in the calculation. Defaults to True.
+
+    Returns:
+        int: The amount of dough the player gets for each chessatron they make.
+    """
+    multiplier = 350 + (anarchy_omega_chessatron * 25)
+    regular_tron = calculate_tron_value(ascension, omega_count, active_shadowmegas, shadowmegas, chessatron_contraption, include_prestige_boost=False)
+    
+    out = regular_tron * multiplier
+    
+    if include_prestige_boost:
+        out *= (1 + (0.1 * ascension))
+    
+    return round(out)
+
+def calculate_loaf_converter_cost(
+        current: int,
+        goal: int,
+        self_converting_yeast: int = 0
+    ) -> int:
+    """Calculates the cumulative cost of getting from a number to a number of Loaf Converters.
+
+    Args:
+        current (int): The start number of Loaf Converters.
+        goal (int): The ending number of Loaf Converters.
+        self_converting_yeast (int, optional): The number of Self Converting Yeast levels. Defaults to 0.
+
+    Returns:
+        int: The amount of dough required to get from the current number of Loaf Converters to the goal.
+    """
+    # \left(g-c\right)\left(256-12s\right)c+\frac{\left(g-c\right)\left(g-c+1\right)\left(256-12s\right)}{2}
+    return int(((goal - current) * (256 - (12 * self_converting_yeast)) * current) + (((goal - current) * ((goal - current) + 1) * (256 - (12 * self_converting_yeast))) // 2))
+
+def calculate_maximum_trons(
+        bking: int,
+        bqueen: int,
+        brook: int,
+        bbishop: int,
+        bknight: int,
+        bpawn: int,
+        wking: int,
+        wqueen: int,
+        wrook: int,
+        wbishop: int,
+        wknight: int,
+        wpawn: int,
+    ) -> dict[str | u_values.Item, int]:
+    """Calculates the maximum number of trons that can be made with the given chess pieces. This works for both regular and anarchy pieces."""
+    
+    kings = (bking + wking) / 2
+    queens = (bqueen + wqueen) / 2
+    rooks = (brook + wrook) / 4
+    bishops = (bbishop + wbishop) / 4
+    knights = (bknight + wknight) / 4
+    pawns = ((bpawn - wpawn) / 3 + wpawn) / 8
+    
+    return {
+        "max": int(min(kings, queens, rooks, bishops, knights, pawns)),
+        "kings": kings,
+        "queens": queens,
+        "rooks": rooks,
+        "bishops": bishops,
+        "knights": knights,
+        "pawns": pawns
+    }
+    
+def max_trons_regular(pieces: dict[typing.Type[u_values.Item], int]) -> dict[str | u_values.Item, int]:
+    """Calculates the maximum number of trons that can be made with the given regular chess pieces.
+    
+    This calls calculate_maximum_trons, but allows you to pass a dict of items instead of individual values."""
+    return calculate_maximum_trons(
+        pieces.get(u_values.bking, 0),
+        pieces.get(u_values.bqueen, 0),
+        pieces.get(u_values.brook, 0),
+        pieces.get(u_values.bbishop, 0),
+        pieces.get(u_values.bknight, 0),
+        pieces.get(u_values.bpawn, 0),
+        pieces.get(u_values.wking, 0),
+        pieces.get(u_values.wqueen, 0),
+        pieces.get(u_values.wrook, 0),
+        pieces.get(u_values.wbishop, 0),
+        pieces.get(u_values.wknight, 0),
+        pieces.get(u_values.wpawn, 0)
+    )
+    
+def max_trons_anarchy(pieces: dict[typing.Type[u_values.Item], int]) -> dict[str | u_values.Item, int]:
+    """Calculates the maximum number of trons that can be made with the given anarchy chess pieces.
+    
+    This calls calculate_maximum_trons, but allows you to pass a dict of items instead of individual values."""
+    return calculate_maximum_trons(
+        pieces.get(u_values.bking_anarchy, 0),
+        pieces.get(u_values.bqueen_anarchy, 0),
+        pieces.get(u_values.brook_anarchy, 0),
+        pieces.get(u_values.bbishop_anarchy, 0),
+        pieces.get(u_values.bknight_anarchy, 0),
+        pieces.get(u_values.bpawn_anarchy, 0),
+        pieces.get(u_values.wking_anarchy, 0),
+        pieces.get(u_values.wqueen_anarchy, 0),
+        pieces.get(u_values.wrook_anarchy, 0),
+        pieces.get(u_values.wbishop_anarchy, 0),
+        pieces.get(u_values.wknight_anarchy, 0),
+        pieces.get(u_values.wpawn_anarchy, 0)
+    )
+
+def regular_iterative_tronning(
+        starting_chess_pieces: dict[typing.Type[u_values.Item], int],
+        starting_omega_items: dict[typing.Type[u_values.Item], int],
+        ascension: int = 0, # a
+        active_shadowmegas: int = 0, # c
+        starting_omegas: int = 0, # p
+    ) -> dict[str, int]:
+    """Calculates the results of iterative tronning with regular chessatrons.
+    
+    Args:
+        starting_chess_pieces (dict[typing.Type[u_values.Item], int]): The starting chess pieces.
+        starting_omega_items (dict[typing.Type[u_values.Item], int]): The starting omega items.
+        ascension (int, optional): The ascension the player is on. Defaults to 0.
+        active_shadowmegas (int, optional): The number of active shadowmegas the player has. Defaults to 0.
+        starting_omegas (int, optional): The number of omegas the player has. Defaults to 0.
+        
+    Returns:
+        dict[str, int]: The resulting data if iterative tronning were to happen."""
+    # Equation:
+    # \left(\left(\left(t-5k\right)\left(2000\ +\ 100\left(k+p\right)\cdot\left(1+0.02c\right)\right)\right)+5\left(2000k+100\left(1+0.02c\right)\left(\frac{k\left(k-1\right)}{2}+pk\right)\right)+40000k\right)\left(1+0.1a\right)
+    
+    # Prepare the data.
+    max_omegas = min(starting_omega_items.values()) # o
+    
+    max_trons = max_trons_regular(starting_chess_pieces)["max"] # t
+    
+    m = min(max_trons, max_omegas * 5)
+    k = int(m // 5)
+    remaining_trons = (max_trons - (5 * k))
+    
+    # \left(\left(t-5k\right)\left(2000\ +\ 100\left(k+p\right)\cdot\left(1+0.02c\right)\right)\right)
+    leftover_trons = remaining_trons * (2000 + 100 * (k + starting_omegas) * (1 + 0.02 * active_shadowmegas))
+    
+    # 5\left(2000k+100\left(1+0.02c\right)\left(\frac{k\left(k-1\right)}{2}+pk\right)\right)
+    main_trons = 5 * (2000 * k + 100 * (1 + 0.02 * active_shadowmegas) * ((k * (k - 1) // 2) + (starting_omegas * k)))
+    
+    # 40000k
+    omegas_made = 40000 * k
+    
+    # \left(1+0.1a\right)
+    ascension_multiplier = 1 + (0.1 * ascension)
+    
+    total_dough_made = (leftover_trons + main_trons + omegas_made) * ascension_multiplier
+    
+    return {
+        "dough_gained": total_dough_made,
+        "omegas_made": k,
+        "extra_trons": remaining_trons,
+        "total_trons": max_trons
+    }
+
+def anarchy_iterative_tronning(
+        starting_anarchy_pieces: dict[typing.Type[u_values.Item], int],
+        starting_omega_items: dict[typing.Type[u_values.Item], int],
+        ascension: int = 0, # a
+        active_shadowmegas: int = 0, # s
+        starting_omegas: int = 0, # u
+        starting_anarchy_omegas: int = 0, # p
+    ) -> dict[str, int]:
+    """Calculates the results of iterative tronning with regular chessatrons.
+    
+    Args:
+        starting_anarchy_pieces (dict[typing.Type[u_values.Item], int]): The starting anarchy pieces.
+        starting_omega_items (dict[typing.Type[u_values.Item], int]): The starting omega items.
+        ascension (int, optional): The ascension the player is on. Defaults to 0.
+        active_shadowmegas (int, optional): The number of active shadowmegas the player has. Defaults to 0.
+        starting_omegas (int, optional): The number of omegas the player has. Defaults to 0.
+        starting_anarchy_omegas (int, optional): The number of anarchy omegas the player has. Defaults to 0.
+        
+    Returns:
+        dict[str, int]: The resulting data if iterative tronning were to happen."""
+    # Equation:
+    # \left(\left(\left(t-5k\right)g\left(k+p,\ u-k,\ s\right)\right)+5\left(700000k+50000\left(\frac{k\left(k-1\right)}{2}+pk\right)+35000\left(1+0.02s\right)\left(uk-\frac{k\left(k-1\right)}{2}\right)+2500\left(1+0.02s\right)\left(u\left(\frac{k\left(k-1\right)}{2}+pk\right)-\left(\frac{\left(k-1\right)k\left(2k-1\right)}{6}+p\frac{k\left(k-1\right)}{2}\right)\right)\right)+31004150k\right)\left(1+0.1a\right)
+    
+    # Prepare the data.
+    max_anarchy_omegas = min(
+        starting_omega_items.get(u_values.chessatron, 0) // 25,
+        starting_omegas
+    )
+    
+    max_trons = max_trons_anarchy(starting_anarchy_pieces)["max"] # t
+    
+    k = int(min(max_trons, max_anarchy_omegas * 5) // 5)
+    remaining_trons = (max_trons - (5 * k))
+    
+    # \left(\left(t-5k\right)g\left(k+p,\ u-k,\ s\right)\right)
+    leftover_trons = remaining_trons * calculate_anarchy_tron_value(
+        ascension = ascension,
+        omega_count = starting_omegas - k,
+        anarchy_omega_chessatron = starting_anarchy_omegas + k,
+        active_shadowmegas = active_shadowmegas,
+        include_prestige_boost = False
+    )
+    
+    # 5\left(700000k+50000\left(\frac{k\left(k-1\right)}{2}+pk\right)+35000\left(1+0.02s\right)\left(uk-\frac{k\left(k-1\right)}{2}\right)+2500\left(1+0.02s\right)\left(u\left(\frac{k\left(k-1\right)}{2}+pk\right)-\left(\frac{\left(k-1\right)k\left(2k-1\right)}{6}+p\frac{k\left(k-1\right)}{2}\right)\right)\right)
+    main_trons = 5 * (700_000 * k + 50_000 * ((k * (k - 1)) // 2 + starting_anarchy_omegas * k) + 35_000 * (1 + 0.02 * active_shadowmegas) * (starting_omegas * k - ((k * (k - 1)) // 2)) + 2_500 * (1 + 0.02 * active_shadowmegas) * (starting_omegas * (((k * (k - 1)) // 2) + (starting_anarchy_omegas * k)) - ((((k - 1) * k * (2 * k - 1)) // 6) + (starting_anarchy_omegas * (k * (k - 1)) // 2))))
+    
+    # 31004150k
+    omegas_made = 31004150 * k # hehe
+    
+    # \left(1+0.1a\right)
+    ascension_multiplier = 1 + (0.1 * ascension)
+    
+    total_dough_made = (leftover_trons + main_trons + omegas_made) * ascension_multiplier
+    
+    return {
+        "dough_gained": total_dough_made,
+        "omegas_made": k,
+        "extra_trons": remaining_trons,
+        "total_trons": max_trons
+    }
 
 def get_ascension(
         tokens: int = 0,
