@@ -1837,8 +1837,17 @@ class Admin_cog(
         ):
         # Clear the stored data for everyone, as the recent update made it incompatible.
         database.save("bread", "data_storage", data={})
-        await ctx.reply("Done.")
         
+        # Remove ping-based bread reminders.
+        reminder_data = database.load("reminders")
+        
+        for reminder in reminder_data["reminder_list"].copy():
+            if str(reminder["user"]).startswith("&"): # Role pings.
+                reminder_data["reminder_list"].remove(reminder)
+        
+        database.save("reminders", data=reminder_data)
+        
+        await ctx.reply("Done.")
 
         
             
