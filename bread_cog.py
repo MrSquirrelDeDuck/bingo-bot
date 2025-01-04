@@ -2689,6 +2689,7 @@ class Bread_cog(
     
     @bread.command(
         name = "net_worth",
+        aliases = ["net_value", "networth", "netvalue"],
         brief = "Calculates the net worth of an account.",
         description = "Calculates the net worth of an account.\nNote that this is very much not perfect, and is just a rough estimate.\n\nThis is using the data stored with the `%bread data` feature.\n\nSettings list:\n- `iterative` will calculate the net worth with iterative tronning for both regular and anarchy trons, as well as attempting to leave enough regular trons to utilize anarchy trons as much as possible. This does not currently account for gem tronning beforehand."
     )
@@ -2758,6 +2759,7 @@ class Bread_cog(
         
         # Step 5: Omegas.
         max_possible_omegas = min(
+            stored_data.get(u_values.chessatron, 0) // 5,
             stored_data.get(u_values.anarchy_chess, 0),
             stored_data.get(u_values.gem_gold, 0),
             stored_data.get(u_values.gem_green, 0),
@@ -2766,12 +2768,14 @@ class Bread_cog(
             stored_data.get(u_values.gem_red, 0)
         )
         
-        raw_omegas = int(40_000 * stored_data.ascension_boost * max_possible_omegas)
+        stored_data.increment(u_values.omega_chessatron, max_possible_omegas)
         
-        # If iterative tronning is used this'll get accounted for in that.
-        # Iterative tronning is very annoying.
-        if not iterative_tronning:
-            value_sum += raw_omegas
+        for item in u_values.all_shiny + [u_values.anarchy_chess]:
+            stored_data.increment(item, -max_possible_omegas)
+            
+        stored_data.increment(u_values.chessatron, -5 * max_possible_omegas)
+        
+        raw_omegas = int(40_000 * stored_data.ascension_boost * max_possible_omegas)
         
         regular_pieces = {
             piece: stored_data.get(piece, 0)
@@ -2783,8 +2787,24 @@ class Bread_cog(
             for piece in u_values.all_anarchy_pieces
         }
         
+        
+        # Step 6: Anarchy Omegas.
+        
+        max_posible_anarchy_omegas = min(
+            stored_data.get(u_values.omega_chessatron, 0),
+            stored_data.get(u_values.chessatron, 0) // 25,
+            stored_data.get(u_values.anarchy_chessatron, 0) // 5,
+        )
+        
+        stored_data.increment(u_values.anarchy_omega_chessatron, max_posible_anarchy_omegas)
+        stored_data.increment(u_values.omega_chessatron, -max_posible_anarchy_omegas)
+        stored_data.increment(u_values.chessatron, -25 * max_posible_anarchy_omegas)
+        stored_data.increment(u_values.anarchy_chessatron, -5 * max_posible_anarchy_omegas)
+        
+        raw_anarchy_omegas = int(31004150 * stored_data.ascension_boost * max_posible_anarchy_omegas)
+        
         if iterative_tronning:
-            # Okay, step 1 to steps 6 and 7, since calculating the regular and anarchy pieces are kind of blurred together with iterative tronning.
+            # Okay, step 1 to steps 7 and 8, since calculating that stuff is kind of blurred together we do it all at once.
             # This is going to be a mess.
             
             maximum_regular = u_bread.max_trons_regular(regular_pieces)["max"]
@@ -2814,7 +2834,7 @@ class Bread_cog(
                 starting_omegas = stored_data.get(u_values.omega_chessatron, 0),
             )
             
-            raw_chess_piece = regular_results["dough_gained"]
+            raw_chess_piece = int(regular_results["dough_gained"])
             
             anarchy_results = u_bread.anarchy_iterative_tronning(
                 starting_anarchy_pieces = anarchy_pieces,
@@ -2825,7 +2845,7 @@ class Bread_cog(
                 starting_anarchy_omegas = stored_data.get(u_values.anarchy_omega_chessatron, 0),
             )
             
-            raw_anarchy_piece = anarchy_results["dough_gained"]
+            raw_anarchy_piece = int(anarchy_results["dough_gained"])
             
             # To make the gem value work it uses the `tron_value` variable.
             # We can't just use the regular stored_data value because it's not accurate.
@@ -2836,26 +2856,31 @@ class Bread_cog(
                 active_shadowmegas = stored_data.active_shadowmegas
             )
             
+            raw_omegas += int(40_000 * regular_results["omegas_made"] * stored_data.ascension_boost)
+            raw_anarchy_omegas += int(31004150 * anarchy_results["omegas_made"] * stored_data.ascension_boost)
+            
             value_sum += raw_chess_piece + raw_anarchy_piece
         else:
             # Calculate it normally.
             
-            # Step 6: The dreaded chess pieces.
+            # Step 7: The dreaded chess pieces.
             maximum_regular = u_bread.max_trons_regular(regular_pieces)["max"]
             tron_value = stored_data.tron_value
             
             raw_chess_piece = maximum_regular * tron_value
             value_sum += raw_chess_piece
             
-            # Step 7: Anarchy pieces.
+            # Step 8: Anarchy pieces.
             
             maximum_anarchy = u_bread.max_trons_anarchy(anarchy_pieces)["max"]
             anarchy_tron_value = stored_data.anarchy_tron_value
             
             raw_anarchy_piece = maximum_anarchy * anarchy_tron_value
             value_sum += raw_anarchy_piece
+        
+        value_sum += raw_omegas + raw_anarchy_omegas
 
-        # Step 8: Gem value.
+        # Step 9: Gem value.
         gems = {
             gem: stored_data.get(gem, 0)
             for gem in u_values.all_shiny
@@ -2875,12 +2900,13 @@ class Bread_cog(
         
         embed = u_interface.gen_embed(
             title = "Net worth calculation",
-            description = "Factors contributing to the net worth:\n- Raw dough: {}\n- Stonks: {}\n- Daily rolls: {}\n- Loaf Converters: {}\n- Omega Chessatrons: {}\n- Chess pieces: {}\n- Anarchy pieces: {}\n- Gems: {}\n\nTotal: **{} dough**.".format(
+            description = "Factors contributing to the net worth:\n- Raw dough: {}\n- Stonks: {}\n- Daily rolls: {}\n- Loaf Converters: {}\n- Omega Chessatrons: {}\n- Anarchy Omega Chessatrons: {}\n- Chess pieces: {}\n- Anarchy pieces: {}\n- Gems: {}\n\nTotal: **{} dough**.".format(
                 sn(raw_dough),
                 sn(raw_stonks),
                 sn(raw_daily_rolls),
                 sn(raw_loaf_converters),
                 sn(raw_omegas),
+                sn(raw_anarchy_omegas),
                 sn(raw_chess_piece),
                 sn(raw_anarchy_piece),
                 sn(raw_gem_value),
