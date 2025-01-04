@@ -20,6 +20,7 @@ import utility.files as u_files
 from dotenv import load_dotenv
 from os import getenv
 
+load_dotenv()
 ERROR_WEBHOOK = getenv('ERROR_WEBHOOK')
 
 everyone_prevention = discord.AllowedMentions(everyone=False)

@@ -2,6 +2,8 @@
 
 This is essentially a modified copy of values.py from Machine-Mind"""
 
+from __future__ import annotations
+
 import typing
 from discord.ext import commands
 
@@ -10,6 +12,9 @@ from discord.ext import commands
 import utility.files as u_files
 
 class Item:
+    converter_attributes = None
+    """List of attributes to use in the `convert` method for discord.py converters."""
+    
     def __init__(
             self: typing.Self,
             name: str,
@@ -70,8 +75,19 @@ class Item:
     def has_attribute(self: typing.Self, attribute: str) -> bool:
         """Returns a boolean for whether this item has the given attribute."""
         return attribute in self.attributes
+    
+    async def convert(self, ctx, arg: str) -> type[Item]:
+        """Discord.py converter, so you can use `typing.Optional[u_values.Item]` in command parameters."""
+        converted = get_item(arg, None)
+
+        if not converted:
+            raise commands.errors.BadArgument
+        
+        return converted
 
 class StonkItem(Item):
+    converter_attributes = ["stonk"]
+    
     def __init__(
             self: typing.Self,
             name: str,
@@ -111,6 +127,8 @@ class StonkItem(Item):
         return current_values.get(self.internal_name, self.base_value)
 
 class ChessItem(Item):
+    converter_attributes = ["chess_piece"]
+    
     def __init__(
             self: typing.Self,
             name: str,
@@ -992,6 +1010,7 @@ black_chess_pieces = attribute_item_list("black_chess_piece")
 black_chess_biased = [bpawn] * 8 + [bknight] * 2 + [bbishop] * 2 + [brook] * 2 + [bqueen, bking]
 
 all_chess_pieces = white_chess_pieces + black_chess_pieces
+all_chess_biased = white_chess_biased + black_chess_biased
 
 white_anarchy_pieces = attribute_item_list("white_anarchy_piece")
 white_anarchy_biased = [wpawn_anarchy] * 8 + [wknight_anarchy] * 2 + [wbishop_anarchy] * 2 + [wrook_anarchy] * 2 + [wqueen_anarchy, wking_anarchy]
@@ -1000,6 +1019,7 @@ black_anarchy_pieces = attribute_item_list("black_anarchy_piece")
 black_anarchy_biased = [bpawn_anarchy] * 8 + [bknight_anarchy] * 2 + [bbishop_anarchy] * 2 + [brook_anarchy] * 2 + [bqueen_anarchy, bking_anarchy]
 
 all_anarchy_pieces = white_anarchy_pieces + black_anarchy_pieces
+all_anarchy_biased = white_anarchy_biased + black_anarchy_biased
 
 every_chess_piece = all_chess_pieces + all_anarchy_pieces
 """This is all regular chess pieces and all anarchy pieces."""
@@ -1009,7 +1029,7 @@ all_shiny = attribute_item_list("shiny")
 all_gambit = special_and_rare + all_chess_pieces + all_shiny
 
 one_of_a_kinds = attribute_item_list("one_of_a_kind")
-stonks = attribute_item_list("stonk")
+stonks = attribute_item_list("stonk") # type: list[StonkItem]
 shadows = attribute_item_list("shadow")
 
 gamble_items = attribute_item_list("gamble_item")
@@ -1985,6 +2005,63 @@ gambit_shop_items = {
         "official_name": "Double Bongcloud"
     }
 }
+
+######################################################################################
+# ███████ ████████  █████  ████████     ███    ██  █████  ███    ███ ███████ ███████ #
+# ██         ██    ██   ██    ██        ████   ██ ██   ██ ████  ████ ██      ██      #
+# ███████    ██    ███████    ██        ██ ██  ██ ███████ ██ ████ ██ █████   ███████ #
+#      ██    ██    ██   ██    ██        ██  ██ ██ ██   ██ ██  ██  ██ ██           ██ #
+# ███████    ██    ██   ██    ██        ██   ████ ██   ██ ██      ██ ███████ ███████ #
+######################################################################################
+# You can use these when doing stuff related to player stats so it's easy to update in the future.
+
+# Main shop:
+WELCOME_PACKET = "welcome_packet" # Not really used.
+EXTRA_DAILY_ROLL = "max_daily_rolls"
+LOAF_CONVERTER = "loaf_converter"
+DOUGH_MULTIPLIER = "dough_multiplier" # Not used.
+EMBIGGENER = "embiggener" # Not used.
+MULTIROLLER = "multiroller"
+COMPOUND_ROLLER = "compound_roller"
+RANDOM_CHESS_PIECE = "random_chess_piece" # Stat name not increased due to custom do_purchase.
+RANDOM_SPECIAL_BREAD = "random_special_bread" # Not used.
+SPECIAL_BREAD_PACK = "special_bread_pack" # Stat name not increased due to custom do_purchase.
+EXTRA_GAMBLE = "extra_gamble" # Stat name not increased due to custom do_purchase.
+ROLL_SUMMARIZER = "roll_summarizer"
+BLACK_HOLE_TECHNOLOGY = "black_hole"
+BLING = "bling"
+RECIPE_REFINEMENT = "LC_booster"
+
+# Hidden Bakery:
+HIGH_ROLLER_TABLE = "gamble_level"
+DAILY_DISCOUNT_CARD = "max_daily_rolls_discount"
+SELF_CONVERTING_YEAST = "loaf_converter_discount"
+CHESS_PIECE_EQUALIZER = "chess_piece_equalizer"
+MOAK_BOOSTER = "moak_booster"
+CHESSATRON_CONTRAPTION = "chessatron_shadow_boost"
+ETHERAL_SHINE = "shadow_gold_gem_luck_boost"
+FIRST_CATCH_OF_THE_DAY = "first_catch_level"
+FUEL_REFINEMENT = "fuel_refinement"
+CORRUPTION_NEGATION = "corruption_negation"
+
+# Space shop:
+BREAD_ROCKET = "space_level"
+UPGRADED_AUTOPILOT = "autopilot_level"
+FUEL_TANK = "fuel_tank"
+FUEL_RESEARCH = "fuel_research"
+UPGRADED_TELESCOPES = "telescope_level"
+MULTIROLLER_TERMINAL = "multiroller_terminal"
+ADVANCED_EXPLORATION = "advanced_exploration"
+ENGINE_EFFICIENCY = "engine_efficiency"
+PAYMENT_BONUS = "payment_bonus"
+
+# Gambit shop is excluded here because it's stored inside the "dough_boosts" stat dictionary,
+# so storing individual stat names won't do anything.
+
+
+######################################################################################################
+######################################################################################################
+######################################################################################################
 
 # Imports down here to avoid circular imports.
 import utility.stonks as u_stonks

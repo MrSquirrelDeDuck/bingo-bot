@@ -31,9 +31,9 @@ def parse_int(argument: str) -> int:
 
 def extended_bool(argument: str) -> bool:
     """Extended boolean converter that allows for more things to be specified."""
-    if argument.lower() in ["true", "t", "1", "on", "yes"]:
+    if argument.lower() in ["true", "t", "1", "on", "yes", "y"]:
         return True
-    elif argument.lower() in ["false", "f", "0", "off", "no"]:
+    elif argument.lower() in ["false", "f", "0", "off", "no", "n"]:
         return False
     
     raise commands.BadArgument

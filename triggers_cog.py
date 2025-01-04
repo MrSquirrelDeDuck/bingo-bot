@@ -616,10 +616,11 @@ Settings list for configuring when you are the one replying:
                     pass
         except Exception as error:
             print(traceback.format_exc())
-            await u_interface.output_error(
-                ctx = None,
-                error = error
-            )
+            if OUTPUT_ERRORS:
+                await u_interface.output_error(
+                    ctx = None,
+                    error = error
+                )
 
 
 
@@ -761,10 +762,11 @@ Settings list for configuring when you are the one replying:
                     await weekly_channel.send("Weekly Bingo Board #{}!".format(live_data["weekly_board_id"]), file=discord.File(r'images/generated/bingo_board.png'))
             except Exception as error:
                 print(traceback.format_exc())
-                await u_interface.output_error(
-                    ctx = None,
-                    error = error
-                )
+                if OUTPUT_ERRORS:
+                    await u_interface.output_error(
+                        ctx = None,
+                        error = error
+                    )
             
             ##### Increment counters. #####
             
@@ -796,10 +798,11 @@ Settings list for configuring when you are the one replying:
                     pass
         except Exception as error:
             print(traceback.format_exc())
-            await u_interface.output_error(
-                ctx = None,
-                error = error
-            )
+            if OUTPUT_ERRORS:
+                await u_interface.output_error(
+                    ctx = None,
+                    error = error
+                )
 
 
 
