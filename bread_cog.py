@@ -870,6 +870,9 @@ class Bread_cog(
             ctx: commands.Context | u_custom.CustomContext,
             *, search_term: typing.Optional[str] = commands.parameter(description = "The search term to search the wiki with.")
         ):
+        await ctx.reply("Here's a link to The Bread Game Wiki:\n<https://bread.miraheze.org/wiki/The_Bread_Game_Wiki>\nSearching the wiki is currently disabled.")
+        return
+    
         if self.bread_wiki_searching:
             await ctx.reply("This commmand is currently being used somewhere, please wait until it's done to try again.")
             return
