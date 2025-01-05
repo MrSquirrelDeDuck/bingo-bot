@@ -666,6 +666,7 @@ async def handle_wiki_search(
             async with session.get(wiki_api_url, params=json_args) as resp:
                 if not resp.ok:
                     print(resp.status, resp)
+                    print(resp.text)
                     await ctx.reply("Something went wrong.")
                     return
                 
@@ -715,6 +716,7 @@ async def handle_wiki_search(
             async with session.get(wiki_api_url, params=json_args) as resp:
                 if not resp.ok:
                     print(resp.status, resp)
+                    print(resp.text)
                     await ctx.reply("Something went wrong.")
                     return
                 
