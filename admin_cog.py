@@ -1948,6 +1948,41 @@ class Admin_cog(
             return
         
         await ctx.reply(f"[Done.](<{message.jump_url}>)")
+        
+            
+
+        
+    ######################################################################################################################################################
+    ##### ADMIN ADD STONK TICK ###########################################################################################################################
+    ######################################################################################################################################################
+    
+    @admin.command(
+        name="add_stonk_tick",
+        brief = "Runs the code for a stonk tick on the replied-to message.",
+        description = "Runs the code for a stonk tick on the replied-to message."
+    )
+    @commands.is_owner()
+    async def admin_add_stonk_tick(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext
+        ):
+        if not u_interface.is_reply(ctx.message):
+            await ctx.reply("Please reply to the tick message.")
+            return
+        
+        replied_to = ctx.message.reference.resolved
+        
+        triggers_cog = self.bot.get_cog("Triggers")
+        
+        if triggers_cog is None:
+            await ctx.reply("Failed to find triggers cog.")
+            return
+        
+        await triggers_cog.on_stonk_tick(replied_to)
+        
+        await ctx.reply("Done.")
+        
+        
 
 
 
