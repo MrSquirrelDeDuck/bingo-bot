@@ -11,6 +11,8 @@ from discord.ext import commands
 
 import utility.files as u_files
 
+BINGO_BOT_VERSION = "3.4.0"
+
 class Item:
     converter_attributes = None
     """List of attributes to use in the `convert` method for discord.py converters."""

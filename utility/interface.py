@@ -22,6 +22,7 @@ from os import getenv
 
 load_dotenv()
 ERROR_WEBHOOK = getenv('ERROR_WEBHOOK')
+EMAIL_ADDRESS = getenv('EMAIL_ADDRESS') # Used in the wiki searching.
 
 everyone_prevention = discord.AllowedMentions(everyone=False)
 
@@ -648,8 +649,13 @@ async def handle_wiki_search(
     sent_message = None
 
     try:
+        
+        headers = {
+            "User-Agent": f"Bingo-Bot/{u_values.BINGO_BOT_VERSION}",
+            "From": EMAIL_ADDRESS
+        }
 
-        async with aiohttp.ClientSession() as session:
+        async with aiohttp.ClientSession(headers=headers) as session:
             json_args = {
                 "action": "query",
                 "format": "json",
