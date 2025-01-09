@@ -564,7 +564,7 @@ def evaluate_problem(
                     if num > 9e+4096:
                         raise OverflowError
                     
-                    c = c.replace(item.group(0), str(num))
+                    c = c.replace(item.group(0), str(num), 1)
                     
                     search = list(pattern.finditer(c))
                     if time.time() > timeout:
