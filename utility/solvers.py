@@ -549,9 +549,10 @@ def evaluate_problem(
                     item = search[0]
 
                     if item.group(0).startswith("e"):
-                        if c[item.start(0) - 1].isdigit():
-                            search.pop(0)
-                            continue
+                        if item.start(0) != 0:
+                            if c[item.start(0) - 1].isdigit():
+                                search.pop(0)
+                                continue
 
                     found = True
                     num = evaluate(item.group(0))
