@@ -20012,5 +20012,11 @@
         "cookie": 42,
         "fortune_cookie": 466,
         "pancakes": 3128
+    },
+    {
+        "pretzel": 110,
+        "cookie": 46,
+        "fortune_cookie": 512,
+        "pancakes": 3191
     }
 ]
