@@ -2757,6 +2757,16 @@ Full timestamp examples:
             return
         
         rules = ["- {}".format(rule.replace("\n", "\n  ")) for rule in rules]
+        
+        if ctx.channel.id == 969881291740811264:
+            await ctx.message.delete()
+            
+            if default:
+                await ctx.send("Channel-specific rules for this channel:\n{}".format("\n".join(rules)))
+            else:
+                await ctx.send("Channel-specific rules for {}:\n{}".format(channel.mention, "\n".join(rules)))
+                
+            return
 
         if default:
             await ctx.reply("Channel-specific rules for this channel:\n{}".format("\n".join(rules)))
