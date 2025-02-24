@@ -467,7 +467,7 @@ def calculate_maximum_trons(
     rooks = (brook + wrook) / 4
     bishops = (bbishop + wbishop) / 4
     knights = (bknight + wknight) / 4
-    pawns = ((bpawn - wpawn) / 3 + wpawn) / 8
+    pawns = (2 * max(bpawn - wpawn, 0) / 3 + wpawn + bpawn - max(bpawn - wpawn, 0)) / 16
     
     return {
         "max": int(min(kings, queens, rooks, bishops, knights, pawns)),
