@@ -924,6 +924,111 @@ class Games_cog(
 
         
     ######################################################################################################################################################
+    ##### LETHAL COMPANY OVERTIME ########################################################################################################################
+    ######################################################################################################################################################
+        
+    @lethal_company.group(
+        name = "overtime",
+        brief = "Calculates how much overtime you'll get.",
+        description = "Calculates how much overtime you'll get.",
+        pass_context = True,
+        invoke_without_command = True
+    )
+    @commands.check(u_checks.hide_from_help)
+    async def lethal_company_overtime(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext,
+            sold: typing.Optional[int] = commands.parameter(description = "The value of the sold scrap."),
+            quota: typing.Optional[int] = commands.parameter(description = "The amount the quota is."),
+            days_left: typing.Optional[int] = commands.parameter(description = "The number of days left until the quota is due.")
+        ):
+        if sold is None:
+            await ctx.reply("Please provide how much scrap you've sold or will sell.")
+            return
+        
+        if quota is None:
+            await ctx.reply("Please provide the amount the quota is.")
+            return
+        
+        if days_left is None:
+            days_left = 0
+        elif not(0 <= days_left <= 3):
+            await ctx.reply("The number of days left must be between 0 and 3, inclusive.")
+            return
+        
+        if days_left > 0:
+            overtime = max((sold - quota) / 5 + 15 * days_left, 0)
+        else:
+            overtime = max((sold - quota) / 5 - 15, 0)
+        
+        embed = u_interface.gen_embed(
+            title = "Lethal Company Overtime",
+            description = "By selling {sold} credits worth of scrap on a quota of {quota} with {days} left, you will get **{overtime}** from the overtime bonus.".format(
+                sold = u_text.smart_number(sold),
+                quota = u_text.smart_number(quota),
+                days = u_text.smart_text(days_left, "day"),
+                overtime = u_text.smart_text(round(overtime, 2), "credit")
+            )
+        )
+        
+        await ctx.reply(embed=embed)
+        
+
+
+        
+            
+
+        
+    ######################################################################################################################################################
+    ##### LETHAL COMPANY OVERTIME GOAL ###################################################################################################################
+    ######################################################################################################################################################
+        
+    @lethal_company_overtime.command(
+        name = "goal",
+        brief = "Calculates how much scrap to sell to get to a set number of credits.",
+        description = "Calculates how much scrap to sell to get to a set number of credits."
+    )
+    @commands.check(u_checks.hide_from_help)
+    async def lethal_company_overtime_goal(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext,
+            goal: typing.Optional[int] = commands.parameter(description = "The goal of credits to reach."),
+            quota: typing.Optional[int] = commands.parameter(description = "The amount the quota is."),
+            buffer: typing.Optional[int] = commands.parameter(description = "Any starting credits to account for.")
+        ):
+        if goal is None:
+            await ctx.reply("Please provide how many credits you're trying to reach.")
+            return
+        
+        if quota is None:
+            await ctx.reply("Please provide the amount the quota is.")
+            return
+        
+        if buffer is None:
+            buffer = 0
+            
+        amount = (5 * goal + 75 - 5 * buffer + quota) / 6
+        
+        embed = u_interface.gen_embed(
+            title = "Lethal Company Overtime Goal",
+            description = "To reach {goal} via overtime with a {quota} quota and a buffer of {buffer}, you would need to sell **{amount}** worth of items.".format(
+                goal = u_text.smart_text(goal, "credit"),
+                quota = u_text.smart_number(quota),
+                buffer = u_text.smart_number(buffer),
+                amount = u_text.smart_text(round(amount, 2), "credit")
+            )
+        )
+        
+        await ctx.reply(embed=embed)
+        
+        
+
+
+        
+            
+
+        
+    ######################################################################################################################################################
     ##### LETHAL COMPANY PARSE ###########################################################################################################################
     ######################################################################################################################################################
         
