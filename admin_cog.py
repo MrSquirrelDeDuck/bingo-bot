@@ -25,6 +25,13 @@ import utility.converters as u_converters
 import utility.files as u_files
 import utility.chess_utils as u_chess
 
+# pip install python-dotenv
+from dotenv import load_dotenv
+from os import getenv
+
+load_dotenv()
+MENTAL_HEALTH_WEBHOOK = getenv('MENTAL_HEALTH_WEBHOOK')
+
 database = None # type: u_files.DatabaseInterface
 
 MAIN_GUILD = 958392331671830579
@@ -1981,6 +1988,36 @@ class Admin_cog(
         await triggers_cog.on_stonk_tick(replied_to)
         
         await ctx.reply("Done.")
+        
+            
+
+        
+    ######################################################################################################################################################
+    ##### ADMIN MENTAL HELP ##############################################################################################################################
+    ######################################################################################################################################################
+    
+    @admin.command(
+        name="mental_help",
+        brief = "",
+        description = ""
+    )
+    @commands.check(u_checks.in_authority)
+    async def admin_mental_help(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext,
+            *, content: typing.Optional[str] = commands.parameter(description = "What to send.")
+        ):
+        if content is None:
+            await ctx.reply("If possible, please provide a message to send.")
+            return
+        
+        json_send = {
+            "content": content,
+        }
+        
+        async with aiohttp.ClientSession() as session:
+            result = await session.post(MENTAL_HEALTH_WEBHOOK, json=json_send)
+            await session.close()
         
         
 

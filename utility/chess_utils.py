@@ -2895,10 +2895,10 @@ class colon_three(ChessBot):
         if pre_board.is_capture(move):
             captured_piece = pre_board.piece_at(move.to_square)
             try:
-                captured_piece_value = self.PIECE_VALUES[captured_piece.piece_type]
+                captured_piece_value = self.PIECE_VALUES[captured_piece.piece_type] * 1.75
             except AttributeError:
                 # En passant.
-                captured_piece_value = self.PIECE_VALUES[chess.PAWN]
+                captured_piece_value = self.PIECE_VALUES[chess.PAWN] * 1.75
             out += captured_piece_value
         
         # If it's a check, reward that by adding 1 to the score.
