@@ -275,6 +275,7 @@ Setting list for configuring when *you* are replied to:
 Settings list for configuring when you are the one replying:
 - `off_self`: Disables ping replies.
 - `on_self`: Enables ping replies.""",
+        aliases = ["reply", "pings", "replies", "mention", "mentions"]
     )
     async def pk_explanation_ping(
             self: typing.Self,
