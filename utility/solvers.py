@@ -464,9 +464,10 @@ OTHER_OPERATIONS = {
     "ceil": mpwrapper(mpmath.ceil),
 }
 
-def evaluate_problem(
+def _evaluate_problem(
         equation: str,
-        timeout_time: int | float = 2.5
+        output: multiprocessing.Queue = None
+        # timeout_time: int | float = 2.5
     ) -> decimal.Decimal:
     """Attempts to parse and solve a math equation like `2 - 7 / (4 * 9) ** sin(10 // 9 * pi) - 10 - (8 ** 3 * 5) + (7 + 10) / 2 // 5 ** 5`. All bitwise operations other than NOT (`~`) are allowed, but all inputs will be floored.
 
@@ -481,158 +482,178 @@ def evaluate_problem(
     Returns:
         decimal.Decimal: The calculated result.
     """
+    try:
+        def parse_float(i: str) -> decimal.Decimal:
+            if i in OTHER_CONSTANTS:
+                return OTHER_CONSTANTS[i]
+            return decimal.Decimal(i.replace(",", ""))
 
-    def parse_float(i: str) -> decimal.Decimal:
-        if i in OTHER_CONSTANTS:
-            return OTHER_CONSTANTS[i]
-        return decimal.Decimal(i.replace(",", ""))
-
-    def final_check(i: str) -> bool:
-        try:
-            parse_float(i)
-            return True
-        except:
-            return False
-    
-    def evaluate_function(eq: str) -> decimal.Decimal:
-        m = REGEX_FUNCTION.match(eq)
-        try:
-            function = m.group(1)
-
-            if function not in OTHER_OPERATIONS:
-                raise u_custom.BingoError(f"Function `{function}` not found.")
-
-            arguments = [i.strip() for i in m.group(2).split(",")]
-            for index, arg in enumerate(arguments):
-                arguments[index] = parse_float(arg)
-            
+        def final_check(i: str) -> bool:
             try:
-                return OTHER_OPERATIONS[function](*arguments)
-            except ValueError:
-                raise u_custom.BingoError(f"Invalid domain for function `{function}`.")
-            except TypeError:
-                raise u_custom.BingoError(f"Incorrect argument amount for function `{function}`")
-
-            
-        except AttributeError:
-            raise u_custom.BingoError(f"Function `{eq}` failed to parse.")
-
-
-    def evaluate(eq: str) -> decimal.Decimal:
-        m = REGEX_EVALUATE.match(eq)
-        try:
-            start = parse_float(m.group(1))
-            operation = m.group(5)
-            end = parse_float(m.group(7))
-        except AttributeError:
-            raise u_custom.BingoError(f"Equation `{eq}` failed to parse.")
-
-        return OPERATIONS[operation](start, end)
-
-    def evaluate_set(eq: str) -> str:
-        c = eq
-        if "(" in c:
-            while "(" in c:
-                if c.count("(") != c.count(")"):
-                    raise u_custom.BingoError(f"Mismatching amount of parentheses in case `{c}`.")
-                
-                c = substitute_parentheses(c)
-                
-                if time.time() > timeout:
-                    raise u_custom.BingoError(f"Timeout of {timeout_time} reached.")
+                parse_float(i)
+                return True
+            except:
+                return False
         
-        while not final_check(c):
-            found = False
-            for pattern in ORDER_OF_OPERATIONS:
-                search = list(pattern.finditer(c))
-                while search: # If search has items in it.
-                    item = search[0]
+        def evaluate_function(eq: str) -> decimal.Decimal:
+            m = REGEX_FUNCTION.match(eq)
+            try:
+                function = m.group(1)
 
-                    if item.group(0).startswith("e"):
-                        if item.start(0) != 0:
-                            if c[item.start(0) - 1].isdigit():
-                                search.pop(0)
-                                continue
+                if function not in OTHER_OPERATIONS:
+                    raise u_custom.BingoError(f"Function `{function}` not found.")
 
-                    found = True
-                    num = evaluate(item.group(0))
+                arguments = [i.strip() for i in m.group(2).split(",")]
+                for index, arg in enumerate(arguments):
+                    arguments[index] = parse_float(arg)
+                
+                try:
+                    return OTHER_OPERATIONS[function](*arguments)
+                except ValueError:
+                    raise u_custom.BingoError(f"Invalid domain for function `{function}`.")
+                except TypeError:
+                    raise u_custom.BingoError(f"Incorrect argument amount for function `{function}`")
 
-                    if num.is_nan():
-                        raise u_custom.BingoError(f"Encountered NaN in case `{c}`. >:(")
-                    if num.is_infinite():
-                        raise u_custom.BingoError(f"Encountered infinity in case `{c}`. >:(")
+                
+            except AttributeError:
+                raise u_custom.BingoError(f"Function `{eq}` failed to parse.")
+
+
+        def evaluate(eq: str) -> decimal.Decimal:
+            m = REGEX_EVALUATE.match(eq)
+            try:
+                start = parse_float(m.group(1))
+                operation = m.group(5)
+                end = parse_float(m.group(7))
+            except AttributeError:
+                raise u_custom.BingoError(f"Equation `{eq}` failed to parse.")
+
+            return OPERATIONS[operation](start, end)
+
+        def evaluate_set(eq: str) -> str:
+            c = eq
+            if "(" in c:
+                while "(" in c:
+                    if c.count("(") != c.count(")"):
+                        raise u_custom.BingoError(f"Mismatching amount of parentheses in case `{c}`.")
                     
-                    if num > 9e+4096:
-                        raise OverflowError
-                    
-                    c = c.replace(item.group(0), str(num), 1)
-                    
+                    c = substitute_parentheses(c)
+            
+            while not final_check(c):
+                found = False
+                for pattern in ORDER_OF_OPERATIONS:
                     search = list(pattern.finditer(c))
-                    if time.time() > timeout:
-                        raise u_custom.BingoError(f"Timeout of {timeout_time} reached.")
+                    while search: # If search has items in it.
+                        item = search[0]
+
+                        if item.group(0).startswith("e"):
+                            if item.start(0) != 0:
+                                if c[item.start(0) - 1].isdigit():
+                                    search.pop(0)
+                                    continue
+
+                        found = True
+                        num = evaluate(item.group(0))
+
+                        if num.is_nan():
+                            raise u_custom.BingoError(f"Encountered NaN in case `{c}`. >:(")
+                        if num.is_infinite():
+                            raise u_custom.BingoError(f"Encountered infinity in case `{c}`. >:(")
+                        
+                        if num > 9e+4096:
+                            raise OverflowError
+                        
+                        c = c.replace(item.group(0), str(num), 1)
+                        
+                        search = list(pattern.finditer(c))
+                
+                if not found:
+                    raise u_custom.BingoError(f"Invalid equation in case `{c}`.")
+
+            return c
+
+        def find_parentheses(eq: str) -> str:
+            if "(" not in eq:
+                raise u_custom.BingoError(f"No parentheses found in `{eq}`.")
             
-            if not found:
-                raise u_custom.BingoError(f"Invalid equation in case `{c}`.")
-                    
-            if time.time() > timeout:
-                raise u_custom.BingoError(f"Timeout of {timeout_time} reached.")
+            start = eq.find("(")
+            current = "("
 
-        return c
+            amount = 1
+            i = start + 1
+            m = len(eq)
+            while amount > 0:
+                if i >= m:
+                    raise u_custom.BingoError(f"Equation `{eq}` failed to find proper parentheses.")
+                
+                char = eq[i]
+                current += char
 
-    def find_parentheses(eq: str) -> str:
-        if "(" not in eq:
-            raise u_custom.BingoError(f"No parentheses found in `{eq}`.")
+                if char == "(":
+                    amount += 1
+                elif char == ")":
+                    amount -= 1
+                
+                i += 1
+            
+            return current
+
+        def substitute_parentheses(eq: str) -> str:
+            found = find_parentheses(eq)
+
+            functions = [f"{i}(" in eq for i in FUNCTION_LIST_SORTED]
+            if any(functions):
+                function = FUNCTION_LIST_SORTED[functions.index(True)]
+                location = eq.index(function)
+                function_inside = find_parentheses(eq[location:])[1:-1]
+                arguments = [i.strip() for i in function_inside.split(",")]
+
+                for index, arg in enumerate(arguments):
+                    arguments[index] = evaluate_set(arg)
+                
+                solved = evaluate_function(f"{function}({', '.join(arguments)})")
+
+                return eq.replace(f"{function}({function_inside})", str(solved))
+            
+            return eq.replace(found, evaluate_set(found[1:-1]))
+
+        decimal.getcontext().prec = SOLVER_PRECISION + 2
+        decimal.getcontext().capitals = 0
         
-        start = eq.find("(")
-        current = "("
+        result = evaluate_set(equation)
+        out = parse_float(result)
 
-        amount = 1
-        i = start + 1
-        m = len(eq)
-        while amount > 0:
-            if i >= m:
-                raise u_custom.BingoError(f"Equation `{eq}` failed to find proper parentheses.")
-            
-            char = eq[i]
-            current += char
+        decimal.getcontext().prec -= 2
+        output.put(+out)
+    except Exception as e:
+        output.put({"error": e})
 
-            if char == "(":
-                amount += 1
-            elif char == ")":
-                amount -= 1
-            
-            i += 1
-        
-        return current
+def evaluate_wrapper(
+        equation: str,
+        timeout_time: int | float = 2.5
+    ) -> decimal.Decimal:
+    # Run the solver in a thread to implement a forced timeout.
+    queue = multiprocessing.Queue()
 
-    def substitute_parentheses(eq: str) -> str:
-        found = find_parentheses(eq)
+    process = multiprocessing.Process(
+        None,
+        _evaluate_problem,
+        args=(equation, queue)
+    )
+    process.start()
 
-        functions = [f"{i}(" in eq for i in FUNCTION_LIST_SORTED]
-        if any(functions):
-            function = FUNCTION_LIST_SORTED[functions.index(True)]
-            location = eq.index(function)
-            function_inside = find_parentheses(eq[location:])[1:-1]
-            arguments = [i.strip() for i in function_inside.split(",")]
+    process.join(timeout_time)
 
-            for index, arg in enumerate(arguments):
-                arguments[index] = evaluate_set(arg)
-            
-            solved = evaluate_function(f"{function}({', '.join(arguments)})")
-
-            return eq.replace(f"{function}({function_inside})", str(solved))
-        
-        return eq.replace(found, evaluate_set(found[1:-1]))
-
-    decimal.getcontext().prec = SOLVER_PRECISION + 2
-    decimal.getcontext().capitals = 0
+    if process.is_alive():
+        process.terminate()
+        raise u_custom.BingoError(f"Timeout of {timeout_time} reached.")
     
-    timeout = time.time() + timeout_time
-    result = evaluate_set(equation)
-    out = parse_float(result)
-
-    decimal.getcontext().prec -= 2
-    return +out
+    out = queue.get()
+    
+    if isinstance(out, dict):
+        raise out.get("error")
+    
+    return out
 
 ##############################################################################################################################################################
 

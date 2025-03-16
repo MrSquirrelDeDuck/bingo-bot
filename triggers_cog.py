@@ -1102,7 +1102,7 @@ Settings list for configuring when you are the one replying:
             sent_number = u_converters.parse_int(message.content)
         else:
             try:
-                sent_number = round(u_solvers.evaluate_problem(message.content), 5)
+                sent_number = round(u_solvers.evaluate_wrapper(message.content), 5)
             except u_custom.BingoError:
                 return
 

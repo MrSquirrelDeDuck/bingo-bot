@@ -2206,7 +2206,7 @@ class Other_cog(
 
         # Run the actual solver.
         try:
-            result = u_solvers.evaluate_problem(equation=equation)
+            result = u_solvers.evaluate_wrapper(equation=equation)
             description = f"The result from the equation `{equation}`:\n## {u_text.format_decimal(result)}"
 
             if len(description) >= 4000:
@@ -2391,14 +2391,21 @@ class Other_cog(
         hex_code = f"#{hex_code:06x}"
 
         rgb1 = tuple(round(c / 255, 3) for c in color_use)
+        
+        hls_h, hls_l, hls_s = colorsys.rgb_to_hls(*rgb1)
+        
+        complementary_rgb = tuple(int(c * 255) for c in colorsys.hls_to_rgb((hls_h + 0.5) % 1, hls_l, hls_s))
+        complementary_int = complementary_rgb[2] + complementary_rgb[1] * 256 + complementary_rgb[0] * 65536
 
         embed = u_interface.gen_embed(
             title = "Color",
-            description = "Hex: {hex}\nRGB: {rgb255} | {rgb1}\nHSV: {hsv}".format(
+            description = "Hex: {hex}\nRGB: {rgb255} | {rgb1}\nHSV: {hsv}\nHSL: {hsl}\n\nComplementary color: #{complementary:06x}".format(
                 hex = hex_code,
                 rgb255 = color_use,
                 rgb1 = rgb1,
-                hsv = tuple(int(c * (100 if index != 0 else 360)) for index, c in enumerate(colorsys.rgb_to_hsv(*rgb1)))
+                hsv = tuple(int(c * (100 if index != 0 else 360)) for index, c in enumerate(colorsys.rgb_to_hsv(*rgb1))),
+                hsl = tuple(int(c * (100 if index != 0 else 360)) for index, c in enumerate([hls_h, hls_s, hls_l])),
+                complementary = complementary_int
             ),
             image_link = file_path
         )
