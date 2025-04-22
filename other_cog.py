@@ -2109,8 +2109,8 @@ class Other_cog(
             self: typing.Self,
             ctx: commands.Context | u_custom.CustomContext
         ):
-        piguy_timestamp = datetime.datetime.fromtimestamp(1095880500)
-        relative_delta = dateutil.relativedelta.relativedelta(datetime.datetime.now(), piguy_timestamp)
+        timestamp = datetime.datetime.fromtimestamp(1095880500)
+        relative_delta = dateutil.relativedelta.relativedelta(datetime.datetime.now(), timestamp)
 
         await ctx.reply("Years: {years}\nMonths: {months}\nDays: {days}\nHours: {hours}\nMinutes: {minutes}".format(
             years = relative_delta.years,
@@ -2138,8 +2138,126 @@ class Other_cog(
             self: typing.Self,
             ctx: commands.Context | u_custom.CustomContext
         ):
-        lilly_timestamp = datetime.datetime.fromtimestamp(1095667440)
-        relative_delta = dateutil.relativedelta.relativedelta(datetime.datetime.now(), lilly_timestamp)
+        timestamp = datetime.datetime.fromtimestamp(1095667440)
+        relative_delta = dateutil.relativedelta.relativedelta(datetime.datetime.now(), timestamp)
+
+        await ctx.reply("Years: {years}\nMonths: {months}\nDays: {days}\nHours: {hours}\nMinutes: {minutes}".format(
+            years = relative_delta.years,
+            months = relative_delta.months,
+            days = relative_delta.days,
+            hours = relative_delta.hours,
+            minutes = relative_delta.minutes
+        ))
+
+        
+            
+
+        
+    ######################################################################################################################################################
+    ##### KOMM ###########################################################################################################################################
+    ######################################################################################################################################################
+    
+    @commands.command(
+        name = "komm",
+        brief = "Komm.",
+        description = "Komm."
+    )
+    @commands.check(u_checks.hide_from_help)
+    async def komm(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext
+        ):
+        timestamp = datetime.datetime.fromtimestamp(1192114980)
+        relative_delta = dateutil.relativedelta.relativedelta(datetime.datetime.now(), timestamp)
+
+        await ctx.reply("Years: {years}\nMonths: {months}\nDays: {days}\nHours: {hours}\nMinutes: {minutes}".format(
+            years = relative_delta.years,
+            months = relative_delta.months,
+            days = relative_delta.days,
+            hours = relative_delta.hours,
+            minutes = relative_delta.minutes
+        ))
+
+        
+            
+
+        
+    ######################################################################################################################################################
+    ##### FREYA ##########################################################################################################################################
+    ######################################################################################################################################################
+    
+    @commands.command(
+        name = "freya",
+        brief = "Freya.",
+        description = "Freya.",
+        aliases = ["chair"]
+    )
+    @commands.check(u_checks.hide_from_help)
+    async def freya(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext
+        ):
+        timestamp = datetime.datetime.fromtimestamp(1078532340)
+        relative_delta = dateutil.relativedelta.relativedelta(datetime.datetime.now(), timestamp)
+
+        await ctx.reply("Years: {years}\nMonths: {months}\nDays: {days}\nHours: {hours}\nMinutes: {minutes}".format(
+            years = relative_delta.years,
+            months = relative_delta.months,
+            days = relative_delta.days,
+            hours = relative_delta.hours,
+            minutes = relative_delta.minutes
+        ))
+
+        
+            
+
+        
+    ######################################################################################################################################################
+    ##### FREYA ##########################################################################################################################################
+    ######################################################################################################################################################
+    
+    @commands.command(
+        name = "masto",
+        brief = "Masto.",
+        description = "Masto.",
+        aliases = ["mastoblood"]
+    )
+    @commands.check(u_checks.hide_from_help)
+    async def masto(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext
+        ):
+        timestamp = datetime.datetime.fromtimestamp(766033200)
+        relative_delta = dateutil.relativedelta.relativedelta(datetime.datetime.now(), timestamp)
+
+        await ctx.reply("Years: {years}\nMonths: {months}\nDays: {days}\nHours: {hours}\nMinutes: {minutes}".format(
+            years = relative_delta.years,
+            months = relative_delta.months,
+            days = relative_delta.days,
+            hours = relative_delta.hours,
+            minutes = relative_delta.minutes
+        ))
+
+        
+            
+
+        
+    ######################################################################################################################################################
+    ##### DUCK ###########################################################################################################################################
+    ######################################################################################################################################################
+    
+    @commands.command(
+        name = "duck",
+        brief = "Duck.",
+        description = "Duck."
+    )
+    @commands.check(u_checks.hide_from_help)
+    async def duck(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext
+        ):
+        timestamp = datetime.datetime.fromtimestamp(random.randint(946746000, 1262365200))
+        relative_delta = dateutil.relativedelta.relativedelta(datetime.datetime.now(), timestamp)
 
         await ctx.reply("Years: {years}\nMonths: {months}\nDays: {days}\nHours: {hours}\nMinutes: {minutes}".format(
             years = relative_delta.years,
