@@ -583,6 +583,42 @@ gem_gold = Item(
     aliases = "gold_gem"
 )
 
+gem_pink = Item(
+    name = "Pink Gem",
+    internal_name = "gem_pink",
+    internal_emoji = "<:gem_pink:1318338567424184341>",
+    gambit_bonus = 64000,
+    attributes = ["very_shiny", "shiny", "rollable"],
+    aliases = "pink_gem"
+)
+
+gem_orange = Item(
+    name = "Orange Gem",
+    internal_name = "gem_orange",
+    internal_emoji = "<:gem_orange:1318338578497142814>",
+    gambit_bonus = 64000,
+    attributes = ["very_shiny", "shiny", "rollable"],
+    aliases = "orange_gem"
+)
+
+gem_cyan = Item(
+    name = "Cyan Gem",
+    internal_name = "gem_cyan",
+    internal_emoji = "<:gem_cyan:1318338586210205738>",
+    gambit_bonus = 64000,
+    attributes = ["very_shiny", "shiny", "rollable"],
+    aliases = "cyan_gem"
+)
+
+gem_white = Item(
+    name = "White Gem",
+    internal_name = "gem_white",
+    internal_emoji = "<:gem_white:1318338593399246898> ",
+    gambit_bonus = 64000,
+    attributes = ["very_shiny", "shiny", "rollable"],
+    aliases = "white_gem"
+)
+
 ##### Miscellaneous items. #####
 
 anarchy_chess = Item(
@@ -624,6 +660,19 @@ ascension_token = Item(
     name = "Ascension Token",
     internal_name = "ascension_token",
     internal_emoji = "<:ascension_token:1023695148380602430>"
+)
+
+ephemeral_token = Item(
+    name = "Ephemeral Token",
+    internal_name = "ephemeral_token",
+    internal_emoji = "<:ephemeral_token:1374514224662843453>"
+)
+
+hotdog = Item(
+    name = "Hotdog",
+    internal_name = "hotdog",
+    internal_emoji = ":hotdog:",
+    emoji = "🌭"
 )
 
 fuel = Item(
@@ -867,8 +916,10 @@ all_items = [
     wpawn_anarchy, wknight_anarchy, wbishop_anarchy, wrook_anarchy, wqueen_anarchy, wking_anarchy,
     # Gems.
     gem_red, gem_blue, gem_purple, gem_green, gem_gold,
+    # Space gems.
+    gem_pink, gem_orange, gem_cyan, gem_white,
     # Misc. items.
-    anarchy_chess, chessatron, omega_chessatron, ascension_token, anarchy_chessatron, anarchy_omega_chessatron, corrupted_bread, fuel,
+    anarchy_chess, chessatron, omega_chessatron, ascension_token, anarchy_chessatron, anarchy_omega_chessatron, corrupted_bread, fuel, ephemeral_token,
     # Shadow items.
     shadow_moak, shadow_gem_gold, shadowmega_chessatron,
     # OoaKs.
@@ -880,7 +931,7 @@ all_items = [
     # Gambling items.
     bricks, brick_fide, fide_brick, brick_gold, cherries, grapes, lemon, bcapy,
 ]
-bling_items = [gem_red, gem_blue, gem_purple, gem_green, gem_gold, chessatron, anarchy_chess, omega_chessatron, anarchy_chessatron, anarchy_omega_chessatron]
+bling_items = [gem_red, gem_blue, gem_purple, gem_green, gem_gold, chessatron, anarchy_chess, omega_chessatron, anarchy_chessatron, anarchy_omega_chessatron, gem_pink, gem_orange, gem_cyan, hotdog, gem_white]
 
 #############################
 ##### UTILITY FUNCTIONS #####
@@ -1027,8 +1078,9 @@ every_chess_piece = all_chess_pieces + all_anarchy_pieces
 """This is all regular chess pieces and all anarchy pieces."""
 
 all_shiny = attribute_item_list("shiny")
+all_very_shiny = attribute_item_list("very_shiny")
 
-all_gambit = special_and_rare + all_chess_pieces + all_shiny
+all_gambit = special_and_rare + all_chess_pieces + all_shiny + all_anarchy_pieces
 
 one_of_a_kinds = attribute_item_list("one_of_a_kind")
 stonks = attribute_item_list("stonk") # type: list[StonkItem]
