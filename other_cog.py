@@ -1290,7 +1290,25 @@ class Other_cog(
             self: typing.Self,
             ctx: commands.Context | u_custom.CustomContext
         ):
-        await ctx.reply(datetime.datetime.today().astimezone(pytz.timezone("US/Eastern")).strftime('%A') + ".")
+        message = datetime.datetime.today().astimezone(pytz.timezone("US/Eastern")).strftime('%A, %B %d').replace(" 0", " ") + "."
+        
+        replacements = [
+            ("0.", "0th."),
+            ("1.", "1st."),
+            ("2.", "2nd."),
+            ("3.", "3rd."),
+            ("4.", "4th."),
+            ("5.", "5th."),
+            ("6.", "6th."),
+            ("7.", "7th."),
+            ("8.", "8th."),
+            ("9.", "9th."),
+        ]
+        
+        for find, replace in replacements:
+            message = message.replace(find, replace)
+            
+        await ctx.reply(message)
 
         
             
@@ -2257,6 +2275,35 @@ class Other_cog(
             ctx: commands.Context | u_custom.CustomContext
         ):
         timestamp = datetime.datetime.fromtimestamp(random.randint(946746000, 1262365200))
+        relative_delta = dateutil.relativedelta.relativedelta(datetime.datetime.now(), timestamp)
+
+        await ctx.reply("Years: {years}\nMonths: {months}\nDays: {days}\nHours: {hours}\nMinutes: {minutes}".format(
+            years = relative_delta.years,
+            months = relative_delta.months,
+            days = relative_delta.days,
+            hours = relative_delta.hours,
+            minutes = relative_delta.minutes
+        ))
+
+        
+            
+
+        
+    ######################################################################################################################################################
+    ##### ETHAN ##########################################################################################################################################
+    ######################################################################################################################################################
+    
+    @commands.command(
+        name = "ethan",
+        brief = "Ethan.",
+        description = "Ethan."
+    )
+    @commands.check(u_checks.hide_from_help)
+    async def ethan(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext
+        ):
+        timestamp = datetime.datetime.fromtimestamp(1114435800)
         relative_delta = dateutil.relativedelta.relativedelta(datetime.datetime.now(), timestamp)
 
         await ctx.reply("Years: {years}\nMonths: {months}\nDays: {days}\nHours: {hours}\nMinutes: {minutes}".format(
