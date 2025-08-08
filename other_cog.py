@@ -18,9 +18,6 @@ import itertools
 # pip install python-dateutil
 import dateutil
 
-# pip install CairoSVG
-import cairosvg
-
 # pip install chess
 import chess
 import chess.svg
@@ -56,6 +53,7 @@ import utility.bread as u_bread
 import utility.files as u_files
 import utility.images as u_images
 import utility.solvers as u_solvers
+import utility.chess_utils as u_chess
 
 database = None # type: u_files.DatabaseInterface
 
@@ -1871,9 +1869,7 @@ class Other_cog(
 
             board = chess.Board(board_fen)
 
-            board_svg = chess.svg.board(board, lastmove=last_move)
-
-            cairosvg.svg2png(bytestring=board_svg,write_to='images/generated/chess_position.png')
+            u_chess.render_board(board, 'images/generated/chess_position.png', last_move=last_move)
 
             fields.append(
                 ("Highlighted game:", f"White: {ret_json['featured']['white']['name']} (*{u_text.smart_number(ret_json['featured']['white']['rating'])}*)\nBlack: {ret_json['featured']['black']['name']} (*{u_text.smart_number(ret_json['featured']['black']['rating'])}*)", False)

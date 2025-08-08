@@ -3458,16 +3458,19 @@ def update_game(
 def render_board(
         board: chess.Board,
         path: str = "images/generated/chess_position.png",
-        flipped: bool = False
-    ) -> io.BytesIO:
-    """Renders the given Chess board and returns a ByesIO object to send via Discord.
+        flipped: bool = False,
+        last_move: chess.Move = None
+    ) -> str:
+    """Renders the given Chess board and returns the file path.
 
     Args:
         board (chess.Board): The board to render.
+        path (str, optional): The path to save the board to. Defaults to "images/generated/chess_position.png".
         flipped (bool, optional): Whether to flip the board to be from black's perspective. If this is None it will default to True if it is black's turn. Defaults to None.
+        last_move (chess.Move, optional): An optional last move to render on the board. The board's last move will be used by default if this is None. Defaults to None.
 
     Returns:
-        io.BytesIO: A BytesIO object that can be sent via Discord.
+        str: The path to the file.
     """
     if flipped is None:
         flipped = not board.turn
@@ -3486,9 +3489,10 @@ def render_board(
     board_img = BASE_IMAGE.copy()
     img_draw = PIL_ImageDraw.ImageDraw(board_img)
 
-    if board.move_stack:
+    if board.move_stack or last_move:
         # Show the last played move.
-        last_move = board.peek()
+        if not last_move:
+            last_move = board.peek()
         
         from_square = last_move.from_square
         from_rank = chess.square_rank(from_square)
