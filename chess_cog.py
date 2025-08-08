@@ -527,6 +527,11 @@ class Chess_cog(
 
         if ctx.author.id not in current_data["players"]:
             current_data["players"].append(ctx.author.id)
+        
+        try:
+            await ctx.message.add_reaction("✅")
+        except:
+            pass
 
         current_data = self.make_bot_move(current_data)
         

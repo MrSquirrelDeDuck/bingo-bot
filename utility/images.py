@@ -558,6 +558,7 @@ def chess_match(
     board = u_chess.get_board_from_pgn(game_data.get("pgn"))
     board_path = u_chess.render_board(board)
     board_image = PIL_Image.open(board_path).copy().convert("RGBA")
+    board_image = board_image.resize((390, 390))
 
     img.paste(board_image, (406, 105))
 

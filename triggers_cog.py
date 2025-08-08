@@ -605,16 +605,6 @@ Settings list for configuring when you are the one replying:
             
             # Save and backup database.
             database.save_database(make_backup=True)
-
-            # Running hourly_task in other cogs.
-            for cog in self.bot.cogs.values():
-                if cog.__cog_name__ == self.__cog_name__:
-                    continue
-
-                try:
-                    await cog.hourly_task()
-                except AttributeError:
-                    pass
         except Exception as error:
             print(traceback.format_exc())
             if OUTPUT_ERRORS:
@@ -622,6 +612,16 @@ Settings list for configuring when you are the one replying:
                     ctx = None,
                     error = error
                 )
+
+        # Running hourly_task in other cogs.
+        for cog in self.bot.cogs.values():
+            if cog.__cog_name__ == self.__cog_name__:
+                continue
+
+            try:
+                await cog.hourly_task()
+            except AttributeError:
+                pass
 
 
 
