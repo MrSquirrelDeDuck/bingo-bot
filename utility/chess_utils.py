@@ -18,10 +18,10 @@ import numpy as np
 # pip install chess
 import chess
 import chess.pgn
-import chess.svg
 
-# pip install CairoSVG
-import cairosvg
+# pip install pillow
+import PIL.Image as PIL_Image
+import PIL.ImageDraw as PIL_ImageDraw
 
 import utility.files as u_files
 import utility.interface as u_interface
@@ -29,6 +29,54 @@ import utility.text as u_text
 
 all_games = open(os.path.join("data", "chess_games.txt"), "r") # Sourced from https://github.com/SebLague/Chess-Coding-Adventure/blob/Chess-V1-Unity/Assets/Book/Games.txt
 game_lines = all_games.readlines()
+
+##### Image utilities. #####
+PIECE_PATH_BLACK = {
+    chess.PAWN: "images/bases/Bpawn.png",
+    chess.KNIGHT: "images/bases/Bknight.png",
+    chess.BISHOP: "images/bases/Bbishop.png",
+    chess.ROOK: "images/bases/Brook.png",
+    chess.QUEEN: "images/bases/Bqueen.png",
+    chess.KING: "images/bases/Bking.png"
+}
+
+PIECE_PATH_WHITE = {
+    chess.PAWN: "images/bases/Wpawn.png",
+    chess.KNIGHT: "images/bases/Wknight.png",
+    chess.BISHOP: "images/bases/Wbishop.png",
+    chess.ROOK: "images/bases/Wrook.png",
+    chess.QUEEN: "images/bases/Wqueen.png",
+    chess.KING: "images/bases/Wking.png",
+}
+
+LAST_MOVE_DARK = "#AAA23B"
+LAST_MOVE_LIGHT = "#CDD16A"
+GRID_SIZE = 75
+
+FONT_SIZE = 25
+LETTERS = "abcdefgh"
+NUMBERS = "87654321" # Starts reversed since the first one is the top row from white's perspective.
+
+EMOJI_IMAGES = {
+    chess.WHITE: {},
+    chess.BLACK: {}
+}
+
+for white, black in zip(PIECE_PATH_WHITE.items(), PIECE_PATH_BLACK.items()):
+    try:
+        EMOJI_IMAGES[chess.WHITE][white[0]] = PIL_Image.open(white[1]).resize((GRID_SIZE, GRID_SIZE))
+    except FileNotFoundError:
+        print(f"Bread Space: Map image loading failed for {white[0]} ({white[1]}) as the file does not exist.")
+        
+    try:
+        EMOJI_IMAGES[chess.BLACK][black[0]] = PIL_Image.open(black[1]).resize((GRID_SIZE, GRID_SIZE))
+    except FileNotFoundError:
+        print(f"Bread Space: Map image loading failed for {black[0]} ({black[1]}) as the file does not exist.")
+
+BASE_IMAGE = PIL_Image.open("images/bases/board_base.png").convert("RGBA")
+OUTER_IMAGE = PIL_Image.new("RGBA", (650, 650), "#212121")
+
+############################
 
 class ChessBot:
     name = "generic_bot"
@@ -3411,26 +3459,93 @@ def render_board(
         board: chess.Board,
         path: str = "images/generated/chess_position.png",
         flipped: bool = False
-    ) -> str:
-    """Renders a chess.Board object into an image and returns the file path.
+    ) -> io.BytesIO:
+    """Renders the given Chess board and returns a ByesIO object to send via Discord.
 
     Args:
-        board (chess.Board): The board object.
-        path (str): The path to save the file to.
+        board (chess.Board): The board to render.
+        flipped (bool, optional): Whether to flip the board to be from black's perspective. If this is None it will default to True if it is black's turn. Defaults to None.
 
     Returns:
-        str: The file path.
+        io.BytesIO: A BytesIO object that can be sent via Discord.
     """
+    if flipped is None:
+        flipped = not board.turn
+        
+    if flipped:
+        def convert_file(f):
+            return 7 - f
+        def convert_rank(r):
+            return r
+    else:
+        def convert_file(f):
+            return f
+        def convert_rank(r):
+            return 7 - r
 
-    last_move = None
+    board_img = BASE_IMAGE.copy()
+    img_draw = PIL_ImageDraw.ImageDraw(board_img)
 
-    if len(board.move_stack) > 0:
-        last_move = board.move_stack[-1]
+    if board.move_stack:
+        # Show the last played move.
+        last_move = board.peek()
+        
+        from_square = last_move.from_square
+        from_rank = chess.square_rank(from_square)
+        from_file = chess.square_file(from_square)
+        
+        to_square = last_move.to_square
+        to_rank = chess.square_rank(to_square)
+        to_file = chess.square_file(to_square)
+        
+        img_draw.rectangle(
+            [(convert_file(from_file) * GRID_SIZE, convert_rank(from_rank) * GRID_SIZE), ((convert_file(from_file) + 1) * GRID_SIZE - 1, (convert_rank(from_rank) + 1) * GRID_SIZE - 1)],
+            fill = LAST_MOVE_DARK if (convert_file(from_file) + convert_rank(from_rank)) % 2 else LAST_MOVE_LIGHT
+        )
+        img_draw.rectangle(
+            [(convert_file(to_file) * GRID_SIZE, convert_rank(to_rank) * GRID_SIZE), ((convert_file(to_file) + 1) * GRID_SIZE - 1, (convert_rank(to_rank) + 1) * GRID_SIZE - 1)],
+            fill = LAST_MOVE_DARK if (convert_file(to_file) + convert_rank(to_rank)) % 2 else LAST_MOVE_LIGHT
+        )
 
-    board_svg = chess.svg.board(board, lastmove=last_move, flipped=flipped)
+    for color in chess.COLORS:
+        for piece in chess.PIECE_TYPES:
+            bitboard = board.pieces_mask(piece, color)
+            paste = EMOJI_IMAGES[color][piece]
+            
+            for square in chess.scan_forward(bitboard):
+                board_img.paste(
+                    im = paste,
+                    box = (
+                        convert_file(chess.square_file(square)) * GRID_SIZE,
+                        convert_rank(chess.square_rank(square)) * GRID_SIZE
+                    ),
+                    mask = paste
+                )
 
-    cairosvg.svg2png(bytestring=board_svg, write_to=path)
+    main_img = OUTER_IMAGE.copy()
+    main_img.paste(board_img, (25, 25))
+
+    main_img_draw = PIL_ImageDraw.ImageDraw(main_img)
+
+    if flipped:
+        letters = LETTERS[::-1]
+        numbers = NUMBERS[::-1]
+    else:
+        letters = LETTERS
+        numbers = NUMBERS
+
+    for index, character in enumerate(letters):
+        width = main_img_draw.textlength(character, font_size=FONT_SIZE)
+        main_img_draw.text((25 + 75 / 2 + 75 * index - width / 2, -5), text=character, font_size=FONT_SIZE)
+        main_img_draw.text((25 + 75 / 2 + 75 * index - width / 2, 620), text=character, font_size=FONT_SIZE)
+
+    for index, number in enumerate(numbers):
+        width = main_img_draw.textlength(number, font_size=FONT_SIZE)
+        main_img_draw.text((width / 2 - 2, 10 + 75 / 2 + 75 * index), text=number, font_size=FONT_SIZE)
+        main_img_draw.text((625 + width / 2 - 2, 10 + 75 / 2 + 75 * index), text=number, font_size=FONT_SIZE)
     
+    main_img.save(path, "png")
+
     return path
 
 def render_data(data: dict) -> str:
