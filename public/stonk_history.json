@@ -24800,5 +24800,11 @@
         "cookie": 30,
         "fortune_cookie": 536,
         "pancakes": 3176
+    },
+    {
+        "pretzel": 99,
+        "cookie": 29,
+        "fortune_cookie": 588,
+        "pancakes": 3037
     }
 ]
