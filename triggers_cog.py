@@ -1640,7 +1640,7 @@ Settings list for configuring when you are the one replying:
         await self.pk_explanation(message)
 
         # Counting
-        if u_converters.is_digit(message.content) or u_solvers.is_math_equation_bool(message.content):
+        if u_converters.is_digit(message.content.replace("\u200b", "")) or u_solvers.is_math_equation_bool(message.content.replace("\u200b", "")):
             await self.counting(message)
         
         # AskOuija
