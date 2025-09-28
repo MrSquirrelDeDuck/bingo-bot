@@ -1100,6 +1100,11 @@ Settings list for configuring when you are the one replying:
         
         content = message.content.replace("\u200b", "")
         
+        if message.channel.id == 1419909913626415125:
+            content = content.replace("8", "⼬")
+            content = content.replace("9", "8")
+            content = content.replace("⼬", "9")
+        
         if u_converters.is_digit(content):
             sent_number = u_converters.parse_int(content)
         else:
@@ -1125,15 +1130,23 @@ Settings list for configuring when you are the one replying:
                 count = 0,
                 sender = 0
             )
+            description = "The counting was broken at **{}** by {}!\nYou must restart at 1.\nGet ready for the brick <:trol:1015821884450947173>\n\nShockingly, {} is not equal to {} + 1.".format(
+                u_text.smart_number(counting_data["count"]),
+                message.author.mention,
+                u_text.smart_number(int(sent_number) if round(sent_number, 5).as_integer_ratio()[-1] == 1 else round(sent_number, 5)),
+                u_text.smart_number(counting_data["count"]),
+            )
+            
+            if message.channel.id == 1419909913626415125:
+                description = description.replace("8", "⼬")
+                description = description.replace("9", "8")
+                description = description.replace("⼬", "9")
+            
             embed = u_interface.gen_embed(
                 title = "You broke the counting!",
-                description = "The counting was broken at **{}** by {}!\nYou must restart at 1.\nGet ready for the brick <:trol:1015821884450947173>\n\nShockingly, {} is not equal to {} + 1.".format(
-                    u_text.smart_number(counting_data["count"]),
-                    message.author.mention,
-                    u_text.smart_number(int(sent_number) if round(sent_number, 5).as_integer_ratio()[-1] == 1 else round(sent_number, 5)),
-                    u_text.smart_number(counting_data["count"]),
-                )
+                description = description
             )
+            
             try:
                 try:
                     emoji = "<:blunder:958752015188656138>"
