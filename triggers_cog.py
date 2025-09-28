@@ -1130,9 +1130,9 @@ Settings list for configuring when you are the one replying:
                 count = 0,
                 sender = 0
             )
-            description = "The counting was broken at **{}** by {}!\nYou must restart at 1.\nGet ready for the brick <:trol:1015821884450947173>\n\nShockingly, {} is not equal to {} + 1.".format(
+            
+            description = "The counting was broken at **{}** by user!\nYou must restart at 1.\nGet ready for the brick trol\n\nShockingly, {} is not equal to {} + 1.".format(
                 u_text.smart_number(counting_data["count"]),
-                message.author.mention,
                 u_text.smart_number(int(sent_number) if round(sent_number, 5).as_integer_ratio()[-1] == 1 else round(sent_number, 5)),
                 u_text.smart_number(counting_data["count"]),
             )
@@ -1141,6 +1141,9 @@ Settings list for configuring when you are the one replying:
                 description = description.replace("8", "⼬")
                 description = description.replace("9", "8")
                 description = description.replace("⼬", "9")
+            
+            description = description.replace("trol", "<:trol:1015821884450947173>")
+            description = description.replace("user", message.author.mention)
             
             embed = u_interface.gen_embed(
                 title = "You broke the counting!",
