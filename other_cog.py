@@ -1228,7 +1228,14 @@ class Other_cog(
             await ctx.reply("There is no count here yet! Send `1` to start it.")
             return
         
-        await ctx.reply("The current count is {}.".format(u_text.smart_number(counting_data["count"])))
+        message = "The current count is {}.".format(u_text.smart_number(counting_data["count"]))
+        
+        if ctx.channel.id == 1419909913626415125:
+            message = message.replace("8", "⼬")
+            message = message.replace("9", "8")
+            message = message.replace("⼬", "9")
+        
+        await ctx.reply(message)
 
         
             
