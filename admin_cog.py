@@ -931,6 +931,42 @@ class Admin_cog(
 
         
     ######################################################################################################################################################
+    ##### ADMIN GET COUNT ################################################################################################################################
+    ######################################################################################################################################################
+    
+    @admin.command(
+        name="get_count",
+        brief = "Gets the counting data for a channel or thread.",
+        description = "Gets the counting data for a channel or thread."
+    )
+    @commands.is_owner()
+    async def admin_set_count(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext,
+            channel_id: typing.Optional[u_converters.parse_int] = commands.parameter(description = "The id of the channel or thread.")
+        ):
+        if channel_id is None:
+            await ctx.reply("You must provide the channel or thread id to get the data for.")
+            return
+        
+        data = database.get_counting_data(channel_id)
+        
+        embed = u_interface.gen_embed(
+            title = "Get Counting Data",
+            description = "Counting data for <#{}>:\nCount: {}\nLast sender: <@{}>".format(
+                channel_id,
+                u_text.smart_number(data["count"]),
+                data["sender"]
+            )
+        )
+        
+        await ctx.reply(embed=embed)
+
+        
+            
+
+        
+    ######################################################################################################################################################
     ##### ADMIN SET CHAIN ################################################################################################################################
     ######################################################################################################################################################
     
