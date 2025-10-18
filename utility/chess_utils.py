@@ -99,7 +99,7 @@ class ChessBot:
     # Not needed for subclasses, this one is fine.
     @classmethod
     def formatted_name(cls: typing.Callable) -> str:
-        return cls.name.replace("_"," ").title()
+        return format_name(cls.name)
     
     # Not needed for subclasses, this one is fine.
     @classmethod
@@ -108,6 +108,17 @@ class ChessBot:
             database: u_files.DatabaseInterface
         ) -> int:
         return get_bot_elo(
+            database = database,
+            bot = cls.name
+        )
+    
+    # Not needed for subclasses, this one is fine.
+    @classmethod
+    def get_puzzle_elo(
+            cls: typing.Callable,
+            database: u_files.DatabaseInterface
+        ) -> int:
+        return get_bot_puzzle_elo(
             database = database,
             bot = cls.name
         )
@@ -3302,6 +3313,349 @@ class colon_three(ChessBot):
         
         return 300 - (check & self.get_attacks(board, not side)).bit_count() * 33 - len(moves) * 50
 
+class rawr_v3(ChessBot):
+    name = "rawr_v3"
+    description = "<a:catboy_rawr:1124505566182649867>"
+    creator = "Duck"
+    color = 0xe51298
+    
+    board: chess.Board = None
+    best_move_overall: chess.Move = None
+    best_eval_overall: int = -math.inf
+    
+    PIECE_VALUES = {
+        chess.PAWN: 100,
+        chess.KNIGHT: 300,
+        chess.BISHOP: 320,
+        chess.ROOK: 500,
+        chess.QUEEN: 900,
+        chess.KING: 1000 # Used only by move ordering.
+    }
+    PIECE_VALUE_ITEMS = list(PIECE_VALUES.items())
+    
+    CHECKMATE_VALUE = 100_000
+    
+    ######################################
+    
+    PIECE_TABLE_PAWN_START: list[int] = list(reversed([
+        0,  0,  0,  0,  0,  0,  0,  0,
+        50, 50, 50, 50, 50, 50, 50, 50,
+        10, 10, 20, 30, 30, 20, 10, 10,
+        5,  5, 10, 25, 25, 10,  5,  5,
+        0,  0,  0, 20, 20,  0,  0,  0,
+        5, -5,-10,  0,  0,-10, -5,  5,
+        5, 10, 10,-20,-20, 10, 10,  5,
+        0,  0,  0,  0,  0,  0,  0,  0
+    ]))
+
+    PIECE_TABLE_PAWN_END: list[int] = list(reversed([
+        100, 100, 100, 100, 100, 100, 100, 100,
+         75,  75,  75,  75,  75,  75,  75,  75,
+         50,  50,  50,  50,  50,  50,  50,  50,
+         25,  25,  25,  25,  25,  25,  25,  25,
+         20,  20,  20,  20,  20,  20,  20,  20,
+         10,  10,  10,  10,  10,  10,  10,  10,
+          0,   0,   0,   0,   0,   0,   0,   0,
+          0,   0,   0,   0,   0,   0,   0,   0
+    ]))
+
+    PIECE_TABLE_KNIGHT: list[int] = list(reversed([
+        -50,-40,-30,-30,-30,-30,-40,-50,
+        -40,-20,  0,  0,  0,  0,-20,-40,
+        -30,  0, 10, 15, 15, 10,  0,-30,
+        -30,  5, 15, 20, 20, 15,  5,-30,
+        -30,  0, 15, 20, 20, 15,  0,-30,
+        -30,  5, 10, 15, 15, 10,  5,-30,
+        -40,-20,  0,  5,  5,  0,-20,-40,
+        -50,-40,-30,-30,-30,-30,-40,-50,
+    ]))
+
+    PIECE_TABLE_BISHOP: list[int] = list(reversed([
+        -20,-10,-10,-10,-10,-10,-10,-20,
+        -10,  0,  0,  0,  0,  0,  0,-10,
+        -10,  0,  5, 10, 10,  5,  0,-10,
+        -10,  5,  5, 10, 10,  5,  5,-10,
+        -10,  0, 10, 10, 10, 10,  0,-10,
+        -10, 10, 10, 10, 10, 10, 10,-10,
+        -10,  5,  0,  0,  0,  0,  5,-10,
+        -20,-10,-10,-10,-10,-10,-10,-20,
+    ]))
+    
+    PIECE_TABLE_ROOK: list[int] = list(reversed([
+        0,  0,  0,  0,  0,  0,  0,  0,
+        5, 10, 10, 10, 10, 10, 10,  5,
+        -5,  0,  0,  0,  0,  0,  0, -5,
+        -5,  0,  0,  0,  0,  0,  0, -5,
+        -5,  0,  0,  0,  0,  0,  0, -5,
+        -5,  0,  0,  0,  0,  0,  0, -5,
+        -5,  0,  0,  0,  0,  0,  0, -5,
+        0,  0,  0,  5,  5,  0,  0,  0
+    ]))
+
+    PIECE_TABLE_QUEEN: list[int] = list(reversed([
+        -20,-10,-10, -5, -5,-10,-10,-20,
+        -10,  0,  0,  0,  0,  0,  0,-10,
+        -10,  0,  5,  5,  5,  5,  0,-10,
+        -5,  0,  5,  5,  5,  5,  0, -5,
+        -5,  0,  5,  5,  5,  5,  0, -5,
+        -10,  5,  5,  5,  5,  5,  0,-10,
+        -10,  0,  5,  0,  0,  0,  0,-10,
+        -20,-10,-10, -5, -5,-10,-10,-20
+    ]))
+
+    PIECE_TABLE_KING_START: list[int] = list(reversed([
+        -30,-40,-40,-50,-50,-40,-40,-30,
+        -30,-40,-40,-50,-50,-40,-40,-30,
+        -30,-40,-40,-50,-50,-40,-40,-30,
+        -30,-40,-40,-50,-50,-40,-40,-30,
+        -20,-30,-30,-40,-40,-30,-30,-20,
+        -10,-20,-20,-20,-20,-20,-20,-10,
+        20, 20,  0,  0,  0,  0, 20, 20,
+        20, 30, 10,  0,  0, 10, 30, 20
+    ]))
+
+    PIECE_TABLE_KING_END: list[int] = list(reversed([
+        -50,-40,-30,-20,-20,-30,-40,-50,
+        -30,-20,-10,  0,  0,-10,-20,-30,
+        -30,-10, 20, 30, 30, 20,-10,-30,
+        -30,-10, 30, 40, 40, 30,-10,-30,
+        -30,-10, 30, 40, 40, 30,-10,-30,
+        -30,-10, 20, 30, 30, 20,-10,-30,
+        -30,-30,  0,  0,  0,  0,-30,-30,
+        -50,-30,-30,-30,-30,-30,-30,-50
+    ]))
+    
+    ######################################
+    
+    def read_piece_table(
+            self: typing.Self,
+            table: list[int],
+            square: chess.Square,
+            color: chess.Color
+        ) -> int:
+        if not color:
+            square = 63 - square
+        
+        return table[square]
+        
+    ######################################
+    
+    def turn(
+            self: typing.Self,
+            board: chess.Board
+        ) -> chess.Move:
+        
+        if len(list(board.legal_moves)) == 1:
+            return list(board.legal_moves)[0]
+        
+        for move in board.legal_moves:
+            board.push(move)
+            try:
+                if board.is_checkmate():
+                    return move
+            finally:
+                board.pop()
+        
+        self.board = board
+        
+        self.nodes = 0
+        
+        self.search(
+            ply_from_root = 0,
+            depth = 6,
+            alpha = -math.inf,
+            beta = math.inf
+        )
+        
+        return self.best_move_overall
+    
+    def search(
+            self: typing.Self,
+            ply_from_root: int,
+            depth: int,
+            alpha: int,
+            beta: int
+        ) -> int:
+        if depth == 0:
+            self.nodes += 1
+            return self.evaluate()
+        
+        moves = self.move_ordering()
+        
+        if not moves:
+            if self.board.is_checkmate():
+                return -self.CHECKMATE_VALUE + ply_from_root
+
+            return 0
+        
+        for index, move in enumerate(moves):
+            self.board.push(move)
+            
+            result = -self.search(
+                ply_from_root = ply_from_root + 1,
+                depth = depth - 1,
+                alpha = -beta,
+                beta= -alpha
+            )
+            
+            self.board.pop()
+            
+            if result >= beta:
+                return beta
+            
+            if result > alpha:
+                alpha = result
+                
+                if ply_from_root == 0:
+                    self.best_eval_overall = result,
+                    self.best_move_overall = move
+        
+        return alpha
+    
+    ###################################################################################################################
+    
+    def move_ordering(self: typing.Self) -> list[chess.Move]:
+        return sorted(
+            self.board.legal_moves,
+            key = self.score_move,
+            reverse = True
+        )
+    
+    def score_move(
+            self: typing.Self,
+            move: chess.Move
+        ) -> int:
+        score_guess = 0
+        
+        moved = self.board.piece_at(move.from_square).piece_type
+        
+        if self.board.is_capture(move):
+            captured = self.board.piece_at(move.to_square)
+            
+            # En passant
+            if captured is None:
+                captured = chess.PAWN
+            else:
+                captured = captured.piece_type
+            
+            score_guess += 10 * self.PIECE_VALUES[captured] - self.PIECE_VALUES[moved]
+        
+        if move.promotion is not None:
+            score_guess += self.PIECE_VALUES[move.promotion]
+        
+        attackers = self.board.attackers_mask(
+            color = not self.board.turn,
+            square = move.to_square
+        )
+        
+        # If the mask of attackers bitwise and'd with the pawns mask
+        # evaluates to True, that means there's an enemy pawn attacking
+        # the target square.
+        if attackers & self.board.pawns:
+            score_guess -= self.PIECE_VALUES[moved]
+        
+        return score_guess
+    
+    ###################################################################################################################
+    
+    def evaluate(self: typing.Self) -> int:
+        pawn_white = (self.board.pawns & self.board.occupied_co[chess.WHITE]).bit_count()
+        pawn_black = self.board.pawns.bit_count() - pawn_white
+        
+        knight_white = (self.board.knights & self.board.occupied_co[chess.WHITE]).bit_count()
+        knight_black = self.board.knights.bit_count() - knight_white
+        
+        bishop_white = (self.board.bishops & self.board.occupied_co[chess.WHITE]).bit_count()
+        bishop_black = self.board.bishops.bit_count() - bishop_white
+        
+        rook_white = (self.board.rooks & self.board.occupied_co[chess.WHITE]).bit_count()
+        rook_black = self.board.rooks.bit_count() - rook_white
+        
+        queen_white = (self.board.queens & self.board.occupied_co[chess.WHITE]).bit_count()
+        queen_black = self.board.queens.bit_count() - queen_white
+        
+        score = (pawn_white - pawn_black) * self.PIECE_VALUES[chess.PAWN] \
+            + (knight_white - knight_black) * self.PIECE_VALUES[chess.KNIGHT] \
+            + (bishop_white - bishop_black) * self.PIECE_VALUES[chess.BISHOP] \
+            + (rook_white - rook_black) * self.PIECE_VALUES[chess.ROOK] \
+            + (queen_white - queen_black) * self.PIECE_VALUES[chess.QUEEN]
+            
+        #####################################
+        
+        # Endgame weights use the other side so its evaluating it based on the opponent's pieces.
+        score += self.evaluate_piece_square_tables(chess.WHITE, self.get_endgame_weight(chess.BLACK))
+        score += self.evaluate_piece_square_tables(chess.BLACK, self.get_endgame_weight(chess.WHITE))
+        
+        #####################################
+        
+        if not self.board.turn:
+            score = -score
+        
+        return score
+    
+    def get_endgame_weight(
+            self: typing.Self,
+            color: chess.Color
+        ) -> int:
+        queens = (self.board.queens & self.board.occupied_co[color]).bit_count()
+        rooks = (self.board.rooks & self.board.occupied_co[color]).bit_count()
+        bishops = (self.board.bishops & self.board.occupied_co[color]).bit_count()
+        knights = (self.board.knights & self.board.occupied_co[color]).bit_count()
+        
+        start_weight = 2 * (
+              20 # Rooks
+            + 10 # Bishops
+            + 10 # Knights
+            + 45 # Queens
+        )
+        weight_sum = (
+              20 * rooks
+            + 10 * bishops
+            + 10 * knights
+            + 45 * queens
+        )
+        
+        return 1 - min(1, weight_sum / start_weight)
+    
+    def evaluate_piece_table_type(
+            self: typing.Self,
+            table: list[int],
+            piece_mask: chess.Bitboard,
+            color: chess.Color
+        ) -> int:
+        piece_mask &= self.board.occupied_co[color]
+        
+        score = 0
+        
+        for square in chess.scan_forward(piece_mask):
+            score += self.read_piece_table(table, square, color)
+        
+        return score    
+    
+    def evaluate_piece_square_tables(
+            self: typing.Self,
+            color: chess.Color,
+            endgame_weight: float
+        ) -> int:
+        score = 0
+        
+        score += self.evaluate_piece_table_type(self.PIECE_TABLE_KNIGHT, self.board.knights, color)
+        score += self.evaluate_piece_table_type(self.PIECE_TABLE_BISHOP, self.board.bishops, color)
+        score += self.evaluate_piece_table_type(self.PIECE_TABLE_ROOK, self.board.rooks, color)
+        score += self.evaluate_piece_table_type(self.PIECE_TABLE_QUEEN, self.board.queens, color)
+        
+        pawn_start = self.evaluate_piece_table_type(self.PIECE_TABLE_PAWN_START, self.board.pawns, color)
+        pawn_end = self.evaluate_piece_table_type(self.PIECE_TABLE_PAWN_END, self.board.pawns, color)
+        score += int(pawn_start * (1 - endgame_weight))
+        score += int(pawn_end * endgame_weight)
+        
+        king_start = self.read_piece_table(self.PIECE_TABLE_KING_START, self.board.king(color), color)
+        king_end = self.read_piece_table(self.PIECE_TABLE_KING_END, self.board.king(color), color)
+        score += int(king_start * (1 - endgame_weight))
+        score += int(king_end * endgame_weight)
+        
+        return score
+
 #######################################################################################################################
 ##### BOT INTERACTION #################################################################################################
 #######################################################################################################################
@@ -3402,6 +3756,42 @@ def run_match(
         "fen": board.fen()
     }
 
+def run_puzzle(
+        bot: ChessBot,
+        pgn: str,
+        solution: str
+    ) -> dict:
+    board = get_board_from_pgn(pgn)
+    correct = True
+    
+    bot_data = {}
+    bot_object = bot(bot_data)
+    bot_turn = board.turn
+    for move in solution:
+        if board.turn == bot_turn:
+            bot_object.load(bot_data)
+            bot_move = bot_object.turn(board.copy())
+            bot_data = bot_object.save()
+            
+            board.push(bot_move)
+            
+            # If the bot got the move wrong.
+            if bot_move.uci() != move:
+                # If it's checkmate there's no way the bot is wrong, so assume there are multiple
+                # checkmates available, and the bot chose one that was not listed as correct.
+                if not board.is_checkmate():
+                    # It is not checkmate, so the bot got the move wrong.
+                    correct = False
+                    break
+        else:
+            board.push_uci(move)
+    
+    return {
+        "ending_fen": board.fen(),
+        "last_move": board.move_stack[-1].uci(),
+        "correct": correct
+    }
+
 class ChessBotConverter(commands.Converter):
     """Converter that can be used in a command to automatically convert an argument to a Chess bot."""
     async def convert(self, ctx, arg: str) -> type[ChessBot]:
@@ -3457,10 +3847,14 @@ def update_game(
 
 def render_board(
         board: chess.Board,
+        *,
         path: str = "images/generated/chess_position.png",
         flipped: bool = False,
-        last_move: chess.Move = None
-    ) -> str:
+        last_move: chess.Move = None,
+        last_move_light: str = "#CDD16A",
+        last_move_dark: str = "#AAA23B",
+        return_image: bool = False
+    ) -> str | PIL_Image.Image:
     """Renders the given Chess board and returns the file path.
 
     Args:
@@ -3468,6 +3862,9 @@ def render_board(
         path (str, optional): The path to save the board to. Defaults to "images/generated/chess_position.png".
         flipped (bool, optional): Whether to flip the board to be from black's perspective. If this is None it will default to True if it is black's turn. Defaults to None.
         last_move (chess.Move, optional): An optional last move to render on the board. The board's last move will be used by default if this is None. Defaults to None.
+        last_move_light (str, optional): The color to mark the last move with, for light squares. Defaults to "#CDD16A".
+        last_move_dark (str, optional): The color to mark the last move with, for dark squares. Defaults to "#AAA23B".
+        return_image: (bool, optional): Whether to return the image object instead of the path to it. Defaults to False
 
     Returns:
         str: The path to the file.
@@ -3504,11 +3901,11 @@ def render_board(
         
         img_draw.rectangle(
             [(convert_file(from_file) * GRID_SIZE, convert_rank(from_rank) * GRID_SIZE), ((convert_file(from_file) + 1) * GRID_SIZE - 1, (convert_rank(from_rank) + 1) * GRID_SIZE - 1)],
-            fill = LAST_MOVE_DARK if (convert_file(from_file) + convert_rank(from_rank)) % 2 else LAST_MOVE_LIGHT
+            fill = last_move_dark if (convert_file(from_file) + convert_rank(from_rank)) % 2 else last_move_light
         )
         img_draw.rectangle(
             [(convert_file(to_file) * GRID_SIZE, convert_rank(to_rank) * GRID_SIZE), ((convert_file(to_file) + 1) * GRID_SIZE - 1, (convert_rank(to_rank) + 1) * GRID_SIZE - 1)],
-            fill = LAST_MOVE_DARK if (convert_file(to_file) + convert_rank(to_rank)) % 2 else LAST_MOVE_LIGHT
+            fill = last_move_dark if (convert_file(to_file) + convert_rank(to_rank)) % 2 else last_move_light
         )
 
     for color in chess.COLORS:
@@ -3548,6 +3945,9 @@ def render_board(
         main_img_draw.text((width / 2 - 2, 10 + 75 / 2 + 75 * index), text=number, font_size=FONT_SIZE)
         main_img_draw.text((625 + width / 2 - 2, 10 + 75 / 2 + 75 * index), text=number, font_size=FONT_SIZE)
     
+    if return_image:
+        return main_img
+        
     main_img.save(path, "png")
 
     return path
@@ -3755,6 +4155,28 @@ def get_bot_elo(
 
     return data.get(bot, 800.0)
 
+def get_bot_puzzle_elo(
+        database: u_files.DatabaseInterface,
+        bot: str | ChessBot
+    ) -> int:
+    """Gets a bot's puzzle elo from the database.
+
+    Args:
+        database (u_files.DatabaseInterface): The database.
+        bot (str | ChessBot): The name or object of the bot.
+
+    Returns:
+        int: The bot's puzzle elo.
+    """
+    try:
+        bot = bot.name
+    except AttributeError:
+        pass
+
+    data = database.load("chess", "puzzles", "ratings", default = {})
+
+    return data.get(bot, 1200.0)
+
 def set_bot_elo(
         database: u_files.DatabaseInterface,
         bot: str | ChessBot,
@@ -3777,6 +4199,29 @@ def set_bot_elo(
     data[bot] = new_rating
 
     database.save("chess", "bot_ratings", data=data)
+
+def set_bot_puzzle_elo(
+        database: u_files.DatabaseInterface,
+        bot: str | ChessBot,
+        new_rating: int
+    ) -> None:
+    """Updates a bot's puzzle elo in the database.
+
+    Args:
+        database (u_files.DatabaseInterface): The databse.
+        bot (str | ChessBot): The name of object of the bot to update.
+        new_rating (int): The new puzzle rating.
+    """
+    try:
+        bot = bot.name
+    except AttributeError:
+        pass
+
+    data = database.load("chess", "puzzles", "ratings", default = {})
+
+    data[bot] = new_rating
+
+    database.save("chess", "puzzles", "ratings", data=data)
 
 def handle_match_outcome(
         database: u_files.DatabaseInterface,
@@ -3887,6 +4332,9 @@ def determine_matches(database: u_files.DatabaseInterface) -> list[tuple[typing.
 def get_rating_history(database: u_files.DatabaseInterface) -> list[dict[str, float]]:
     return database.load("chess", "rating_history", default = [])
 
+def get_puzzle_rating_history(database: u_files.DatabaseInterface) -> list[dict[str, float]]:
+    return database.load("chess", "puzzles", "history", default = [])
+
 def get_all_elos(
         database: u_files.DatabaseInterface,
         return_classes: bool = True
@@ -3896,5 +4344,45 @@ def get_all_elos(
     for name, bot in get_bot_list().items():
         out[bot if return_classes else name] = bot.get_elo(database)
 
+    return out
+
+def get_all_puzzle_elos(
+        database: u_files.DatabaseInterface,
+        return_classes: bool = True
+    ) -> dict[typing.Type[ChessBot] | str, float]:
+    out = {}
+
+    for name, bot in get_bot_list().items():
+        out[bot if return_classes else name] = bot.get_puzzle_elo(database)
 
     return out
+
+def format_name(name: str) -> str:
+    return name.replace("_"," ").title()
+
+def get_puzzle_theme_data(database: u_files.DatabaseInterface) -> dict:
+    """Format:
+    ```
+    {
+        "bot_name": {
+            <theme name>: {
+                "total": <total number of puzzles with this theme encountered>,
+                "correct": <number of times this bot has correctly solved a puzzle with this theme>,
+            }
+            ...
+        },
+        ...
+    }"""
+    return database.load("chess", "puzzles", "themes", default={})
+
+def get_puzzle_overall_data(database: u_files.DatabaseInterface) -> dict:
+    """Format:
+    ```
+    {
+        "bot_name": {
+            "total": ...
+            "correct": ...
+        },
+        ...
+    }"""
+    return database.load("chess", "puzzles", "overall", default={})

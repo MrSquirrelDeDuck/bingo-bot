@@ -6,6 +6,8 @@ import typing
 import importlib
 import textwrap
 import io
+import chess
+import math
 
 # pip install matplotlib
 import matplotlib.pyplot as plt
@@ -599,7 +601,7 @@ def chess_match(
     if font_size_white > max_font_size:
         font_white = PIL_ImageFont.truetype(font_path, size=max_font_size)
 
-    # White font size.
+    # Black font size.
     font_black = PIL_ImageFont.truetype(font_path, font_size_black)
     while font_black.getlength(black_name) < ending_x_size:
         # iterate until the text size is just larger than the criteria
@@ -664,6 +666,155 @@ def chess_match(
     img.save(f"images{SLASH}generated{SLASH}chess_match.png", quality=90)
     
     # 242, 221
+
+######################################################################################################################################
+##### CHESS PUZLES ###################################################################################################################
+######################################################################################################################################
+
+def chess_puzzle(
+        puzzle_data: dict,
+        elo_data: dict
+    ) -> None:
+    correct_image = PIL_Image.open(f"images{SLASH}bases{SLASH}check.png").resize((50, 50)).convert("RGBA")
+    incorrect_image = PIL_Image.open(f"images{SLASH}bases{SLASH}x.png").resize((50, 50)).convert("RGBA")
+    
+    def prep_board(board: PIL_Image.Image) -> PIL_Image.Image:
+        board = board.resize((390, 390))
+        outside = PIL_Image.new("RGBA", (394, 394), "#bfbfbf")
+        outside.paste(board, (2, 2))
+        return outside
+        
+    def index_to_grid(index: int) -> tuple[int]:
+        x = index % PER_ROW
+        y = index // PER_ROW
+        
+        if (number_of_bots - index - 1) < EXTRA_BOTS:
+            x += -1/2 * EXTRA_BOTS + PER_ROW / 2
+            
+        return (int(SIDE_BUFFERS + x * (WIDTH_PER_BOT + 12)), TOP_OFFSET + y * (HEIGHT_PER_BOT + 12))
+
+    font_path = f"images{SLASH}bases{SLASH}verdana.ttf"
+    
+    number_of_bots = len(puzzle_data["bots"])
+    
+    TOTAL_ROWS = math.isqrt(number_of_bots)
+    PER_ROW = math.ceil(number_of_bots / TOTAL_ROWS)
+    EXTRA_BOTS = number_of_bots % PER_ROW
+    
+    # Height:
+    TOP_OFFSET = 467
+    BOTTOM_BUFFER = 40
+    HEIGHT_PER_BOT = 95 + 394 + 52 # 95 (height of the bot label) + 394 (height of the board itself) + 52 (height of the elo label)
+    
+    # Width:
+    SIDE_BUFFERS = 40
+    WIDTH_PER_BOT = 5 + 394 + 5 # 5 (white outline on the left) + 394 (width of the board itself) + 5 (white outline on the right)
+    
+    total_image_height = TOP_OFFSET + (12 + HEIGHT_PER_BOT) * TOTAL_ROWS + BOTTOM_BUFFER - 12 # Subtract 12 to remove the buffer between bots for the last row.
+    total_image_width = SIDE_BUFFERS * 2 + (12 + WIDTH_PER_BOT) * PER_ROW - 12 # Subtract 12 to remove the buffer between bots for the last column.
+    
+    img = PIL_Image.open(f"images{SLASH}bases{SLASH}chess_puzzles.png").copy().convert("RGBA")
+    img = img.resize((total_image_width, total_image_height))
+    img_draw = PIL_ImageDraw.ImageDraw(img)
+    
+    puzzle_default = prep_board(u_chess.render_board(
+        board = chess.Board(puzzle_data["puzzle"]["fen"]),
+        last_move=chess.Move.from_uci(puzzle_data["puzzle"]["last_move"]),
+        return_image=True
+    ))
+    
+    img.paste(puzzle_default, (img.width//2 - 394//2, 40))
+    img_draw.line([(50, 450), (img.width-51, 450)], width=9)
+    
+    name_y_size = 95
+    name_x_size = 356
+    namx_x_size_multiplier = 0.95
+    ending_name_x_size = name_x_size * namx_x_size_multiplier
+    max_name_font_size = 57
+    
+    for index, bot_name in enumerate(puzzle_data["bots"].keys()):
+        data = puzzle_data["bots"][bot_name]
+        
+        base_x, base_y = index_to_grid(index)
+        
+        # Draw the background rectangle:
+        img_draw.rounded_rectangle([(base_x, base_y), (base_x + WIDTH_PER_BOT, base_y + HEIGHT_PER_BOT)], radius=25, fill="#ffffff")
+        
+        # Draw the board:
+        if data["correct"]:
+            highlight_light = "#6ad16c"
+            highlight_dark = "#45aa3b"
+        else:
+            highlight_light = "#d1716a"
+            highlight_dark = "#aa3b3f"
+        
+        bot_puzzle_board = prep_board(u_chess.render_board(
+            board = chess.Board(data["ending_fen"]),
+            last_move=chess.Move.from_uci(data["last_move"]),
+            last_move_light = highlight_light,
+            last_move_dark = highlight_dark,
+            return_image=True
+        ))
+    
+        img.paste(bot_puzzle_board, (base_x + 5, base_y + 95))
+        
+        # Write the bot's name:
+        fancy_name = u_chess.format_name(bot_name)
+        box_left = base_x + 20
+        box_top = base_y
+        name_font_width = 1
+        
+        # White font size.
+        name_font = PIL_ImageFont.truetype(font_path, name_font_width)
+        while name_font.getlength(fancy_name) < ending_name_x_size:
+            # iterate until the text size is just larger than the criteria
+            name_font_width += 1
+            name_font = PIL_ImageFont.truetype(font_path, name_font_width)
+
+        if name_font_width > max_name_font_size:
+            name_font = PIL_ImageFont.truetype(font_path, size=max_name_font_size)
+        else:
+            name_font = PIL_ImageFont.truetype(font_path, name_font_width - 1)
+        
+        name_bounds = img_draw.textbbox((0, 0), fancy_name, font=name_font)
+
+        white_x_coord = (name_x_size - name_bounds[2]) / 2 + box_left
+        white_y_coord = (name_y_size - name_bounds[3]) / 2 + box_top
+
+        # Write the name of the bot playing white.
+        img_draw.text((white_x_coord, white_y_coord), fancy_name, (0, 0, 0), font=name_font, align="center", stroke_width=1)
+        
+        # Elo ratings:
+        increase_color = (0, 230, 0)
+        decrease_color = (230, 0, 0)
+
+        elo_font = PIL_ImageFont.truetype(font_path, size=30)
+
+        # White elo
+        img_draw.text((base_x + 20, base_y + 494), str(elo_data[bot_name]["elo"]), (0, 0, 0), font=elo_font, align="center", stroke_width=1)
+        elo_width = img_draw.textlength(str(elo_data[bot_name]["elo"]), elo_font)
+
+        delta = str(elo_data[bot_name]["delta"])
+        if elo_data[bot_name]["delta"] > 0:
+            delta = f"+{delta}"
+            color = increase_color
+        else:
+            color = decrease_color
+
+        img_draw.text((base_x + elo_width + 30, base_y + 494), delta, color, font=elo_font, align="center", stroke_width=1)
+        
+        # Check/X stamp:
+        if data["correct"]:
+            to_paste = correct_image
+        else:
+            to_paste = incorrect_image
+            
+        img.paste(to_paste.copy(), (base_x + WIDTH_PER_BOT - 51, base_y + HEIGHT_PER_BOT - 51), to_paste.copy())
+    
+    # Save the final image.
+    img.save(f"images{SLASH}generated{SLASH}chess_puzzle.png", quality=90)
+    
+    
 
 ######################################################################################################################################
 ##### COLOR ##########################################################################################################################
