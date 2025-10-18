@@ -1876,7 +1876,7 @@ class Other_cog(
 
             board = chess.Board(board_fen)
 
-            u_chess.render_board(board, 'images/generated/chess_position.png', last_move=last_move)
+            u_chess.render_board(board, path='images/generated/chess_position.png', last_move=last_move)
 
             fields.append(
                 ("Highlighted game:", f"White: {ret_json['featured']['white']['name']} (*{u_text.smart_number(ret_json['featured']['white']['rating'])}*)\nBlack: {ret_json['featured']['black']['name']} (*{u_text.smart_number(ret_json['featured']['black']['rating'])}*)", False)

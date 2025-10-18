@@ -931,6 +931,42 @@ class Admin_cog(
 
         
     ######################################################################################################################################################
+    ##### ADMIN GET COUNT ################################################################################################################################
+    ######################################################################################################################################################
+    
+    @admin.command(
+        name="get_count",
+        brief = "Gets the counting data for a channel or thread.",
+        description = "Gets the counting data for a channel or thread."
+    )
+    @commands.is_owner()
+    async def admin_set_count(
+            self: typing.Self,
+            ctx: commands.Context | u_custom.CustomContext,
+            channel_id: typing.Optional[u_converters.parse_int] = commands.parameter(description = "The id of the channel or thread.")
+        ):
+        if channel_id is None:
+            await ctx.reply("You must provide the channel or thread id to get the data for.")
+            return
+        
+        data = database.get_counting_data(channel_id)
+        
+        embed = u_interface.gen_embed(
+            title = "Get Counting Data",
+            description = "Counting data for <#{}>:\nCount: {}\nLast sender: <@{}>".format(
+                channel_id,
+                u_text.smart_number(data["count"]),
+                data["sender"]
+            )
+        )
+        
+        await ctx.reply(embed=embed)
+
+        
+            
+
+        
+    ######################################################################################################################################################
     ##### ADMIN SET CHAIN ################################################################################################################################
     ######################################################################################################################################################
     
@@ -1639,7 +1675,7 @@ class Admin_cog(
         if action is None or identifier is None:
             embed = u_interface.gen_embed(
                 title = "PluralKit filter",
-                description = "To add or remove someone from the filter, use the `add` or `remove` parameter.\nCommand syntax: `%admin pk_filter <add|remove> <member id>`.\nNote that you can provide a message link for the member id parameter to have it automatically determine the member id.",
+                description = f"To add or remove someone from the filter, use the `add` or `remove` parameter.\nCommand syntax: `{ctx.prefix}admin pk_filter <add|remove> <member id>`.\nNote that you can provide a message link for the member id parameter to have it automatically determine the member id.",
                 fields = [("Filtered member ids:", "\n".join(
                     [f"- {item}" for item in filter_list]
                 ), False)]
@@ -1842,23 +1878,29 @@ class Admin_cog(
             self: typing.Self,
             ctx: commands.Context | u_custom.CustomContext
         ):
-        # Clear the stored data for everyone, as the recent update made it incompatible.
-        database.save("bread", "data_storage", data={})
+        puzzles = database.load("chess", "daily", "puzzles", default=None)
         
-        # Remove ping-based bread reminders.
-        reminder_data = database.load("reminders")
+        elos = u_chess.get_all_puzzle_elos(database, return_classes=False)
         
-        for reminder in reminder_data["reminder_list"].copy():
-            # Keep the "Do Wordle." GPTM reminder for Kapola to reply "No." to.".
-            if "Wordle" in reminder["text"]:
-                continue
-            
-            if str(reminder["user"]).startswith("&"): # Role pings.
-                reminder_data["reminder_list"].remove(reminder)
+        fake_elo_data = {
+            name: {
+                "elo": elo,
+                "delta": random.randint(-20, 20)
+            }
+            for name, elo in elos.items()
+        }
         
-        database.save("reminders", data=reminder_data)
+        u_images.chess_puzzle(puzzles[0], fake_elo_data)
+        send_file = discord.File("images/generated/chess_puzzle.png")
+        send_file_link = "attachment://chess_puzzle.png"
         
-        await ctx.reply("Done.")
+        embed = u_interface.gen_embed(
+            title = "Puzzle".format(),
+            description = "boingo",
+            image_link = send_file_link
+        )
+        
+        await ctx.reply(embed=embed, file=send_file)
 
         
             
