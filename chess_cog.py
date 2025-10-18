@@ -28,7 +28,7 @@ import utility.text as u_text
 
 database = None # type: u_files.DatabaseInterface
 
-PING_LISTS_CHANNEL = 1196865786489344120 # 1060344552818483230
+PING_LISTS_CHANNEL = 1060344552818483230
 
 class Chess_cog(
         u_custom.CustomCog,
