@@ -940,7 +940,7 @@ class Admin_cog(
         description = "Gets the counting data for a channel or thread."
     )
     @commands.is_owner()
-    async def admin_set_count(
+    async def admin_get_count(
             self: typing.Self,
             ctx: commands.Context | u_custom.CustomContext,
             channel_id: typing.Optional[u_converters.parse_int] = commands.parameter(description = "The id of the channel or thread.")
