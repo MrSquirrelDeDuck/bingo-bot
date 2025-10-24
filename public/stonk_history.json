@@ -26618,5 +26618,23 @@
         "cookie": 24,
         "fortune_cookie": 557,
         "pancakes": 4622
+    },
+    {
+        "pretzel": 165,
+        "cookie": 26,
+        "fortune_cookie": 610,
+        "pancakes": 4305
+    },
+    {
+        "pretzel": 178,
+        "cookie": 27,
+        "fortune_cookie": 570,
+        "pancakes": 4675
+    },
+    {
+        "pretzel": 165,
+        "cookie": 29,
+        "fortune_cookie": 616,
+        "pancakes": 4247
     }
 ]
