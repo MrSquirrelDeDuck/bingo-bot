@@ -342,11 +342,13 @@ class Other_cog(
         # Root structure for saving images.
         render_location = "images/generated/{}".format(target.id)
 
-        # Download the avatar.
+        # Download and get url of the avatar.
         if display:
             await target.display_avatar.save("{}_avatar.png".format(render_location))
+            avatarURL = target.display_avatar.url
         else:
             await target.avatar.save("{}_avatar.png".format(render_location))
+            avatarURL = target.avatar.url
         
         # Render the avatar.
         if decoration:
@@ -377,21 +379,21 @@ class Other_cog(
 
             # Render final image.
             finalImage.save("{}_final.png".format(render_location))
+
+            # Create image object for embed.
+            imageURL = "attachment://image.png"
+            image = discord.File("{}_final.png".format(render_location), filename="image.png")
         else:
-
-            # Create image object.
-            finalImage = PIL_Image.open("{}_avatar.png".format(render_location)).convert("RGBA")
-
-            # Render final image.
-            finalImage.save("{}_final.png".format(render_location))
+            # create image object for embed
+            imageURL = avatarURL
+            image = None
 
         # Setup the embed to send.
         title = "Display avatar" if display else "Avatar"
-        image = discord.File("{}_final.png".format(render_location), filename="image.png")
         embed = u_interface.gen_embed(
             title = title,
             description = "{} for {}:".format(title, target.mention),
-            image_link="attachment://image.png"
+            image_link=imageURL
         )
         
         # Send the embed.
