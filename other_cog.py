@@ -41,6 +41,10 @@ import wikipedia
 # pip install python-Levenshtein
 from fuzzywuzzy import fuzz
 
+# pip install pillow
+import PIL.Image as PIL_Image
+import PIL.ImageDraw as PIL_ImageDraw
+
 import sys
 
 import utility.custom as u_custom
@@ -323,31 +327,75 @@ class Other_cog(
             self: typing.Self,
             ctx: commands.Context | u_custom.CustomContext,
             target: typing.Optional[discord.Member] = commands.parameter(description = "The member to use, if nothing is provided it'll use you."),
-            display: typing.Optional[str] = commands.parameter(description = "If 'display' is provided it will use server avatars.")
+            *arguments: typing.Optional[str]
         ):
         # If a target was specified or not.
         if target is None:
             target = ctx.author
         
         # If it should use the display avatar, rather than the global one.
-        display = display == "display"
+        display = "display" in arguments
+
+        # If it should use the avatar decoration.
+        decoration = ("decoration" in arguments) and (target.avatar_decoration != None)
         
-        # Get the avatar url.
+        # Root structure for saving images.
+        render_location = "images/generated/{}".format(target.id)
+
+        # Download the avatar.
         if display:
-            avatar_url = target.display_avatar
+            await target.display_avatar.save("{}_avatar.png".format(render_location))
         else:
-            avatar_url = target.avatar
+            await target.avatar.save("{}_avatar.png".format(render_location))
+        
+        # Render the avatar.
+        if decoration:
+
+            # State image sizes
+            avatarSize = (244, 244)
+            decorationSize = (288, 288)
+
+            # Download the decoration.
+            await target.avatar_decoration.save("{}_decoration.png".format(render_location))
+
+            # Create image objects.
+            finalImage = PIL_Image.new("RGBA", decorationSize, "#00000000")
+            avatarImage = PIL_Image.open("{}_avatar.png".format(render_location)).convert("RGBA").resize(avatarSize)
+            decorationImage = PIL_Image.open("{}_decoration.png".format(render_location)).convert("RGBA").resize(decorationSize)
+
+            # Create circular mask for avatar.
+            avatarMask = PIL_Image.new("L", avatarSize, 0)
+            avatarMaskDraw = PIL_ImageDraw.Draw(avatarMask)
+            avatarMaskDraw.ellipse(((0,0), avatarSize), fill=255)
+
+            # Mask avatar with circular mask.
+            avatarImage.putalpha(avatarMask)
+
+            # Place images on base.
+            finalImage.paste(avatarImage, ((decorationSize[0] - avatarSize[0]) // 2, (decorationSize[1] - avatarSize[1]) // 2))
+            finalImage = PIL_Image.alpha_composite(finalImage, decorationImage)
+
+            # Render final image.
+            finalImage.save("{}_final.png".format(render_location))
+        else:
+
+            # Create image object.
+            finalImage = PIL_Image.open("{}_avatar.png".format(render_location)).convert("RGBA")
+
+            # Render final image.
+            finalImage.save("{}_final.png".format(render_location))
 
         # Setup the embed to send.
         title = "Display avatar" if display else "Avatar"
+        image = discord.File("{}_final.png".format(render_location), filename="image.png")
         embed = u_interface.gen_embed(
             title = title,
             description = "{} for {}:".format(title, target.mention),
-            image_link = avatar_url
+            image_link="attachment://image.png"
         )
         
         # Send the embed.
-        await ctx.reply(embed=embed)
+        await ctx.reply(embed=embed, file=image)
 
 
         
