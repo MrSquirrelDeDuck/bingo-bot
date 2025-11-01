@@ -321,13 +321,13 @@ class Other_cog(
         name = "avatar",
         aliases = ["pfp"],
         brief = "Get someone's avatar.",
-        description = "Get someone's avatar.\nThis will use their global avatar, however the `display` parameter can be used to fetch server-specific avatars."
+        description = "Get someone's avatar.\nThis will use their global avatar, however the `display` modifier can be used to fetch server-specific avatars.\nYou can also use the `decoration` modifier to overlay avatar decorations."
     )
     async def avatar(
             self: typing.Self,
             ctx: commands.Context | u_custom.CustomContext,
             target: typing.Optional[discord.Member] = commands.parameter(description = "The member to use, if nothing is provided it'll use you."),
-            *, modifiers: typing.Optional[str]
+            *, modifiers: typing.Optional[str] = commands.parameter(description = "The modifiers to use. See above for more information.")
         ):
 
         # If a target was specified or not.
