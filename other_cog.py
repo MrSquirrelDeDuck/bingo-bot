@@ -10,6 +10,7 @@ import time
 import datetime
 import os
 from os.path import sep as SLASH
+import io
 import difflib
 import decimal
 import colorsys
@@ -340,59 +341,36 @@ class Other_cog(
         else:
             modifiers = modifiers.split(" ")
         
-        # If it should use the display avatar, rather than the global one.
         display = "display" in modifiers
-
-        # If it should use the avatar decoration.
         decoration = ("decoration" in modifiers) and (target.avatar_decoration != None)
-        
-        # Root structure for saving images.
-        render_location = "images/generated/{}".format(target.id)
 
         # Download and get url of the avatar.
+        avatar_image = io.BytesIO()
         if display:
-            await target.display_avatar.save("{}_avatar.png".format(render_location))
-            avatarURL = target.display_avatar.url
+            await target.display_avatar.save(avatar_image)
+            avatar_url = target.display_avatar.url
         else:
-            await target.avatar.save("{}_avatar.png".format(render_location))
-            avatarURL = target.avatar.url
+            await target.avatar.save(avatar_image)
+            avatar_url = target.avatar.url
         
         # Render the avatar.
         if decoration:
 
-            # State image sizes
-            avatarSize = (244, 244)
-            decorationSize = (288, 288)
-
             # Download the decoration.
-            await target.avatar_decoration.save("{}_decoration.png".format(render_location))
+            decoration_image = io.BytesIO()
+            await target.avatar_decoration.save(decoration_image)
 
-            # Create image objects.
-            finalImage = PIL_Image.new("RGBA", decorationSize, "#00000000")
-            avatarImage = PIL_Image.open("{}_avatar.png".format(render_location)).convert("RGBA").resize(avatarSize)
-            decorationImage = PIL_Image.open("{}_decoration.png".format(render_location)).convert("RGBA").resize(decorationSize)
-
-            # Create circular mask for avatar.
-            avatarMask = PIL_Image.new("L", avatarSize, 0)
-            avatarMaskDraw = PIL_ImageDraw.Draw(avatarMask)
-            avatarMaskDraw.ellipse(((0,0), avatarSize), fill=255)
-
-            # Mask avatar with circular mask.
-            avatarImage.putalpha(avatarMask)
-
-            # Place images on base.
-            finalImage.paste(avatarImage, ((decorationSize[0] - avatarSize[0]) // 2, (decorationSize[1] - avatarSize[1]) // 2))
-            finalImage = PIL_Image.alpha_composite(finalImage, decorationImage)
-
-            # Render final image.
-            finalImage.save("{}_final.png".format(render_location))
+            image = u_images.avatar_decoration(
+                avatar = avatar_image,
+                decoration = decoration_image
+            )
 
             # Create image object for embed.
-            imageURL = "attachment://image.png"
-            image = discord.File("{}_final.png".format(render_location), filename="image.png")
+            image_url = "attachment://image.png"
+            image = discord.File(image, filename="image.png")
         else:
             # create image object for embed
-            imageURL = avatarURL
+            image_url = avatar_url
             image = None
 
         # Setup the embed to send.
@@ -400,7 +378,7 @@ class Other_cog(
         embed = u_interface.gen_embed(
             title = title,
             description = "{} for {}:".format(title, target.mention),
-            image_link=imageURL
+            image_link = image_url
         )
         
         # Send the embed.
