@@ -327,7 +327,7 @@ class Other_cog(
             self: typing.Self,
             ctx: commands.Context | u_custom.CustomContext,
             target: typing.Optional[discord.Member] = commands.parameter(description = "The member to use, if nothing is provided it'll use you."),
-            *, arguments: typing.Optional[str]
+            *, modifiers: typing.Optional[str]
         ):
 
         # If a target was specified or not.
@@ -335,16 +335,16 @@ class Other_cog(
             target = ctx.author
         
         # If modifiers are being used.
-        if arguments is None:
-            arguments = []
+        if modifiers is None:
+            modifiers = []
         else:
-            arguments = arguments.split(" ")
+            modifiers = modifiers.split(" ")
         
         # If it should use the display avatar, rather than the global one.
-        display = "display" in arguments
+        display = "display" in modifiers
 
         # If it should use the avatar decoration.
-        decoration = ("decoration" in arguments) and (target.avatar_decoration != None)
+        decoration = ("decoration" in modifiers) and (target.avatar_decoration != None)
         
         # Root structure for saving images.
         render_location = "images/generated/{}".format(target.id)
