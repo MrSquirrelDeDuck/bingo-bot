@@ -327,11 +327,18 @@ class Other_cog(
             self: typing.Self,
             ctx: commands.Context | u_custom.CustomContext,
             target: typing.Optional[discord.Member] = commands.parameter(description = "The member to use, if nothing is provided it'll use you."),
-            *arguments: typing.Optional[str]
+            *, arguments: typing.Optional[str]
         ):
+
         # If a target was specified or not.
         if target is None:
             target = ctx.author
+        
+        # If modifiers are being used.
+        if arguments is None:
+            arguments = []
+        else:
+            arguments = arguments.split(" ")
         
         # If it should use the display avatar, rather than the global one.
         display = "display" in arguments
