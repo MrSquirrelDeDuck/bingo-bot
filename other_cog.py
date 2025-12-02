@@ -10,6 +10,7 @@ import time
 import datetime
 import os
 from os.path import sep as SLASH
+import io
 import difflib
 import decimal
 import colorsys
@@ -40,6 +41,10 @@ import wikipedia
 # pip install fuzzywuzzy
 # pip install python-Levenshtein
 from fuzzywuzzy import fuzz
+
+# pip install pillow
+import PIL.Image as PIL_Image
+import PIL.ImageDraw as PIL_ImageDraw
 
 import sys
 
@@ -317,37 +322,67 @@ class Other_cog(
         name = "avatar",
         aliases = ["pfp"],
         brief = "Get someone's avatar.",
-        description = "Get someone's avatar.\nThis will use their global avatar, however the `display` parameter can be used to fetch server-specific avatars."
+        description = "Get someone's avatar.\nThis will use their global avatar, however the `display` modifier can be used to fetch server-specific avatars.\nYou can also use the `decoration` modifier to overlay avatar decorations."
     )
     async def avatar(
             self: typing.Self,
             ctx: commands.Context | u_custom.CustomContext,
             target: typing.Optional[discord.Member] = commands.parameter(description = "The member to use, if nothing is provided it'll use you."),
-            display: typing.Optional[str] = commands.parameter(description = "If 'display' is provided it will use server avatars.")
+            *, modifiers: typing.Optional[str] = commands.parameter(description = "The modifiers to use. See above for more information.")
         ):
+
         # If a target was specified or not.
         if target is None:
             target = ctx.author
         
-        # If it should use the display avatar, rather than the global one.
-        display = display == "display"
-        
-        # Get the avatar url.
-        if display:
-            avatar_url = target.display_avatar
+        # If modifiers are being used.
+        if modifiers is None:
+            modifiers = []
         else:
-            avatar_url = target.avatar
+            modifiers = modifiers.split(" ")
+        
+        display = "display" in modifiers
+        decoration = ("decoration" in modifiers) and (target.avatar_decoration != None)
+
+        # Download and get url of the avatar.
+        avatar_image = io.BytesIO()
+        if display:
+            await target.display_avatar.save(avatar_image)
+            avatar_url = target.display_avatar.url
+        else:
+            await target.avatar.save(avatar_image)
+            avatar_url = target.avatar.url
+        
+        # Render the avatar.
+        if decoration:
+
+            # Download the decoration.
+            decoration_image = io.BytesIO()
+            await target.avatar_decoration.save(decoration_image)
+
+            image = u_images.avatar_decoration(
+                avatar = avatar_image,
+                decoration = decoration_image
+            )
+
+            # Create image object for embed.
+            image_url = "attachment://image.png"
+            image = discord.File(image, filename="image.png")
+        else:
+            # create image object for embed
+            image_url = avatar_url
+            image = None
 
         # Setup the embed to send.
         title = "Display avatar" if display else "Avatar"
         embed = u_interface.gen_embed(
             title = title,
             description = "{} for {}:".format(title, target.mention),
-            image_link = avatar_url
+            image_link = image_url
         )
         
         # Send the embed.
-        await ctx.reply(embed=embed)
+        await ctx.reply(embed=embed, file=image)
 
 
         
