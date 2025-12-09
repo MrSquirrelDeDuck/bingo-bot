@@ -113,10 +113,18 @@ class BlackjackPlayer:
             ace_count += 1
         
         if ace_count >= 1:
+            count_11 = 0
+            
             for _ in range(ace_count):
                 if total + 11 > 21:
+                    if total + 1 > 21 and count_11 > 0:
+                        while count_11 > 0:
+                            count_11 -= 1
+                            total -= 10
+                            
                     total += 1
                 else:
+                    count_11 += 1
                     total += 11
         
         return total
@@ -144,13 +152,21 @@ class BlackjackPlayer:
             ace_count += 1
         
         if ace_count >= 1:
+            count_11 = 0
+            
             for _ in range(ace_count):
                 if total + 11 > 21:
+                    if total + 1 > 21 and count_11 > 0:
+                        while count_11 > 0:
+                            count_11 -= 1
+                            total -= 10
+                            
                     total += 1
                 else:
-                    return True
+                    count_11 += 1
+                    total += 11
         
-        return False
+        return count_11 > 0
     
     # double down, surrender, split
     @property
