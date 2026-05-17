@@ -833,3 +833,40 @@ def solid_color(
     output.seek(0)
 
     return output
+
+
+
+######################################################################################################################################
+##### AVATAR #########################################################################################################################
+######################################################################################################################################
+
+def avatar_decoration(
+        avatar: io.BytesIO,
+        decoration: io.BytesIO,
+        avatar_size: tuple[int] = (244, 244),
+        decoration_size: tuple[int] = (288, 288)
+):
+
+    # Create image objects.
+    final = PIL_Image.new("RGBA", decoration_size, "#00000000")
+    avatar = PIL_Image.open(avatar).convert("RGBA").resize(avatar_size)
+    decoration = PIL_Image.open(decoration).convert("RGBA").resize(decoration_size)
+
+    # Create circular mask for avatar.
+    mask = PIL_Image.new("L", avatar_size, 0)
+    mask_draw = PIL_ImageDraw.Draw(mask)
+    mask_draw.ellipse(((0,0), avatar_size), fill=255)
+
+    # Mask avatar with circular mask.
+    avatar.putalpha(mask)
+
+    # Place images on base.
+    final.paste(avatar, ((decoration_size[0] - avatar_size[0]) // 2, (decoration_size[1] - avatar_size[1]) // 2))
+    final = PIL_Image.alpha_composite(final, decoration)
+
+    # Render final image.
+    output = io.BytesIO()
+    final.save(output, "png")
+    output.seek(0)
+
+    return output
