@@ -1357,7 +1357,7 @@ Settings list for configuring when you are the one replying:
             # "37" was in a number, not on its own.
             return
         
-        if random.randint(1, 32) != 1:
+        if random.randint(1, 37) != 1:
             return
         
         # Now, fetch the users in the "37_pinglist" from the pinglist data and send a message pinging all of them.
